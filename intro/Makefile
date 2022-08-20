@@ -7,16 +7,18 @@ OBJECTS := data/JazzCat-RitchieGlitchie-ctr.o \
 LIBS := libctr
 
 CLEAN-FILES := main.o data/bar.c data/bar-2.c data/stripes.c data/colors.c \
-	       data/JazzCat-RitchieGlitchie.smp data/text-scroll-font.c
+	       data/JazzCat-RitchieGlitchie.smp data/text-scroll-font.c \
+	       data/intro.c data/turmite-pal.c
 
-SOURCES := weave.c textscroll.c
-MAIN := main.o
+SOURCES := main.c weave.c textscroll.c turmite.c
+MAIN := #
 
 PNG2C.bar := --bitmap bar,480x133x4 --palette bar_pal,16
 PNG2C.bar-2 := --palette bar2_pal,16
 PNG2C.stripes := --sprite stripes,320,4
 PNG2C.colors := --palette stripes_pal,16
 PNG2C.text-scroll-font := --bitmap font,768x8x1 --palette font_pal,2
+PNG2C.turmite-pal := --palette turmite_pal,16
 
 CPPFLAGS += -DINTRO
 

@@ -63,6 +63,8 @@ static void Init(void) {
 }
 
 static void Kill(void) {
+  DisableDMA(DMAF_RASTER|DMAF_COPPER);
+
   DeleteCopList(cp[0]);
   DeleteCopList(cp[1]);
   DeleteBitmap(scroll);
