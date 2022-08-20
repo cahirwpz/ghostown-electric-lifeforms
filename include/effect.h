@@ -82,6 +82,11 @@ void EffectKill(EffectT *effect);
 void EffectUnLoad(EffectT *effect);
 void EffectRun(EffectT *effect);
 
+#ifdef INTRO
+#undef ALIAS
+#define ALIAS(a, b)
+#endif
+
 #define EFFECT(NAME, L, U, I, K, R)                                            \
   EffectT NAME##Effect = {                                                     \
     .name = #NAME,                                                             \
