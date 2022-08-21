@@ -71,8 +71,20 @@ func parseFrame(token string) (frame int64, err error) {
 	if token[0] == '$' {
 		if len(token) != 5 {
 			err = &parseError{"key must be 4 hex digit protracker song position"}
+			return
 		}
+
 		frame, err = strconv.ParseInt(token[1:], 16, 16)
+		if err != nil {
+			return
+		}
+
+		if frame&0xC0 != 0 {
+			err = &parseError{"not a valid pattern row"}
+			return
+		}
+
+		frame = frame&63 | (frame>>2)&-64
 		frame *= FramesPerRow
 	} else {
 		var f float64
