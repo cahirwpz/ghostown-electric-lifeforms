@@ -18,6 +18,9 @@ extern EffectT WeaveEffect;
 extern EffectT TextScrollEffect;
 extern EffectT TurmiteEffect;
 
+short frameFromStart;
+short frameTillEnd;
+
 #include "data/intro.c"
 
 static EffectT *AllEffects[] = {
@@ -50,19 +53,16 @@ static void UnLoadEffects(EffectT **effects) {
   }
 }
 
-int main(void) {
-  /* NOP that triggers fs-uae debugger to stop and inform GDB that it should
-   * fetch segments locations to relocate symbol information read from file. */
-  asm volatile("exg %d7,%d7");
+static short CurrKeyFrame(TrackT *track) {
+  return track->curr->frame;
+}
 
-  CinterInit(CinterModule, CinterSamples, CinterPlayer);
+static short NextKeyFrame(TrackT *track) {
+  return track->next->frame;
+}
 
-  TrackInit(&EffectNumber);
-  LoadEffects(AllEffects);
 
-  EnableDMA(DMAF_AUDIO);
-  AddIntServer(INTB_VERTB, CinterMusicServer);
-
+static void RunEffects(void) {
   /* Reset frame counter and wait for all time actions to finish. */
   SetFrameCounter(0);
   frameCount = 0;
@@ -87,6 +87,8 @@ int main(void) {
       EffectT *effect = AllEffects[curr];
       int t = ReadFrameCounter();
       frameCount = t;
+      frameFromStart = t - CurrKeyFrame(&EffectNumber);
+      frameTillEnd = NextKeyFrame(&EffectNumber) - t;
       if (effect->Render)
         effect->Render();
       lastFrameCount = t;
@@ -94,6 +96,22 @@ int main(void) {
 
     prev = curr;
   }
+}
+
+int main(void) {
+  /* NOP that triggers fs-uae debugger to stop and inform GDB that it should
+   * fetch segments locations to relocate symbol information read from file. */
+  asm volatile("exg %d7,%d7");
+
+  CinterInit(CinterModule, CinterSamples, CinterPlayer);
+
+  TrackInit(&EffectNumber);
+  LoadEffects(AllEffects);
+
+  EnableDMA(DMAF_AUDIO);
+  AddIntServer(INTB_VERTB, CinterMusicServer);
+
+  RunEffects();
 
   RemIntServer(INTB_VERTB, CinterMusicServer);
   DisableDMA(DMAF_AUDIO);

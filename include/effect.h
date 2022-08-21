@@ -26,19 +26,24 @@
 /*
  * Number of frames (50Hz) from time point when Render() was called first.
  */
-extern int frameCount;
+extern short frameCount;
 
 /*
  * The time when Render() was called previously.
  * Used to calculate how much did it take to render last frame.
  */
-extern int lastFrameCount;
+extern short lastFrameCount;
 
 /*
  * When set to true effect render loop breaks.
  * Normally set by LeftMouseButton routine, but can be overwritten.
  */
 extern bool exitLoop;
+
+#ifdef INTRO
+extern short frameFromStart;
+extern short frameTillEnd;
+#endif
 
 typedef enum {
   EFFECT_LOADED = 1,
