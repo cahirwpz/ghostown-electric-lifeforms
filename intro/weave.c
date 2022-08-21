@@ -288,9 +288,10 @@ static void Init(void) {
 }
 
 static void Kill(void) {
-  DisableDMA(DMAF_RASTER|DMAF_SPRITE|DMAF_COPPER);
+  DisableDMA(DMAF_RASTER|DMAF_COPPER);
   DeleteCopList(cp[0]);
   DeleteCopList(cp[1]);
+  ResetSprites();
 }
 
 PROFILE(UpdateStripeState);

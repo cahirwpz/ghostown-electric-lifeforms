@@ -6,6 +6,7 @@
 #include "bitmap.h"
 #include "sprite.h"
 #include "fx.h"
+#include <system/memory.h>
 
 #include "data/turmite-pal.c"
 
@@ -23,29 +24,7 @@ static CopListT *cp;
 static BitmapT *screen;
 
 /* higher 5 bits store value, lower 3 bits store color information */
-static u_char board[WIDTH * HEIGHT];
-
-static void Init(void) {
-  screen = NewBitmap(WIDTH, HEIGHT, DEPTH);
-
-  SetupDisplayWindow(MODE_LORES, X(32), Y(0), WIDTH, HEIGHT);
-  SetupBitplaneFetch(MODE_LORES, X(32), WIDTH);
-  SetupMode(MODE_LORES, DEPTH);
-  LoadPalette(&turmite_pal, 0);
-
-  cp = NewCopList(100);
-  CopInit(cp);
-  CopSetupBitplanes(cp, NULL, screen, DEPTH);
-  CopEnd(cp);
-  CopListActivate(cp);
-
-  EnableDMA(DMAF_RASTER);
-}
-
-static void Kill(void) {
-  DisableDMA(DMAF_RASTER|DMAF_COPPER);
-  DeleteCopList(cp);
-}
+static u_char *board;
 
 #define SOUTH 0
 #define WEST 1
@@ -249,6 +228,40 @@ void SimulateTurmite(void) {
 #if GENERATION
   generation += STEP;
 #endif
+}
+
+static void ResetTurmite(TurmiteT *t) {
+  t->pos = POS(128, 128);
+  t->dir = 0;
+  t->state = 0;
+}
+
+static void Init(void) {
+  board = MemAlloc(WIDTH * HEIGHT, MEMF_PUBLIC|MEMF_CLEAR);
+
+  screen = NewBitmap(WIDTH, HEIGHT, DEPTH);
+
+  SetupDisplayWindow(MODE_LORES, X(32), Y(0), WIDTH, HEIGHT);
+  SetupBitplaneFetch(MODE_LORES, X(32), WIDTH);
+  SetupMode(MODE_LORES, DEPTH);
+  LoadPalette(&turmite_pal, 0);
+
+  cp = NewCopList(100);
+  CopInit(cp);
+  CopSetupBitplanes(cp, NULL, screen, DEPTH);
+  CopEnd(cp);
+  CopListActivate(cp);
+
+  ResetTurmite(TheTurmite);
+
+  EnableDMA(DMAF_RASTER);
+}
+
+static void Kill(void) {
+  DisableDMA(DMAF_RASTER|DMAF_COPPER);
+  DeleteCopList(cp);
+  DeleteBitmap(screen);
+  MemFree(board);
 }
 
 PROFILE(SimulateTurmite);
