@@ -13,6 +13,7 @@ static CinterPlayerT CinterPlayer[1];
 extern u_char CinterModule[];
 extern u_char CinterSamples[];
 
+extern EffectT LogoEffect;
 extern EffectT WeaveEffect;
 extern EffectT TextScrollEffect;
 extern EffectT TurmiteEffect;
@@ -20,6 +21,7 @@ extern EffectT TurmiteEffect;
 #include "data/intro.c"
 
 static EffectT *AllEffects[] = {
+  &LogoEffect,
   &WeaveEffect,
   &TextScrollEffect,
   &TurmiteEffect,
