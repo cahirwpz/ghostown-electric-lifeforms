@@ -35,6 +35,7 @@ SOURCES := \
 	NullSprData.c \
 	PixmapScramble_4_1.c \
 	PixmapScramble_4_2.c \
+	ResetSprites.c \
 	SetupBitplaneFetch.c \
 	SetupDisplayWindow.c \
 	SetupMode.c \
