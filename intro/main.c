@@ -18,6 +18,7 @@ extern EffectT WeaveEffect;
 extern EffectT TextScrollEffect;
 extern EffectT TurmiteEffect;
 extern EffectT GrowingTreeEffect;
+extern EffectT TileMoverEffect;
 
 short frameFromStart;
 short frameTillEnd;
@@ -30,6 +31,7 @@ static EffectT *AllEffects[] = {
   &WeaveEffect,
   &TurmiteEffect,
   &GrowingTreeEffect,
+  &TileMoverEffect,
   NULL,
 };
 
