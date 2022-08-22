@@ -258,9 +258,11 @@ static void MakeSinTab8(void) {
 
 #define COPLIST_SIZE (HEIGHT * 22 + 100)
 
-static void Init(void) {
+static void Load(void) {
   MakeSinTab8();
+}
 
+static void Init(void) {
   SetupDisplayWindow(MODE_LORES, X(16), Y(0), WIDTH, HEIGHT);
   SetupBitplaneFetch(MODE_LORES, X(0), WIDTH + 16);
   SetupMode(MODE_LORES, DEPTH);
@@ -280,15 +282,20 @@ static void Init(void) {
 
   MakeCopperList(cp[0], &state[0]);
   MakeCopperList(cp[1], &state[1]);
+
+  UpdateBarState(&state[0]);
+  UpdateSpriteState(&state[0]);
+  UpdateStripeState(&state[0]);
+
   CopListActivate(cp[0]);
 
   Log("CopperList: %ld instructions left\n",
       COPLIST_SIZE - (cp[0]->curr - cp[0]->entry));
-  EnableDMA(DMAF_RASTER|DMAF_SPRITE);
+  EnableDMA(DMAF_RASTER | DMAF_SPRITE);
 }
 
 static void Kill(void) {
-  DisableDMA(DMAF_RASTER|DMAF_COPPER);
+  DisableDMA(DMAF_RASTER | DMAF_COPPER);
   DeleteCopList(cp[0]);
   DeleteCopList(cp[1]);
   ResetSprites();
@@ -309,4 +316,4 @@ static void Render(void) {
   active ^= 1;
 }
 
-EFFECT(Weave, NULL, NULL, Init, Kill, Render);
+EFFECT(Weave, Load, NULL, Init, Kill, Render);
