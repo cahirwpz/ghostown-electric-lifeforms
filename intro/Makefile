@@ -1,13 +1,13 @@
 TOPDIR := $(realpath ..)
 
-OBJECTS := data/JazzCat-RitchieGlitchie-ctr.o \
-	   data/JazzCat-RitchieGlitchie-smp.o \
+OBJECTS := data/JazzCat-ElectricLifeforms-ctr.o \
+	   data/JazzCat-ElectricLifeforms-smp.o \
 	   data/text-scroll.o
 
 LIBS := libctr
 
 CLEAN-FILES := main.o data/bar.c data/bar-2.c data/stripes.c data/colors.c \
-	       data/JazzCat-RitchieGlitchie.smp data/text-scroll-font.c \
+	       data/JazzCat-ElectricLifeforms.smp data/text-scroll-font.c \
 	       data/intro.c data/turmite-pal.c data/electric-lifeforms.c \
 	       data/fruit.c data/tilemover-pal.c
 
@@ -35,7 +35,7 @@ data/%.ctr data/%.smp: data/%.mod
 # You MUST pad the section to size that is determined by the converter script.
 # Look for `total instrument memory` in the output.
 OBJCOPY-CHIP := --rename-section .data=.datachip,alloc,load,data,contents \
-	        --pad-to 185738
+	        --pad-to 219164
 
 data/%-ctr.o: data/%.ctr
 	@echo "[OBJCOPY] $(DIR)$< -> $(DIR)$@"
