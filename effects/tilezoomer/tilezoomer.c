@@ -3,6 +3,8 @@
 #include <copper.h>
 #include <stdlib.h>
 #include <system/memory.h>
+#include <fx.h>
+#include <gfx.h>
 
 #define MOTIONBLUR 1
 
@@ -26,6 +28,9 @@
 #define ROTATION  1
 #define ZOOM      1
 
+#define TWO_PI 25736
+#define PI 12868
+
 static BitmapT *screen0;
 #if !MOTIONBLUR
 static BitmapT *screen1;
@@ -40,32 +45,77 @@ static int tiles[NTILES * 2];
 
 #include "data/tilezoomer-pal.c"
 
-static void CalculateTiles(int *tile, short rotation, short zoom) { 
+// fx, tx, fy, ty are arguments in pi-space (pi = 0x800, as in fx.h)
+void CalculateTiles(int *tile, short fx, short tx, short fy, short ty, u_short field_idx) { 
   short x, y;
   short dx, dy;
+  short px, py;
+  short px_real, py_real;
 
-  for (y = 0, dy = 0; y < HTILES - 1; y++, dy += TILESIZE) {
-    short yo = (HTILES - 1 - y) - TILESIZE / 2;
-    for (x = 0, dx = 0; x < WTILES - 1; x++, dx += TILESIZE) {
-      short xo = x - TILESIZE / 2;
+  // convert x and y ranges from pi-space to 4.12 space (pi = 12868 = 3.1416015625 in 4.12)
+  short fx_real = normfx((int)(fx) * (int)(TWO_PI));
+  short tx_real = normfx((int)(tx) * (int)(TWO_PI));
+  short fy_real = normfx((int)(fy) * (int)(TWO_PI));
+  short ty_real = normfx((int)(ty) * (int)(TWO_PI));
+
+  short px_step = (tx - fx) / (WTILES - 1);
+  short px_real_step = (tx_real - fx_real) / (WTILES - 1);
+  short py_step = (ty - fy) / (HTILES - 1);
+  short py_real_step = (ty_real - fy_real) / (HTILES - 1);
+
+  for (y = 0, dy = 0, py = fy, py_real = fy_real; y < HTILES - 1; y++, dy += TILESIZE, py += py_step, py_real += py_real_step) {
+    // multiplication could overflow
+    // bare formulas:
+    // short py = fy + ((int)(y) * (int)(ty - fy)) / (short)(HTILES - 1);
+    // short py_real = fy_real + ((int)(y) * (int)(ty_real - fy_real)) / (short)(HTILES - 1);
+
+    for (x = 0, dx = 0, px = fx, px_real = fx_real; x < WTILES - 1; x++, dx += TILESIZE, px += px_step, px_real += px_real_step) {
+      // bare formulas:
+      // short px = fx + ((int)(x) * (int)(tx - fx)) / (short)(WTILES - 1);
+      // short px_real = fx_real + ((int)(x) * (int)(tx_real - fx_real)) / (short)(WTILES - 1);
+
       short sx = dx;
       short sy = dy;
+      short vx = 0;
+      short vy = 0;
+      int mag = isqrt((int)px_real*(int)px_real + (int)py_real*(int)py_real);
+      int mag_sin = div16((int)(mag << 16), TWO_PI) >> 4;
 
-      if (rotation > 0) {
-        sx += yo;
-        sy += xo;
-      } else if (rotation < 0) {
-        sx -= yo;
-        sy -= xo;
+      switch (field_idx) {
+        case 0:
+          // SIN_PI/3, SIN_PI, -SIN_PI/3, SIN_PI/12
+          vx = (SIN(mag_sin)) >> 8;
+          vy = ((COS(mag_sin)) >> 8) - (py_real >> 9);
+          break;
+        case 1:
+          // -SIN_PI/2, SIN_PI/2, 0, SIN_PI/2,
+          vx = min(py_real, normfx(px_real * py_real)) >> 9;
+          vy = mag >> 9;
+          break;
+        case 2:
+          // -SIN_PI/3, SIN_PI/3, -SIN_PI/3, SIN_PI/3
+          // this is also good with range: SIN_PI/12, SIN_PI/4, -SIN_PI/12, SIN_PI/24
+          vx = (SIN(py*6)/2) >> 9;
+          vy = (SIN(px*6)/2) >> 9;
+          break;
+        case 3:
+          // -2 * SIN_PI, 2 * SIN_PI, -SIN_PI, SIN_PI
+          vx = (SIN(py) / 2) >> 9;
+          vy = 0;
+          break;
+        case 4:
+          // -SIN_PI / 4, SIN_PI / 4, -SIN_PI, SIN_PI,
+          vx = ((COS(px) / 2) + 127) >> 8;
+          vy = (px_real + 127) >> 8;
+          break;
+        default:
       }
 
-      if (zoom > 0) {
-        sx -= xo;
-        sy += yo;
-      } else if (zoom < 0) {
-        sx += xo;
-        sy -= yo;
-      }
+      //Log("(%d %d): %d %d %d %d\n", px_real, py_real, mag, mag_sin, vx, vy);
+
+      vx = -vx;
+      sx += vx;
+      sy += vy;
 
       *tile++ = sy * WIDTH * DEPTH + sx; /* source tile offset */
       *tile++ = dy * WIDTH * DEPTH + dx; /* destination tile offset */
@@ -74,7 +124,7 @@ static void CalculateTiles(int *tile, short rotation, short zoom) {
 }
 
 static void Init(void) {
-  CalculateTiles(tiles, ROTATION, ZOOM);
+  CalculateTiles(tiles, SIN_PI/3, SIN_PI, -SIN_PI/3, SIN_PI/12, 0);
 
 #if MOTIONBLUR
   screen0 = NewBitmap(WIDTH, HEIGHT, DEPTH + SHADOW);
@@ -125,8 +175,8 @@ static void Kill(void) {
 }
 
 static void DrawSeed(u_char *bpl) {
-  short y = HEIGHT / 2 - TILESIZE / 2;
-  short x = WIDTH / 2 - TILESIZE / 2;
+  short y = HEIGHT / (random() % 8 + 1) - TILESIZE / 2;
+  short x = WIDTH / (random() % 8 + 1) - TILESIZE / 2;
   int offset = (y * WIDTH * DEPTH + x) / 8;
   short n = DEPTH * 8 - 1;
 
@@ -229,21 +279,8 @@ static void UpdateBitplanePointers(void) {
 PROFILE(TileZoomer);
 
 static void Render(void) {
-#if MOTIONBLUR
-  static short rotation = 0;
-  static short zoom = 0;
-#endif
   ProfilerStart(TileZoomer);
-#if MOTIONBLUR
-  if ((frameCount & 63) < 2) {
-    rotation = random() % 2;
-    zoom = random() % 2;
-    if (rotation == 0)
-      rotation = -1;
-    CalculateTiles(tiles, rotation, zoom);
-  }
-#endif
-  if (zoom && ((random() & 3) == 0))
+  if ((random() & 15) == 0)
     DrawSeed(screen0->planes[active]);
   {
     short xshift = random() & (TILESIZE - 1);
