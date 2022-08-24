@@ -16,9 +16,10 @@ SUBDIRS := \
 	flatshade-convex \
 	floor \
 	floor-old \
+	game-of-life \
+	glitch \
 	growing-tree \
 	gui \
-	glitch \
 	highway \
 	kbtest \
 	layers \
@@ -33,6 +34,7 @@ SUBDIRS := \
 	plotter \
 	prisms \
 	rotator \
+	sea-anemone \
 	shapes \
 	showpchg \
 	stripes \
