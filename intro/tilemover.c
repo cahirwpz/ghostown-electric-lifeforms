@@ -108,9 +108,11 @@ void CalculateTiles(int *tile, short fx, short tx, short fy, short ty, u_short f
   }
 }
 
-static void Init(void) {
+static void Load(void) {
   CalculateTiles(tiles, SIN_PI/3, SIN_PI, -SIN_PI/3, SIN_PI/12, 0);
+}
 
+static void Init(void) {
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1);
 
   SetupPlayfield(MODE_LORES, DEPTH, X(MARGIN), Y((256 - HEIGHT + MARGIN) / 2),
@@ -254,4 +256,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(TileMover, NULL, NULL, Init, Kill, Render);
+EFFECT(TileMover, Load, NULL, Init, Kill, Render);
