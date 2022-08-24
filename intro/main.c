@@ -19,6 +19,7 @@ extern EffectT TextScrollEffect;
 extern EffectT TurmiteEffect;
 extern EffectT GrowingTreeEffect;
 extern EffectT TileMoverEffect;
+extern EffectT SeaAnemoneEffect;
 
 short frameFromStart;
 short frameTillEnd;
@@ -32,6 +33,7 @@ static EffectT *AllEffects[] = {
   &TurmiteEffect,
   &GrowingTreeEffect,
   &TileMoverEffect,
+  &SeaAnemoneEffect,
   NULL,
 };
 
