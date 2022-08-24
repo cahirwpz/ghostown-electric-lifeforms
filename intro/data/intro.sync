@@ -1,6 +1,5 @@
 @track EffectNumber
-$0000 0 !step
-$0100 2
+$0000 5 !step
 $0200 3
 $0300 4
 $0400 5
@@ -12,4 +11,20 @@ $0700 3
 $0720 2
 $0800 1
 $0A00 -1
+@end
+
+@track TileMoverNumber
+$0000 0 !step
+$0010 1
+$0020 2
+$0030 3
+$0100 4
+@end
+
+@track TileMoverBlit
+$0008 1 !event
+$0018 1
+$0028 1
+$0038 1
+$0108 1
 @end

@@ -4,12 +4,15 @@
 #include <stdlib.h>
 #include <system/memory.h>
 #include <fx.h>
+#include <sync.h>
 
 /* Add tile sized margins on every side to hide visual artifacts. */
 #define MARGIN 32
 #define WIDTH  (256 + MARGIN)
 #define HEIGHT (224 + MARGIN)
 #define DEPTH  4
+#define COLORS 16
+#define NFLOWFIELDS 5
 
 #define TILESIZE  16
 #define WTILES    (WIDTH / TILESIZE)
@@ -23,12 +26,18 @@ static BitmapT *screen;
 static int active = 0;
 static CopListT *cp;
 static CopInsT *bplptr[DEPTH + 1];
+static CopInsT *palptr[COLORS];
 
 /* for each tile following array stores source and destination offsets relative
  * to the beginning of a bitplane */
-static int tiles[NTILES * 2];
+static int tiles[NFLOWFIELDS][NTILES * 2];
+static u_short current_ff = 0;
 
 #include "data/tilemover-pal.c"
+#include "data/ghostown-logo-crop.c"
+
+extern TrackT TileMoverNumber;
+extern TrackT TileMoverBlit;
 
 // fx, tx, fy, ty are arguments in pi-space (pi = 0x800, as in fx.h)
 void CalculateTiles(int *tile, short fx, short tx, short fy, short ty, u_short field_idx) { 
@@ -108,11 +117,33 @@ void CalculateTiles(int *tile, short fx, short tx, short fy, short ty, u_short f
   }
 }
 
+short ranges[NFLOWFIELDS*4] = {
+  SIN_PI/3,  SIN_PI,   -SIN_PI/3, SIN_PI/12,
+  -SIN_PI/2, SIN_PI/2, 0,         SIN_PI/2,
+  -SIN_PI/3, SIN_PI/3, -SIN_PI/3, SIN_PI/3,
+  -2*SIN_PI, 2*SIN_PI, -SIN_PI,   SIN_PI,
+  -SIN_PI/4, SIN_PI/4, -SIN_PI,   SIN_PI,
+};
+
 static void Load(void) {
-  CalculateTiles(tiles, SIN_PI/3, SIN_PI, -SIN_PI/3, SIN_PI/12, 0);
+  u_short i;
+  short* rangetab = ranges;
+  for (i = 0; i < NFLOWFIELDS; i++) {
+    short fx = *rangetab++;
+    short tx = *rangetab++;
+    short fy = *rangetab++;
+    short ty = *rangetab++;
+    CalculateTiles(tiles[i], fx, tx, fy, ty, i);
+  }
 }
 
 static void Init(void) {
+  u_short i;
+  u_short* color = tilemover_pal.colors;
+
+  TrackInit(&TileMoverNumber);
+  TrackInit(&TileMoverBlit);
+
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1);
 
   SetupPlayfield(MODE_LORES, DEPTH, X(MARGIN), Y((256 - HEIGHT + MARGIN) / 2),
@@ -124,6 +155,8 @@ static void Init(void) {
   CopSetupBitplanes(cp, bplptr, screen, DEPTH);
   CopMove16(cp, bpl1mod, MARGIN / 8);
   CopMove16(cp, bpl2mod, MARGIN / 8);
+  for (i = 0; i < COLORS; i++)
+    palptr[i] = CopSetColor(cp, i, *color++);
   CopEnd(cp);
 
   CopListActivate(cp);
@@ -153,7 +186,7 @@ static void DrawSeed(u_char *bpl) {
 
 static void MoveTiles(void *src, void *dst, short xshift, short yshift) {
   short n = NTILES - 1;
-  int *tile = tiles;
+  int *tile = tiles[current_ff];
   int offset;
 
   register volatile void *bltptr asm("a4") = &custom->bltcon1;
@@ -236,7 +269,24 @@ static void UpdateBitplanePointers(void) {
 PROFILE(TileZoomer);
 
 static void Render(void) {
+  u_short i;
+  u_short* color = tilemover_pal.colors; // replace with some interpolated palette?
+  u_short blitGhostown = TrackValueGet(&TileMoverBlit, frameCount);
+  
+  current_ff = TrackValueGet(&TileMoverNumber, frameCount);
+  
+  Log("%d\n", blitGhostown);
+
+  
   ProfilerStart(TileZoomer);
+
+  for (i = 0; i < COLORS; i++)
+    CopInsSet16(palptr[i], *color++);
+
+  if (blitGhostown) {
+    // TODO
+  }
+
   if ((random() & 15) == 0)
     DrawSeed(screen->planes[active]);
   {

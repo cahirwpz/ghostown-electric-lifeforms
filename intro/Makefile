@@ -9,7 +9,8 @@ LIBS := libctr
 CLEAN-FILES := main.o data/bar.c data/bar-2.c data/stripes.c data/colors.c \
 	       data/JazzCat-ElectricLifeforms.smp data/text-scroll-font.c \
 	       data/intro.c data/turmite-pal.c data/electric-lifeforms.c \
-	       data/fruit.c data/tilemover-pal.c data/anemone-pal.c
+	       data/fruit.c data/tilemover-pal.c data/anemone-pal.c \
+		   data/ghostown-logo-crop.c
 
 SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   tilemover.c sea-anemone.c
@@ -25,6 +26,7 @@ PNG2C.electric-lifeforms := --bitmap logo,320x256x3 --palette logo_pal,8
 PNG2C.fruit := --bitmap fruit,16x16x1
 PNG2C.tilemover-pal := --palette tilemover_pal,16
 PNG2C.anemone-pal := --palette anemone_pal,16
+PNG2C.ghostown-logo-crop := --bitmap ghostown_logo,185x127x3 --palette ghostown_logo_pal,8
 
 CPPFLAGS += -DINTRO
 
