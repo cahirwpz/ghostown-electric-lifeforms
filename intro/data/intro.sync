@@ -1,5 +1,6 @@
 @track EffectNumber
 $0000 7 !step
+$0100 8
 $0200 3
 $0300 4
 $0400 5

@@ -20,6 +20,7 @@ extern EffectT TurmiteEffect;
 extern EffectT GrowingTreeEffect;
 extern EffectT TileMoverEffect;
 extern EffectT SeaAnemoneEffect;
+extern EffectT WireworldEffect;
 extern EffectT GameOfLifeEffect;
 
 short frameFromStart;
@@ -35,6 +36,7 @@ static EffectT *AllEffects[] = {
   &GrowingTreeEffect,
   &TileMoverEffect,
   &SeaAnemoneEffect,
+  &WireworldEffect,
   &GameOfLifeEffect,
   NULL,
 };
