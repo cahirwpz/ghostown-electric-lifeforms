@@ -164,11 +164,21 @@ static void Load(void) {
   {
     u_short w = ghostown_logo.width;
     u_short h = ghostown_logo.height;
+
+    EnableDMA(DMAF_BLITTER);
+
     // bitmap size aligned to word
     logo_blit = NewBitmap(w + (16 - (w / 16)), h + (16 - (h / 16)), 1);
     BlitSimple(ghostown_logo.planes[0], ghostown_logo.planes[1], ghostown_logo.planes[2], logo_blit,
                ABC | ANBC | ABNC | ANBNC | NABC | NANBC | NABNC);
+
+    WaitBlitter();
+    DisableDMA(DMAF_BLITTER);
   }
+}
+
+static void UnLoad(void) {
+  DeleteBitmap(logo_blit);
 }
 
 static void Init(void) {
@@ -339,4 +349,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(TileMover, Load, NULL, Init, Kill, Render);
+EFFECT(TileMover, Load, UnLoad, Init, Kill, Render);
