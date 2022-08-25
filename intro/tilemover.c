@@ -28,6 +28,9 @@ static CopListT *cp;
 static CopInsT *bplptr[DEPTH + 1];
 static CopInsT *palptr[COLORS];
 
+// 1 bit version of logo for blitting
+static BitmapT *logo_blit;
+
 /* for each tile following array stores source and destination offsets relative
  * to the beginning of a bitplane */
 static int tiles[NFLOWFIELDS][NTILES * 2];
@@ -125,6 +128,28 @@ short ranges[NFLOWFIELDS*4] = {
   -SIN_PI/4, SIN_PI/4, -SIN_PI,   SIN_PI,
 };
 
+static void BlitSimple(void *sourceA, void *sourceB,
+                       void *sourceC, const BitmapT *target,
+                       u_short minterms) {
+  u_short bltsize = (target->height << 6) | (target->width >> 4);
+
+  custom->bltcon0 = minterms | (SRCA | SRCB | SRCC | DEST);
+  custom->bltcon1 = 0;
+
+  custom->bltafwm = 0xFFFF;
+  custom->bltalwm = 0xFFFF;
+  custom->bltamod = 0;
+  custom->bltbmod = 0;
+  custom->bltcmod = 0;
+  custom->bltdmod = 0;
+
+  custom->bltapt = sourceA;
+  custom->bltbpt = sourceB;
+  custom->bltcpt = sourceC;
+  custom->bltdpt = target->planes[0];
+  custom->bltsize = bltsize;
+}
+
 static void Load(void) {
   u_short i;
   short* rangetab = ranges;
@@ -134,6 +159,15 @@ static void Load(void) {
     short fy = *rangetab++;
     short ty = *rangetab++;
     CalculateTiles(tiles[i], fx, tx, fy, ty, i);
+  }
+
+  {
+    u_short w = ghostown_logo.width;
+    u_short h = ghostown_logo.height;
+    // bitmap size aligned to word
+    logo_blit = NewBitmap(w + (16 - (w / 16)), h + (16 - (h / 16)), 1);
+    BlitSimple(ghostown_logo.planes[0], ghostown_logo.planes[1], ghostown_logo.planes[2], logo_blit,
+               ABC | ANBC | ABNC | ANBNC | NABC | NANBC | NABNC);
   }
 }
 
@@ -272,19 +306,18 @@ static void Render(void) {
   u_short i;
   u_short* color = tilemover_pal.colors; // replace with some interpolated palette?
   u_short blitGhostown = TrackValueGet(&TileMoverBlit, frameCount);
-  
   current_ff = TrackValueGet(&TileMoverNumber, frameCount);
-  
-  Log("%d\n", blitGhostown);
 
-  
   ProfilerStart(TileZoomer);
-
   for (i = 0; i < COLORS; i++)
     CopInsSet16(palptr[i], *color++);
 
   if (blitGhostown) {
-    // TODO
+    BlitterCopySetup(screen, 35, 48, logo_blit);
+    // monkeypatch minterms to perform screen = screen | logo_blit
+    custom->bltcon0 = (SRCB | SRCC | DEST) | (ABC | ANBC | ABNC);
+    for (i = 0; i < screen->depth; i++)
+      BlitterCopyStart(i, 0);
   }
 
   if ((random() & 15) == 0)
