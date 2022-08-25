@@ -5,6 +5,8 @@
 #include "fx.h"
 #include "sprite.h"
 #include "pixmap.h"
+#include "color.h"
+#include <sync.h>
 #include <system/interrupt.h>
 #include <system/memory.h>
 
@@ -86,6 +88,10 @@
 #include "data/logo-electrons.c"
 #include "games.c"
 
+extern TrackT GOLPaletteH;
+extern TrackT GOLPaletteS;
+extern TrackT GOLPaletteV;
+
 static CopListT *cp;
 static BitmapT *current_board;
 
@@ -139,6 +145,8 @@ static PaletteT palette = {
       0x09F, // 1111
     },
 };
+
+static u_short* dynamic_pal;
 
 // Used by CPU to quickly transform 1x1 pixels into 2x1 pixels.
 static u_short double_pixels[256];
@@ -369,18 +377,114 @@ static void UpdateBitplanePointers(void) {
   }
 }
 
+typedef struct RGB {
+  u_char r;
+  u_char g;
+  u_char b;
+} RGB;
+
+typedef struct HSV {
+  u_char h;
+  u_char s;
+  u_char v;
+} HSV;
+
+// Forgive me, Cahir, for I have sinned...
+// https://stackoverflow.com/a/14733008
+HSV RgbToHsv(u_char r, u_char g, u_char b) {
+    unsigned char rgbMin, rgbMax;
+    HSV hsv;
+
+    rgbMin = r < g ? (r < b ? r : b) : (g < b ? g : b);
+    rgbMax = r > g ? (r > b ? r : b) : (g > b ? g : b);
+
+    hsv.v = rgbMax;
+    if (hsv.v == 0)
+    {
+        hsv.h = 0;
+        hsv.s = 0;
+        return hsv;
+    }
+
+    hsv.s = 255 * (long)(rgbMax - rgbMin) / hsv.v;
+    if (hsv.s == 0)
+    {
+        hsv.h = 0;
+        return hsv;
+    }
+
+    if (rgbMax == r)
+        hsv.h = 0 + 43 * (g - b) / (rgbMax - rgbMin);
+    else if (rgbMax == g)
+        hsv.h = 85 + 43 * (b - r) / (rgbMax - rgbMin);
+    else
+        hsv.h = 171 + 43 * (r - g) / (rgbMax - rgbMin);
+
+    return hsv;
+}
+
+u_short HsvToRgb(u_char h, u_char s, u_char v)
+{
+    unsigned char region, remainder, p, q, t;
+    RGB rgb;
+
+    if (s == 0)
+    {
+        v &= 0xf0;
+        return (v << 4) | v | (v >> 4);
+    }
+
+    region = h / 43;
+    remainder = (h - (region * 43)) * 6; 
+
+    p = (v * (255 - s)) >> 8;
+    q = (v * (255 - ((s * remainder) >> 8))) >> 8;
+    t = (v * (255 - ((s * (255 - remainder)) >> 8))) >> 8;
+
+    switch (region)
+    {
+        case 0:
+            rgb.r = v; rgb.g = t; rgb.b = p;
+            break;
+        case 1:
+            rgb.r = q; rgb.g = v; rgb.b = p;
+            break;
+        case 2:
+            rgb.r = p; rgb.g = v; rgb.b = t;
+            break;
+        case 3:
+            rgb.r = p; rgb.g = q; rgb.b = v;
+            break;
+        case 4:
+            rgb.r = t; rgb.g = p; rgb.b = v;
+            break;
+        default:
+            rgb.r = v; rgb.g = p; rgb.b = q;
+            break;
+    }
+
+    rgb.r &= 0xf0;
+    rgb.g &= 0xf0;
+    rgb.b &= 0xf0;
+
+    return (rgb.r << 4) | rgb.g | (rgb.b >> 4);
+}
+
+static u_short* cur_pal;
+
 static void CyclePalette(void) {
-  static u_short* cur_pal = gradient_pixels;
-  static u_short pal_phase = 0;  
+  //u_short i;
+  static u_short pal_phase = 0;
+  u_short* end = (u_short*)(dynamic_pal)+1024-4;
 
   ChangePalette(cur_pal);
-  
+
   if (pal_phase)
     cur_pal -= 4;
   else
     cur_pal += 4;
 
-  if (cur_pal >= (u_short*)(gradient_pixels)+gradient_width*gradient_height || cur_pal <= gradient_pixels) {
+  if (cur_pal >= end || cur_pal <= dynamic_pal) {
     pal_phase ^= 1;
     if (pal_phase)
       cur_pal -= 4;
@@ -419,6 +523,23 @@ static void Load(void) {
 
     PixelDouble = MemAlloc(PixelDoubleSize, MEMF_PUBLIC);
     MakePixelDoublingCode(boards[0]);
+
+    TrackInit(&GOLPaletteH);
+    TrackInit(&GOLPaletteS);
+    TrackInit(&GOLPaletteV);
+
+    dynamic_pal = MemAlloc(4*256*sizeof(u_short), MEMF_PUBLIC);
+    for (i = 0; i < 256; i++) {
+      u_char h = TrackValueGet(&GOLPaletteH, i);
+      u_char s = TrackValueGet(&GOLPaletteS, i);
+      u_char v = TrackValueGet(&GOLPaletteV, i);
+      Log("%d %d %d\n", h, s, v);
+      dynamic_pal[4*i] = HsvToRgb(h, s, v/8);
+      dynamic_pal[4*i+1] = HsvToRgb(h, s, v/4);
+      dynamic_pal[4*i+2] = HsvToRgb(h, s, v/2);
+      dynamic_pal[4*i+3] = HsvToRgb(h, s, v);
+    }
+    cur_pal = dynamic_pal;
   }
 }
 
