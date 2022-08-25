@@ -1,5 +1,8 @@
 TOPDIR := $(realpath ..)
 
+RLE2PNG = rle2png.py
+ELECTRONS2C = electrons2c.py
+
 OBJECTS := data/JazzCat-ElectricLifeforms-ctr.o \
 	   data/JazzCat-ElectricLifeforms-smp.o \
 	   data/text-scroll.o
@@ -10,10 +13,11 @@ CLEAN-FILES := main.o data/bar.c data/bar-2.c data/stripes.c data/colors.c \
 	       data/JazzCat-ElectricLifeforms.smp data/text-scroll-font.c \
 	       data/intro.c data/turmite-pal.c data/electric-lifeforms.c \
 	       data/fruit.c data/tilemover-pal.c data/anemone-pal.c \
-		   data/ghostown-logo-crop.c
+		   data/ghostown-logo-crop.c data/p46basedprng.c data/cell-gradient.c \
+		   data/logo-electrons.c data/electric-lifeforms.c
 
 SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
-	   tilemover.c sea-anemone.c
+	   tilemover.c sea-anemone.c game-of-life.c
 MAIN := #
 
 PNG2C.bar := --bitmap bar,480x133x4 --palette bar_pal,16
@@ -27,6 +31,9 @@ PNG2C.fruit := --bitmap fruit,16x16x1
 PNG2C.tilemover-pal := --palette tilemover_pal,16
 PNG2C.anemone-pal := --palette anemone_pal,16
 PNG2C.ghostown-logo-crop := --bitmap ghostown_logo,185x127x3 --palette ghostown_logo_pal,8
+PNG2C.p46basedprng := --bitmap p46basedprng,156x75x1
+PNG2C.electric-lifeforms-wireworld := --bitmap wireworld_logo,160x128x1
+PNG2C.cell-gradient := --pixmap gradient,4x64x12
 
 CPPFLAGS += -DINTRO
 
@@ -63,3 +70,11 @@ data/%.o: data/%.txt
 	  --redefine-sym _binary_data_$(subst -,_,$*)_txt_end=_TextEnd \
 	  --redefine-sym _binary_data_$(subst -,_,$*)_txt_size=_TextSize \
 	  $^ $@
+
+data/%.png: data/%.rle
+	@echo "[RLE] $(DIR)$< -> $(DIR)$@"
+	$(PYTHON3) $(RLE2PNG) $< $@ || (rm -f $@ && exit 1)
+
+data/%-electrons.c: data/%-electrons.png
+	@echo "[PNG] $(DIR)$< -> $(DIR)$@"
+	$(PYTHON3) $(ELECTRONS2C) $< $@ || (rm -f $@ && exit 1)
