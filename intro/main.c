@@ -22,6 +22,7 @@ extern EffectT TileMoverEffect;
 extern EffectT SeaAnemoneEffect;
 extern EffectT WireworldEffect;
 extern EffectT GameOfLifeEffect;
+extern EffectT VitruvianEffect;
 
 short frameFromStart;
 short frameTillEnd;
@@ -38,6 +39,7 @@ static EffectT *AllEffects[] = {
   &SeaAnemoneEffect,
   &WireworldEffect,
   &GameOfLifeEffect,
+  &VitruvianEffect,
   NULL,
 };
 

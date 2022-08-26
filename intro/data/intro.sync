@@ -7,8 +7,10 @@ $0100 5
 $0200 2
 # wireworld
 $0300 7
+# vitruvian
+$0400 9
 # game of life
-$0400 8
+$0420 8
 # tree
 $0600 4
 # tilemover
@@ -33,6 +35,15 @@ $0000 0 !step
 $0010 1 
 $0020 2
 $0030 3
+$1000 3
+$1010 2
+$1020 1
+$1030 0
+@end
+
+@track ElectricLifeformsLogoPal
+$0400 1 !step
+$0410 2
 @end
 
 @track TileMoverNumber
@@ -66,17 +77,15 @@ $0000 255 !step
 
 @track GOLGame
 # classic gol
-$0400 0 !step
+$0420 0 !step
 # coagulations
-$0410 1
+$0430 1
 # day and night
-$0420 5
+$0500 5
 # maze
-$0430 2
+$0510 2
 # three-four
-$0500 6
+$0520 6
 # diamoeba
-$0510 3
-# stains
-$0520 4
+$0530 3
 @end
