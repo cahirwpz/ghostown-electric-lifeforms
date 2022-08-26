@@ -547,7 +547,6 @@ static void Load(void) {
       u_char h = TrackValueGet(&GOLPaletteH, i);
       u_char s = TrackValueGet(&GOLPaletteS, i);
       u_char v = TrackValueGet(&GOLPaletteV, i);
-      Log("%d %d %d\n", h, s, v);
       dynamic_pal[4*i] = HsvToRgb(h, s, v/8);
       dynamic_pal[4*i+1] = HsvToRgb(h, s, v/4);
       dynamic_pal[4*i+2] = HsvToRgb(h, s, v/2);
