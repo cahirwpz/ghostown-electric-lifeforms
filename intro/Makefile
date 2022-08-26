@@ -3,8 +3,8 @@ TOPDIR := $(realpath ..)
 RLE2PNG = rle2png.py
 ELECTRONS2C = electrons2c.py
 
-OBJECTS := data/JazzCat-ElectricLifeforms-ctr.o \
-	   data/JazzCat-ElectricLifeforms-smp.o \
+OBJECTS := data/JazzCat-ElectricLifeforms.ctr.o \
+	   data/JazzCat-ElectricLifeforms-Delta.smp.o \
 	   data/text-scroll.o
 
 LIBS := libctr
@@ -15,7 +15,7 @@ CLEAN-FILES := main.o data/bar.c data/bar-2.c data/stripes.c data/colors.c \
 	       data/fruit.c data/tilemover-pal.c data/anemone-pal.c \
 	       data/ghostown-logo-crop.c data/p46basedprng.c data/cell-gradient.c \
 	       data/logo-electrons.c data/electric-lifeforms.c \
-	       data/ghostown-logo-0[1-3].c
+	       data/electric-lifeforms-wireworld.c data/ghostown-logo-0[1-3].c
 
 SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   tilemover.c sea-anemone.c game-of-life.c vitruvian.c
@@ -56,7 +56,7 @@ data/%.ctr data/%.smp: data/%.mod
 OBJCOPY-CHIP := --rename-section .data=.datachip,alloc,load,data,contents \
 	        --pad-to 181610
 
-data/%-ctr.o: data/%.ctr
+data/%.ctr.o: data/%.ctr
 	@echo "[OBJCOPY] $(DIR)$< -> $(DIR)$@"
 	$(OBJCOPY) -I binary -O amiga \
 	  --redefine-sym _binary_data_$(subst -,_,$*)_ctr_start=_CinterModule \
@@ -64,7 +64,11 @@ data/%-ctr.o: data/%.ctr
 	  --redefine-sym _binary_data_$(subst -,_,$*)_ctr_size=_CinterModuleSize \
 	  $^ $@
 
-data/%-smp.o: data/%.smp
+data/%-Delta.smp: data/%.smp
+	@echo "[RLE] $(DIR)$< -> $(DIR)$@"
+	$(PYTHON3) delta.py $< $@
+
+data/%.smp.o: data/%.smp
 	@echo "[OBJCOPY] $(DIR)$< -> $(DIR)$@"
 	$(OBJCOPY) $(OBJCOPY-CHIP) -I binary -O amiga \
 	  --redefine-sym _binary_data_$(subst -,_,$*)_smp_start=_CinterSamples \
