@@ -59,14 +59,36 @@ static inline int fastrand(void) {
 
 #define random fastrand
 
+static u_short palette[] = {
+  // pal0
+  0xfdb,
+  0x653,
+  0xd43,
+  0xd43,
+  // pal1
+  0x123,
+  0x068,
+  0x9df,
+  0x9df
+};
+
+static u_short nrPal = 0;
+static void setTreePalette(void) {
+  u_short x = 0;
+  u_short *pal = &palette[nrPal<<2];
+  for (x = 0; x < 4; x++) {
+    SetColor(x, *pal++);
+  }
+  nrPal++;
+  nrPal &= 1;
+}
+
 static void Init(void) {
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH);
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
-  SetColor(0, 0xfff);
-  SetColor(1, 0x000);
-  SetColor(2, 0xf00);
-  SetColor(3, 0xf00);
+
+  setTreePalette();
 
   cp = NewCopList(50);
   CopInit(cp);
@@ -306,6 +328,7 @@ static void Render(void) {
     }
     waitFrame = 0;
     BitmapClear(screen);
+    setTreePalette();
   }
 
   if (lastBranch == branches) {
