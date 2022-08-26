@@ -1,17 +1,31 @@
 @track EffectNumber
+# logo
 $0000 0 !step
+# tilemover
 $0100 5
-$0200 8
-$0300 4
-$0400 3
-$0500 6
-$0520 5
+# weave
+$0200 2
+# wireworld
+$0300 7
+# game of life
+$0400 8
+# tree
 $0600 4
-$0620 6
-$0700 3
-$0720 2
-$0800 1
-$0A00 -1
+# tilemover
+$0800 5
+# turmite
+$0A00 3
+# sea anemone
+$0D00 6
+# wireworld
+$0E00 7
+# tilemover
+$0F00 5
+# logo
+$1000 0
+# scrolling text
+$1100 1
+$1400 -1
 @end
 
 @track GhostownLogoPal
@@ -51,7 +65,18 @@ $0000 255 !step
 @end
 
 @track GOLGame
-$0100 0 !step
-$0110 1
-$0120 2
+# classic gol
+$0400 0 !step
+# coagulations
+$0410 1
+# day and night
+$0420 5
+# maze
+$0430 2
+# three-four
+$0500 6
+# diamoeba
+$0510 3
+# stains
+$0520 4
 @end
