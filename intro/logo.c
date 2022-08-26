@@ -1,4 +1,4 @@
-#include <effect.h>
+#include <intro.h>
 #include <blitter.h>
 #include <copper.h>
 #include <color.h>
@@ -31,6 +31,13 @@ static void Init(void) {
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
 
+  {
+    short i = 0;
+
+    for (i = 0; i < (1 << DEPTH); i++)
+      SetColor(i, 0xf00);
+  }
+
   EnableDMA(DMAF_BLITTER);
   BitmapCopy(screen, (WIDTH - ghostown_logo_width) / 2,
              (HEIGHT - ghostown_logo_height) / 2, &ghostown_logo);
@@ -59,18 +66,20 @@ static void Kill(void) {
 
 static void Render(void) {
   short num = TrackValueGet(&GhostownLogoPal, frameCount);
-  short fromCurrKeyFrame = frameCount - CurrKeyFrame(&GhostownLogoPal);
+  short frame = FromCurrKeyFrame(&GhostownLogoPal);
 
-  if (fromCurrKeyFrame < 16) {
-    short i;
+  if (num > 0) {
+    if (frame < 16) {
+      short i;
 
-    for (i = 0; i < (1 << DEPTH); i++) {
-      short prev = (num == 1) ? 0 : ghostown_logo_pal[num - 1]->colors[i];
-      short curr = ghostown_logo_pal[num]->colors[i];
-      SetColor(i, ColorTransition(prev, curr, fromCurrKeyFrame));
+      for (i = 0; i < (1 << DEPTH); i++) {
+        short prev = (num == 1) ? 0xf00 : ghostown_logo_pal[num - 1]->colors[i];
+        short curr = ghostown_logo_pal[num]->colors[i];
+        SetColor(i, ColorTransition(prev, curr, frame));
+      }
+    } else {
+      LoadPalette(ghostown_logo_pal[num], 0);
     }
-  } else {
-    LoadPalette(ghostown_logo_pal[num], 0);
   }
 
   TaskWaitVBlank();
