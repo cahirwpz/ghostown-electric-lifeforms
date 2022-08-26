@@ -1,6 +1,6 @@
 @track EffectNumber
 $0000 0 !step
-$0100 7
+$0100 5
 $0200 8
 $0300 4
 $0400 3
@@ -22,19 +22,17 @@ $0030 3
 @end
 
 @track TileMoverNumber
-$0000 0 !step
-$0010 1
-$0020 2
-$0030 3
-$0100 4
+$0100 2 !step
+$0110 0
+$0120 1
+$0130 3
 @end
 
 @track TileMoverBlit
-$0008 1 !event
-$0018 1
-$0028 1
-$0038 1
-$0108 1
+$0100 1 !event
+$0110 1
+$0120 1
+$0130 1
 @end
 
 @track GOLPaletteH

@@ -150,6 +150,22 @@ static void BlitSimple(void *sourceA, void *sourceB,
   custom->bltsize = bltsize;
 }
 
+static void BlitGhostown(void) {
+  short i;
+  short j = active;
+  BlitterCopySetup(screen, (WIDTH - MARGIN - logo_blit->width) / 2 + 6,
+                   (HEIGHT - MARGIN - logo_blit->height) / 2, logo_blit);
+  // monkeypatch minterms to perform screen = screen | logo_blit
+  custom->bltcon0 = (SRCB | SRCC | DEST) | (ABC | ANBC | ABNC);
+
+  for (i = DEPTH - 1; i >= 0; i--) {
+    BlitterCopyStart(j, 0);
+    j--;
+    if (j < 0)
+      j += DEPTH + 1;
+  }
+}
+
 static void Load(void) {
   u_short i;
   short* rangetab = ranges;
@@ -167,8 +183,8 @@ static void Load(void) {
 
     EnableDMA(DMAF_BLITTER);
 
-    // bitmap size aligned to word
-    logo_blit = NewBitmap(w + (16 - (w / 16)), h + (16 - (h / 16)), 1);
+    // bitmap width aligned to word
+    logo_blit = NewBitmap(w + (16 - (w % 16)), h, 1);
     BlitSimple(ghostown_logo.planes[0], ghostown_logo.planes[1], ghostown_logo.planes[2], logo_blit,
                ABC | ANBC | ABNC | ANBNC | NABC | NANBC | NABNC);
 
@@ -315,20 +331,17 @@ PROFILE(TileZoomer);
 static void Render(void) {
   u_short i;
   u_short* color = tilemover_pal.colors; // replace with some interpolated palette?
-  u_short blitGhostown = TrackValueGet(&TileMoverBlit, frameCount);
-  current_ff = TrackValueGet(&TileMoverNumber, frameCount);
+  u_short blitGhostown;
 
   ProfilerStart(TileZoomer);
+  blitGhostown = TrackValueGet(&TileMoverBlit, frameCount);
+  current_ff = TrackValueGet(&TileMoverNumber, frameCount);
+
   for (i = 0; i < COLORS; i++)
     CopInsSet16(palptr[i], *color++);
 
-  if (blitGhostown) {
-    BlitterCopySetup(screen, 35, 48, logo_blit);
-    // monkeypatch minterms to perform screen = screen | logo_blit
-    custom->bltcon0 = (SRCB | SRCC | DEST) | (ABC | ANBC | ABNC);
-    for (i = 0; i < screen->depth; i++)
-      BlitterCopyStart(i, 0);
-  }
+  if (blitGhostown)
+    BlitGhostown();
 
   if ((random() & 15) == 0)
     DrawSeed(screen->planes[active]);
