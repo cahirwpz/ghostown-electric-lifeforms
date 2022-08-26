@@ -51,6 +51,8 @@
 #define EXT_BOARD_HEIGHT (BOARD_HEIGHT + EXT_HEIGHT_TOP + EXT_HEIGHT_BOTTOM)
 #define BOARD_DEPTH 1
 
+#define BLTSIZE ((BOARD_HEIGHT << 6) | ((EXT_BOARD_WIDTH / 16)))
+
 // "EXT_BOARD" is the area on which the game of life is calculated
 // "BOARD" is the area which will actually be displayed (size before pixel
 // doubling). Various constants are best described using a drawing (all shown
@@ -203,22 +205,15 @@ static void BlitAdjacentHorizontal(const BitmapT *sourceA, __attribute__((unused
   void *srcCenter = sourceA->planes[0] + sourceA->bytesPerRow;    // C channel
   void *srcRight = sourceA->planes[0] + sourceA->bytesPerRow + 2; // B channel
   void *srcLeft = sourceA->planes[0] + sourceA->bytesPerRow;      // A channel
-  u_short bltsize = (BOARD_HEIGHT << 6) | ((EXT_BOARD_WIDTH / 16));
 
   custom->bltcon0 = ASHIFT(1) | minterms | (SRCA | SRCB | SRCC | DEST);
   custom->bltcon1 = BSHIFT(15);
 
-  custom->bltafwm = 0x0000;
-  custom->bltalwm = 0x0000;
-  custom->bltamod = 0;
-  custom->bltbmod = 0;
-  custom->bltcmod = 0;
-  custom->bltdmod = 0;
   custom->bltapt = srcLeft;
   custom->bltbpt = srcRight;
   custom->bltcpt = srcCenter;
   custom->bltdpt = target->planes[0] + target->bytesPerRow;
-  custom->bltsize = bltsize;
+  custom->bltsize = BLTSIZE;
 }
 
 // setup blitter to calculate a function of three vertically adjacent lit pixels
@@ -228,44 +223,29 @@ static void BlitAdjacentVertical(const BitmapT *sourceA, __attribute__((unused))
   void *srcCenter = sourceA->planes[0] + sourceA->bytesPerRow;   // C channel
   void *srcUp = sourceA->planes[0];                             // A channel
   void *srcDown = sourceA->planes[0] + 2 * sourceA->bytesPerRow; // B channel
-  u_short bltsize = (BOARD_HEIGHT << 6) | ((EXT_BOARD_WIDTH / 16));
 
   custom->bltcon0 = minterms | (SRCA | SRCB | SRCC | DEST);
   custom->bltcon1 = 0;
 
-  custom->bltafwm = 0xFFFF;
-  custom->bltalwm = 0xFFFF;
-  custom->bltamod = 0;
-  custom->bltbmod = 0;
-  custom->bltcmod = 0;
-  custom->bltdmod = 0;
   custom->bltapt = srcUp;
   custom->bltbpt = srcDown;
   custom->bltcpt = srcCenter;
   custom->bltdpt = target->planes[0] + target->bytesPerRow;
-  custom->bltsize = bltsize;
+  custom->bltsize = BLTSIZE;
 }
 
 // setup blitter for a standard blit without shifts
 static void BlitFunc(const BitmapT *sourceA, const BitmapT *sourceB,
                      const BitmapT *sourceC, const BitmapT *target,
                      u_short minterms) {
-  u_short bltsize = (BOARD_HEIGHT << 6) | ((EXT_BOARD_WIDTH / 16));
-
   custom->bltcon0 = minterms | (SRCA | SRCB | SRCC | DEST);
   custom->bltcon1 = 0;
 
-  custom->bltafwm = 0xFFFF;
-  custom->bltalwm = 0xFFFF;
-  custom->bltamod = 0;
-  custom->bltbmod = 0;
-  custom->bltcmod = 0;
-  custom->bltdmod = 0;
   custom->bltapt = sourceA->planes[0] + sourceA->bytesPerRow;
   custom->bltbpt = sourceB->planes[0] + sourceB->bytesPerRow;
   custom->bltcpt = sourceC->planes[0] + sourceC->bytesPerRow;
   custom->bltdpt = target->planes[0] + target->bytesPerRow;
-  custom->bltsize = bltsize;
+  custom->bltsize = BLTSIZE;
 }
 
 static void SpawnElectrons(const ElectronsT *electrons, u_short board) {
@@ -300,6 +280,15 @@ static void WireworldSwitch(__attribute__((unused)) const BitmapT *sourceA,
     SpawnElectrons(&heads, wireworld_step^1);
     SpawnElectrons(&tails, wireworld_step);
   }
+}
+
+static void BlitterInit(void) {
+  custom->bltafwm = 0xFFFF;
+  custom->bltalwm = 0xFFFF;
+  custom->bltamod = 0;
+  custom->bltbmod = 0;
+  custom->bltcmod = 0;
+  custom->bltdmod = 0;
 }
 
 static void (*PixelDouble)(u_char *source asm("a0"), u_short *target asm("a1"),
@@ -338,7 +327,7 @@ static void MakePixelDoublingCode(const BitmapT *bitmap) {
 static void ChangePalette(const u_short* pal) {
     u_short i, j;
     
-    // I wonder if this would be better just being unrolled...
+    // unrolling this loop gives worse performance for some reason
     // increment `pal` on every power of 2, essentially setting
     // 4 consecutive colors from `pal` to 1, 2, 4 and 8 colors respectively
     for (i = 1; i < COLORS;)
@@ -380,14 +369,18 @@ static void MakeCopperList(CopListT *cp) {
 static void UpdateBitplanePointers(void) {
   BitmapT *cur;
   u_short i;
-  for (i = 1; i < PREV_STATES_DEPTH; i++) {
+  u_short last = states_head + 2;
+  for (i = 0; i < PREV_STATES_DEPTH - 1; i++) {
     // update bitplane order: (states_head + i + 1) % PREV_STATES_DEPTH iterates
     // from the oldest+1 (to facilitate double buffering; truly oldest state is
     // the one we won't display as it's gonna be a buffer for the next game
     // state) to newest game state, so 0th bitplane displays the oldest+1 state
     // and (PREV_STATES_DEPTH-1)'th bitplane displays the newest state
-    cur = prev_states[(states_head + i + 1) % PREV_STATES_DEPTH];
-    CopInsSet32(bplptr[i - 1], cur->planes[0]);
+    cur = prev_states[last];
+    CopInsSet32(bplptr[i], cur->planes[0]);
+    last++;
+    if (last >= PREV_STATES_DEPTH)
+      last -= PREV_STATES_DEPTH;
   }
 }
 
@@ -487,7 +480,6 @@ u_short HsvToRgb(u_char h, u_char s, u_char v)
 static u_short* cur_pal;
 
 static void CyclePalette(void) {
-  //u_short i;
   static u_short pal_phase = 0;
   u_short* end = (u_short*)(dynamic_pal)+1024-4;
 
@@ -598,6 +590,7 @@ static void SharedPostInit(void) {
   // the bits we're setting below *after* they're set
   WaitBlitter();
   ClearIRQ(INTF_BLIT);
+  BlitterInit();
 
   SetIntVector(INTB_BLIT, (IntHandlerT)GameOfLife, NULL);
   EnableINT(INTF_BLIT);
@@ -647,15 +640,17 @@ static void Kill(void) {
 PROFILE(GOLStep)
 
 static void GolStep(void) {
-  void *dst = prev_states[states_head % PREV_STATES_DEPTH]->planes[0];
-  void *src = current_board->planes[0] + current_board->bytesPerRow + EXT_WIDTH_LEFT / 8;
+  void *dst = prev_states[states_head]->planes[0];
+  void *src = current_board->planes[0] + EXT_BOARD_WIDTH / 8 + EXT_WIDTH_LEFT / 8;
 
   ProfilerStart(GOLStep);
   if (!wireworld)
     current_game = games[TrackValueGet(&GOLGame, frameCount)];
   PixelDouble(src, dst, double_pixels);
   UpdateBitplanePointers();
-  states_head = (states_head+1) % PREV_STATES_DEPTH;
+  states_head++;
+  if (states_head >= PREV_STATES_DEPTH)
+    states_head -= PREV_STATES_DEPTH;
   phase = 0;
   GameOfLife();
   CyclePalette();
@@ -664,9 +659,9 @@ static void GolStep(void) {
   ProfilerStop(GOLStep);
 }
 
-static u_short run_continous = 1;
-
 #ifdef DEBUG_KBD
+
+static u_short run_continous = 1;
 
 static bool HandleEvent(void) {
   EventT ev[1];
@@ -689,7 +684,9 @@ static bool HandleEvent(void) {
 #endif
 
 static void Render(void) {
+#ifdef DEBUG_KBD
   if (run_continous)
+#endif
     GolStep();
 
 #ifdef DEBUG_KBD
