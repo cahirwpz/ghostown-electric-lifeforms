@@ -12,6 +12,7 @@
 static CinterPlayerT CinterPlayer[1];
 extern u_char CinterModule[];
 extern u_char CinterSamples[];
+extern u_char CinterSamplesEnd[];
 
 extern EffectT LogoEffect;
 extern EffectT WeaveEffect;
@@ -40,6 +41,25 @@ static EffectT *AllEffects[] = {
   &GameOfLifeEffect,
   NULL,
 };
+
+void DecodeSamples(u_char *smp, u_char *end) {
+  u_char data = *smp++;
+  u_int size = end - smp;
+  short n = (size + 7) / 8 - 1;
+  short k = size & 7;
+
+  switch (k) {
+  case 0: do { data += *smp; *smp++ = data;
+  case 7:      data += *smp; *smp++ = data;
+  case 6:      data += *smp; *smp++ = data;
+  case 5:      data += *smp; *smp++ = data;
+  case 4:      data += *smp; *smp++ = data;
+  case 3:      data += *smp; *smp++ = data;
+  case 2:      data += *smp; *smp++ = data;
+  case 1:      data += *smp; *smp++ = data;
+          } while (--n != -1);
+  }
+}
 
 static int CinterMusic(CinterPlayerT *player) {
   CinterPlay1(player);
@@ -105,6 +125,7 @@ int main(void) {
   asm volatile("exg %d7,%d7");
 
   CinterInit(CinterModule, CinterSamples, CinterPlayer);
+  DecodeSamples(CinterSamples, CinterSamplesEnd);
 
   TrackInit(&EffectNumber);
   LoadEffects(AllEffects);
