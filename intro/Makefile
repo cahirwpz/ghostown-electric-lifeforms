@@ -13,8 +13,8 @@ CLEAN-FILES := main.o data/bar.c data/bar-2.c data/stripes.c data/colors.c \
 	       data/JazzCat-ElectricLifeforms.smp data/text-scroll-font.c \
 	       data/intro.c data/turmite-pal.c data/electric-lifeforms.c \
 	       data/fruit.c data/tilemover-pal.c data/anemone-pal.c \
-		   data/ghostown-logo-crop.c data/p46basedprng.c data/cell-gradient.c \
-		   data/logo-electrons.c data/electric-lifeforms.c
+	       data/ghostown-logo-crop.c data/p46basedprng.c data/cell-gradient.c \
+	       data/logo-electrons.c data/electric-lifeforms.c
 
 SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   tilemover.c sea-anemone.c game-of-life.c
@@ -37,6 +37,10 @@ PNG2C.cell-gradient := --pixmap gradient,4x64x12
 
 CPPFLAGS += -DINTRO
 
+data/%-electrons.c: data/%-electrons.png
+	@echo "[PNG] $(DIR)$< -> $(DIR)$@"
+	$(PYTHON3) $(ELECTRONS2C) $< $@ || (rm -f $@ && exit 1)
+
 include $(TOPDIR)/build/effect.mk
 
 data/%.ctr data/%.smp: data/%.mod
@@ -45,7 +49,7 @@ data/%.ctr data/%.smp: data/%.mod
 # You MUST pad the section to size that is determined by the converter script.
 # Look for `total instrument memory` in the output.
 OBJCOPY-CHIP := --rename-section .data=.datachip,alloc,load,data,contents \
-	        --pad-to 219164
+	        --pad-to 181610
 
 data/%-ctr.o: data/%.ctr
 	@echo "[OBJCOPY] $(DIR)$< -> $(DIR)$@"
@@ -74,7 +78,3 @@ data/%.o: data/%.txt
 data/%.png: data/%.rle
 	@echo "[RLE] $(DIR)$< -> $(DIR)$@"
 	$(PYTHON3) $(RLE2PNG) $< $@ || (rm -f $@ && exit 1)
-
-data/%-electrons.c: data/%-electrons.png
-	@echo "[PNG] $(DIR)$< -> $(DIR)$@"
-	$(PYTHON3) $(ELECTRONS2C) $< $@ || (rm -f $@ && exit 1)
