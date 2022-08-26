@@ -35,7 +35,7 @@ static void Init(void) {
     short i = 0;
 
     for (i = 0; i < (1 << DEPTH); i++)
-      SetColor(i, 0xf00);
+      SetColor(i, ghostown_logo_1_pal.colors[0]);
   }
 
   EnableDMA(DMAF_BLITTER);
@@ -73,7 +73,8 @@ static void Render(void) {
       short i;
 
       for (i = 0; i < (1 << DEPTH); i++) {
-        short prev = (num == 1) ? 0xf00 : ghostown_logo_pal[num - 1]->colors[i];
+        short prev = (num == 1) ? ghostown_logo_1_pal.colors[0]
+          : ghostown_logo_pal[num - 1]->colors[i];
         short curr = ghostown_logo_pal[num]->colors[i];
         SetColor(i, ColorTransition(prev, curr, frame));
       }
