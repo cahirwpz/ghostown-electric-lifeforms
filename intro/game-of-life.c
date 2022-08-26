@@ -369,18 +369,18 @@ static void MakeCopperList(CopListT *cp) {
 static void UpdateBitplanePointers(void) {
   BitmapT *cur;
   u_short i;
-  u_short last = states_head + 2;
+  u_short last = states_head + 1;
   for (i = 0; i < PREV_STATES_DEPTH - 1; i++) {
-    // update bitplane order: (states_head + i + 1) % PREV_STATES_DEPTH iterates
+    // update bitplane order: (states_head + 2) % PREV_STATES_DEPTH iterates
     // from the oldest+1 (to facilitate double buffering; truly oldest state is
     // the one we won't display as it's gonna be a buffer for the next game
     // state) to newest game state, so 0th bitplane displays the oldest+1 state
     // and (PREV_STATES_DEPTH-1)'th bitplane displays the newest state
-    cur = prev_states[last];
-    CopInsSet32(bplptr[i], cur->planes[0]);
     last++;
     if (last >= PREV_STATES_DEPTH)
       last -= PREV_STATES_DEPTH;
+    cur = prev_states[last];
+    CopInsSet32(bplptr[i], cur->planes[0]);
   }
 }
 
