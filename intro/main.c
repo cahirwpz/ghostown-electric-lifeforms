@@ -90,11 +90,11 @@ static void RunEffects(void) {
       EffectInit(AllEffects[curr]);
     }
 
-    lastFrameCount = ReadFrameCounter();
+    lastFrameCount = ReadFrameCounter() - 1;
 
     {
       EffectT *effect = AllEffects[curr];
-      int t = ReadFrameCounter();
+      short t = ReadFrameCounter();
       frameCount = t;
       frameFromStart = t - CurrKeyFrame(&EffectNumber);
       frameTillEnd = NextKeyFrame(&EffectNumber) - t;
