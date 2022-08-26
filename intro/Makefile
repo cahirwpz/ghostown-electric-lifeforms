@@ -15,7 +15,8 @@ CLEAN-FILES := main.o data/bar.c data/bar-2.c data/stripes.c data/colors.c \
 	       data/fruit.c data/tilemover-pal.c data/anemone-pal.c \
 	       data/ghostown-logo-crop.c data/p46basedprng.c data/cell-gradient.c \
 	       data/logo-electrons.c data/electric-lifeforms.c \
-	       data/electric-lifeforms-wireworld.c data/ghostown-logo-0[1-3].c
+	       data/electric-lifeforms-wireworld.c data/ghostown-logo-0[1-3].c \
+	       data/turmite-credits.c
 
 SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   tilemover.c sea-anemone.c game-of-life.c vitruvian.c
@@ -26,6 +27,7 @@ PNG2C.bar-2 := --palette bar2_pal,16
 PNG2C.stripes := --sprite stripes,320,4
 PNG2C.colors := --palette stripes_pal,16
 PNG2C.text-scroll-font := --bitmap font,768x8x1 --palette font_pal,2
+PNG2C.turmite-credits-1 := --bitmap turmite_credits_1,256x256x1
 PNG2C.turmite-pal := --palette turmite_pal,16
 PNG2C.electric-lifeforms-01 := --bitmap electric_lifeforms,320x256x3 --palette electric_lifeforms_1_pal,8
 PNG2C.electric-lifeforms-02 := --palette electric_lifeforms_2_pal,8
