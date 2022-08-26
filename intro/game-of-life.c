@@ -91,6 +91,7 @@
 extern TrackT GOLPaletteH;
 extern TrackT GOLPaletteS;
 extern TrackT GOLPaletteV;
+extern TrackT GOLGame;
 
 static CopListT *cp;
 static BitmapT *current_board;
@@ -121,7 +122,20 @@ static u_short stepCount = 0;
 // which wireworld game (0-1) phase are we on
 static u_short wireworld_step = 0;
 
+// are we running wireworld?
+static bool wireworld = false;
+
 static const GameDefinitionT* current_game;
+
+static const GameDefinitionT* games[] = {
+  &classic_gol,
+  &coagulation,
+  &maze,
+  &diamoeba,
+  &stains,
+  &day_and_night,
+  &three_four,
+};
 
 static PaletteT palette = {
   .count = 16,
@@ -594,6 +608,7 @@ static void InitWireworld(void) {
   SharedPreInit();
 
   current_game = &wireworld1;
+  wireworld = true;
 
   // board 11 is special in case of wireworld - it contains the electron paths
   BitmapCopy(boards[11], EXT_WIDTH_LEFT, EXT_HEIGHT_TOP, &wireworld_logo);
@@ -608,7 +623,9 @@ static void InitWireworld(void) {
 static void InitGameOfLife(void) {
   SharedPreInit();
 
-  current_game = &classic_gol;
+  TrackInit(&GOLGame);
+  wireworld = false;
+  current_game = games[0];
 
   BitmapClear(boards[0]);
   BitmapCopy(boards[0], EXT_WIDTH_LEFT, EXT_HEIGHT_TOP, &wireworld_logo);
@@ -635,6 +652,8 @@ static void GolStep(void) {
   void *src = current_board->planes[0] + current_board->bytesPerRow + EXT_WIDTH_LEFT / 8;
 
   ProfilerStart(GOLStep);
+  if (!wireworld)
+    current_game = games[TrackValueGet(&GOLGame, frameCount)];
   PixelDouble(src, dst, double_pixels);
   UpdateBitplanePointers();
   states_head = (states_head+1) % PREV_STATES_DEPTH;
