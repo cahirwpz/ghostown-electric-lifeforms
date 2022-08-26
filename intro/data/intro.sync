@@ -44,3 +44,9 @@ $002a 128
 @track GOLPaletteV
 $0000 255 !step
 @end
+
+@track GOLGame
+$0100 0 !step
+$0110 1
+$0120 2
+@end
