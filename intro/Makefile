@@ -14,7 +14,8 @@ CLEAN-FILES := main.o data/bar.c data/bar-2.c data/stripes.c data/colors.c \
 	       data/intro.c data/turmite-pal.c data/electric-lifeforms.c \
 	       data/fruit.c data/tilemover-pal.c data/anemone-pal.c \
 	       data/ghostown-logo-crop.c data/p46basedprng.c data/cell-gradient.c \
-	       data/logo-electrons.c data/electric-lifeforms.c
+	       data/logo-electrons.c data/electric-lifeforms.c \
+	       data/ghostown-logo-0[1-3].c
 
 SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   tilemover.c sea-anemone.c game-of-life.c
@@ -30,12 +31,15 @@ PNG2C.electric-lifeforms := --bitmap logo,320x256x3 --palette logo_pal,8
 PNG2C.fruit := --bitmap fruit,16x16x1
 PNG2C.tilemover-pal := --palette tilemover_pal,16
 PNG2C.anemone-pal := --palette anemone_pal,16
-PNG2C.ghostown-logo-crop := --bitmap ghostown_logo,196x127x3 --palette ghostown_logo_pal,8
 PNG2C.p46basedprng := --bitmap p46basedprng,156x75x1
 PNG2C.electric-lifeforms-wireworld := --bitmap wireworld_logo,160x128x1
 PNG2C.cell-gradient := --pixmap gradient,4x64x12
+PNG2C.ghostown-logo-crop := --bitmap ghostown_logo,196x127x3
+PNG2C.ghostown-logo-01 := --palette ghostown_logo_1_pal,8
+PNG2C.ghostown-logo-02 := --palette ghostown_logo_2_pal,8
+PNG2C.ghostown-logo-03 := --palette ghostown_logo_3_pal,8
 
-CPPFLAGS += -DINTRO
+CPPFLAGS += -DINTRO -I.
 
 data/%-electrons.c: data/%-electrons.png
 	@echo "[PNG] $(DIR)$< -> $(DIR)$@"

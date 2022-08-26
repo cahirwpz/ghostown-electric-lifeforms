@@ -63,14 +63,6 @@ static void UnLoadEffects(EffectT **effects) {
   }
 }
 
-static short CurrKeyFrame(TrackT *track) {
-  return track->curr->frame;
-}
-
-static short NextKeyFrame(TrackT *track) {
-  return track->next->frame;
-}
-
 static void RunEffects(void) {
   /* Reset frame counter and wait for all time actions to finish. */
   SetFrameCounter(0);
