@@ -34,9 +34,7 @@
 typedef struct State {
   CopInsT *sprite;
   /* two halves of the screen: 4 bitplane pointers and bplcon1 */
-  CopInsT *bar[2];
-  /* for each bar moves to bplcon1, bpl1mod and bpl2mod */
-  CopInsT *bar_change[4];
+  CopInsT *bar[4];
   /* for each line five horizontal positions */
   u_short *stripes[HEIGHT];
 } StateT;
@@ -61,11 +59,10 @@ static void MakeCopperList(CopListT *cp, StateT *state) {
   CopInit(cp);
 
   /* Setup initial bitplane pointers. */
-  state->bar[0] = cp->curr;
-  CopMove32(cp, bplpt[0], NULL);
-  CopMove32(cp, bplpt[1], NULL);
-  CopMove32(cp, bplpt[2], NULL);
-  CopMove32(cp, bplpt[3], NULL);
+  CopMove32(cp, bplpt[0], bar.planes[0]);
+  CopMove32(cp, bplpt[1], bar.planes[1]);
+  CopMove32(cp, bplpt[2], bar.planes[2]);
+  CopMove32(cp, bplpt[3], bar.planes[3]);
   CopMove16(cp, bplcon1, 0);
 
   /* Move back bitplane pointers to repeat the line. */
@@ -100,17 +97,13 @@ static void MakeCopperList(CopListT *cp, StateT *state) {
 
     CopWaitSafe(cp, vp, 0);
 
-    /* With current solution bitplane setup takes at most 3 copper move
-     * instructions (bpl1mod, bpl2mod, bplcon1) per raster line. */
     if (my == 0) {
-      if (y == 128) {
-        state->bar[1] = cp->curr;
-        CopMove32(cp, bplpt[0], NULL);
-        CopMove32(cp, bplpt[1], NULL);
-        CopMove32(cp, bplpt[2], NULL);
-        CopMove32(cp, bplpt[3], NULL);
-        CopMove16(cp, bplcon1, 0);
-      }
+      state->bar[y >> 6] = cp->curr;
+      CopMove32(cp, bplpt[0], NULL);
+      CopMove32(cp, bplpt[1], NULL);
+      CopMove32(cp, bplpt[2], NULL);
+      CopMove32(cp, bplpt[3], NULL);
+      CopMove16(cp, bplcon1, 0);
     } else if (my == 8) {
       if (y & 64) {
         CopLoadPal(cp, &bar_pal, 0);
@@ -121,13 +114,6 @@ static void MakeCopperList(CopListT *cp, StateT *state) {
       /* Advance bitplane pointers to display consecutive lines. */
       CopMove16(cp, bpl1mod, bar_bplmod);
       CopMove16(cp, bpl2mod, bar_bplmod);
-    } else if (my == 48) {
-      state->bar_change[b++] = cp->curr;
-      /* Move back bitplane pointers to the beginning of bitmap. Take into
-       * account new bitmap offset and shifter configuration for next bar. */
-      CopMove16(cp, bplcon1, 0);
-      CopMove16(cp, bpl1mod, 0);
-      CopMove16(cp, bpl2mod, 0);
     } else if (my == 49) {
       /* Move back bitplane pointers to repeat the line. */
       CopMove16(cp, bpl1mod, -WIDTH / 8 - 2);
@@ -169,38 +155,25 @@ static void UpdateBarState(StateT *state) {
   short w = (bar_width - WIDTH) / 2;
   short f = frameCount * 16;
   short bx = w + normfx(SIN(f) * w);
-  CopInsT **insp = state->bar_change;
-  short shift, offset, bplmod, bx_prev, i;
+  short shift, offset, i;
 
   for (i = 0; i < BARS; i++) {
-    CopInsT *ins;
+    CopInsT *ins = state->bar[i];
 
-    if ((i & 1) == 0) {
-      ins = state->bar[i >> 1];
+    offset = (bx >> 3) & -2;
+    shift = ~bx & 15;
 
-      offset = (bx >> 3) & -2;
-      shift = ~bx & 15;
+    if (i & 1)
+      offset += bar_bytesPerRow * 33;
 
-      CopInsSet32(&ins[0], bar.planes[0] + offset);
-      CopInsSet32(&ins[2], bar.planes[1] + offset);
-      CopInsSet32(&ins[4], bar.planes[2] + offset);
-      CopInsSet32(&ins[6], bar.planes[3] + offset);
-      CopInsSet16(&ins[8], (shift << 4) | shift);
-    }
+    CopInsSet32(&ins[0], bar.planes[0] + offset);
+    CopInsSet32(&ins[2], bar.planes[1] + offset);
+    CopInsSet32(&ins[4], bar.planes[2] + offset);
+    CopInsSet32(&ins[6], bar.planes[3] + offset);
+    CopInsSet16(&ins[8], (shift << 4) | shift);
 
     f += SIN_HALF_PI;
-    bx_prev = bx;
     bx = w + normfx(SIN(f) * w);
-
-    shift = ~bx & 15;
-    offset = (bx & -16) - (bx_prev & -16);
-    bplmod = bar_bplmod + (offset >> 3);
-
-    ins = *insp++;
-    CopInsSet16(&ins[0], (shift << 4) | shift);
-    CopInsSet16(&ins[1], bplmod);
-    CopInsSet16(&ins[2], bplmod);
-
   }
 }
 
