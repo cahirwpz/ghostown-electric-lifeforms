@@ -41,7 +41,7 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Report sizes of sections and number of relocations.')
     parser.add_argument('objfiles', metavar='OBJFILES', type=str, nargs='+',
-            help='AmigaHunk object files.')
+                        help='AmigaHunk object files.')
     args = parser.parse_args()
 
     for path in args.objfiles:
