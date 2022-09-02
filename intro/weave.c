@@ -28,6 +28,9 @@
 #define O3 172
 #define O4 224
 
+#define STRIPES 5
+#define BARS 4
+
 typedef struct State {
   CopInsT *sprite;
   /* at the beginning: 4 bitplane pointers and bplcon1 */
@@ -35,16 +38,13 @@ typedef struct State {
   /* for each bar moves to bplcon1, bpl1mod and bpl2mod */
   CopInsT *bar_change[4];
   /* for each line five horizontal positions */
-  CopInsT *stripes[HEIGHT];
+  u_short *stripes[HEIGHT];
 } StateT;
 
 static int active = 1;
 static CopListT *cp[2];
-static short sintab8[128];
+static short sintab8[128 * 4];
 static StateT state[2];
-
-#define STRIPES 5
-#define BARS 4
 
 /* These numbers must be odd due to optimizations. */
 static char StripePhase[STRIPES] = { 4, 24, 16, 8, 12 };
@@ -135,7 +135,7 @@ static void MakeCopperList(CopListT *cp, StateT *state) {
       }
 
       CopWait(cp, vp, HP(O0) + 2);
-      state->stripes[y] = cp->curr;
+      state->stripes[y] = (u_short *)cp->curr + 1;
       CopSpriteSetHP(cp, 0);
       CopMove16(cp, bplcon2, p0);
       CopWait(cp, vp, HP(O1) + 2);
@@ -221,27 +221,24 @@ static void UpdateStripeState(StateT *state) {
   const char *offsetp = offset;
   short i;
 
-  for (i = 0; i < STRIPES * 4; i += 4) {
+  for (i = 0; i < STRIPES * 8; i += 8) {
     u_int phase = (u_char)*phasep;
-    CopInsT **stripesp = state->stripes;
+    u_short **stripesp = state->stripes;
+    short *st = &sintab8[phase];
     short hp_off = *offsetp++;
     short n = HEIGHT / 8 - 1;
 
     (*phasep++) += (*incrp++);
 
     do {
-      CopInsT *ins;
+      u_short *ins;
       short hp;
 
-#define BODY()                                          \
-      ins = *stripesp++;                                \
-      asm ("movew (%2,%1:w),%0\n\t"                     \
-           "addqb #2,%1\n\t"                            \
-           "addw  %3,%0"                                \
-           : "=d" (hp), "+d" (phase)                    \
-           : "a" (sintab8), "d" (hp_off));              \
-      CopInsSet16(&ins[i + 0], hp);                     \
-      CopInsSet16(&ins[i + 1], hp + 8);
+#define BODY()                  \
+      ins = (*stripesp++) + i;  \
+      hp = hp_off + (*st++);    \
+      ins[0] = hp;              \
+      ins[2] = hp + 8;
 
       BODY(); BODY(); BODY(); BODY();
       BODY(); BODY(); BODY(); BODY();
@@ -254,6 +251,9 @@ static void MakeSinTab8(void) {
 
   for (i = 0, j = 0; i < 128; i++, j += 32)
     sintab8[i] = (sintab[j] + 512) >> 10;
+
+  memcpy(&sintab8[128], &sintab8[0], 128 * sizeof(u_short));
+  memcpy(&sintab8[256], &sintab8[0], 256 * sizeof(u_short));
 }
 
 #define COPLIST_SIZE (HEIGHT * 22 + 100)
