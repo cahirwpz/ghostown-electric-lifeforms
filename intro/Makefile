@@ -22,7 +22,7 @@ SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   tilemover.c sea-anemone.c game-of-life.c vitruvian.c
 MAIN := #
 
-PNG2C.bar := --bitmap bar,480x133x4 --palette bar_pal,16
+PNG2C.bar := --bitmap bar,480x67x4 --palette bar_pal,16
 PNG2C.bar-2 := --palette bar2_pal,16
 PNG2C.stripes := --sprite stripes,320,4
 PNG2C.colors := --palette stripes_pal,16
