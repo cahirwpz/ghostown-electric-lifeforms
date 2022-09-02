@@ -165,13 +165,14 @@ def do_sprite(im, desc):
         raise SystemExit('Only 8-bit images supported.')
 
     param = parse(desc, ('name', str), ('height', int), ('count', int),
-                  attached=False, array=False)
+                  attached=False, array=False, onlydata=False)
 
     name = param['name']
     has_height = param['height']
     has_count = param['count']
     sequence = param['array']
     attached = param['attached']
+    onlydata = param['onlydata']
 
     pix = array('B', im.getdata())
 
@@ -218,14 +219,15 @@ def do_sprite(im, desc):
         print('  }')
         print('};')
         print('')
-        print('static SpriteT %s = {' % sprite)
-        print('  .sprdat = &%s_sprdat,' % sprite)
-        print('  .height = %d,' % height)
-        print('  .attached = %s,' % attached_str)
-        print('};')
-        print('')
+        if not onlydata:
+            print('static SpriteT %s = {' % sprite)
+            print('  .sprdat = &%s_sprdat,' % sprite)
+            print('  .height = %d,' % height)
+            print('  .attached = %s,' % attached_str)
+            print('};')
+            print('')
 
-    if sequence:
+    if sequence and not onlydata:
         sprites = ['&%s%d' % (name, i) for i in range(width // 16)]
         print('static SpriteT *%s[] = {' % name)
         print('  %s' % ', '.join(sprites))

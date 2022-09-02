@@ -24,7 +24,7 @@ MAIN := #
 
 PNG2C.bar := --bitmap bar,480x67x4 --palette bar_pal,16
 PNG2C.bar-2 := --palette bar2_pal,16
-PNG2C.stripes := --sprite stripes,320,4
+PNG2C.stripes := --sprite arrow,128,2,+onlydata
 PNG2C.colors := --palette stripes_pal,16
 PNG2C.text-scroll-font := --bitmap font,768x8x1 --palette font_pal,2
 PNG2C.turmite-credits-1 := --bitmap turmite_credits_1,256x256x1

@@ -6,6 +6,7 @@
 #include "bitmap.h"
 #include "sprite.h"
 #include "fx.h"
+#include <system/memory.h>
 
 #include "data/bar.c"
 #include "data/bar-2.c"
@@ -50,6 +51,8 @@ static CopListT *cpBars[2];
 static short sintab8[128 * 4];
 static StateT state[2];
 static StateBarT stateBars[2];
+static SpriteT stripe[4];
+static SprDataT *stripe_sprdat[4];
 
 /* These numbers must be odd due to optimizations. */
 static char StripePhase[STRIPES] = { 4, 24, 16, 8, 12 };
@@ -61,7 +64,7 @@ static inline void CopSpriteSetHP(CopListT *cp, short n) {
 }
 
 static void MakeCopperListFull(CopListT *cp, StateT *state) {
-  short b, y;
+  short b, y, i;
 
   CopInit(cp);
 
@@ -77,26 +80,14 @@ static void MakeCopperListFull(CopListT *cp, StateT *state) {
   CopMove16(cp, bpl2mod, -WIDTH / 8 - 2);
 
   /* Load default sprite settings */
-  CopMove32(cp, sprpt[0], &stripes0_sprdat); /* up */
-  CopMove32(cp, sprpt[1], &stripes1_sprdat);
-  CopMove32(cp, sprpt[2], &stripes2_sprdat); /* down */
-  CopMove32(cp, sprpt[3], &stripes3_sprdat);
-  CopMove32(cp, sprpt[4], &stripes0_sprdat); /* up */
-  CopMove32(cp, sprpt[5], &stripes1_sprdat);
-  CopMove32(cp, sprpt[6], &stripes2_sprdat); /* down */
-  CopMove32(cp, sprpt[7], &stripes3_sprdat);
+  for (i = 0; i < 8; i++)
+    CopMove32(cp, sprpt[i], stripe_sprdat[i & 3]);
 
   CopWait(cp, Y(-1), 0);
 
   state->sprite = cp->curr;
-  CopMove32(cp, sprpt[0], stripes0_sprdat.data); /* up */
-  CopMove32(cp, sprpt[1], stripes1_sprdat.data);
-  CopMove32(cp, sprpt[2], stripes2_sprdat.data); /* down */
-  CopMove32(cp, sprpt[3], stripes3_sprdat.data);
-  CopMove32(cp, sprpt[4], stripes0_sprdat.data); /* up */
-  CopMove32(cp, sprpt[5], stripes1_sprdat.data);
-  CopMove32(cp, sprpt[6], stripes2_sprdat.data); /* down */
-  CopMove32(cp, sprpt[7], stripes3_sprdat.data);
+  for (i = 0; i < 8; i++)
+    CopMove32(cp, sprpt[i], stripe_sprdat[i & 3]->data);
 
   for (y = 0, b = 0; y < HEIGHT; y++) {
     short vp = Y(y);
@@ -106,10 +97,8 @@ static void MakeCopperListFull(CopListT *cp, StateT *state) {
 
     if (my == 0) {
       state->bars.bar[b] = cp->curr;
-      CopMove32(cp, bplpt[0], NULL);
-      CopMove32(cp, bplpt[1], NULL);
-      CopMove32(cp, bplpt[2], NULL);
-      CopMove32(cp, bplpt[3], NULL);
+      for (i = 0; i < 4; i++)
+        CopMove32(cp, bplpt[i], NULL);
       CopMove16(cp, bplcon1, 0);
     } else if (my == 8) {
       if (y & 64) {
@@ -160,7 +149,7 @@ static void MakeCopperListFull(CopListT *cp, StateT *state) {
 }
 
 static void MakeCopperListBars(CopListT *cp, StateBarT *bars) {
-  short b, by, y;
+  short b, by, y, i;
 
   for (b = 0; b < 4; b++) {
     bars->bar[b] = NULL;
@@ -172,10 +161,8 @@ static void MakeCopperListBars(CopListT *cp, StateBarT *bars) {
   CopInit(cp);
 
   /* Setup initial bitplane pointers. */
-  CopMove32(cp, bplpt[0], bar.planes[0]);
-  CopMove32(cp, bplpt[1], bar.planes[1]);
-  CopMove32(cp, bplpt[2], bar.planes[2]);
-  CopMove32(cp, bplpt[3], bar.planes[3]);
+  for (i = 0; i < 4; i++)
+    CopMove32(cp, bplpt[i], bar.planes[i]);
   CopMove16(cp, bplcon1, 0);
 
   /* Move back bitplane pointers to repeat the line. */
@@ -189,10 +176,8 @@ static void MakeCopperListBars(CopListT *cp, StateBarT *bars) {
 
     if (y == by - 1) {
       bars->bar[b] = cp->curr;
-      CopMove32(cp, bplpt[0], NULL);
-      CopMove32(cp, bplpt[1], NULL);
-      CopMove32(cp, bplpt[2], NULL);
-      CopMove32(cp, bplpt[3], NULL);
+      for (i = 0; i < 4; i++)
+        CopMove32(cp, bplpt[i], NULL);
       CopMove16(cp, bplcon1, 0);
 
       if (b & 1) {
@@ -255,14 +240,14 @@ static void UpdateSpriteState(StateT *state) {
   int fu = frameCount & 63;
   int fd = (~frameCount) & 63;
 
-  CopInsSet32(ins + 0, stripes0_sprdat.data + fu); /* up */
-  CopInsSet32(ins + 2, stripes1_sprdat.data + fu);
-  CopInsSet32(ins + 4, stripes2_sprdat.data + fd); /* down */
-  CopInsSet32(ins + 6, stripes3_sprdat.data + fd);
-  CopInsSet32(ins + 8, stripes0_sprdat.data + fu); /* up */
-  CopInsSet32(ins + 10, stripes1_sprdat.data + fu);
-  CopInsSet32(ins + 12, stripes2_sprdat.data + fd); /* down */
-  CopInsSet32(ins + 14, stripes3_sprdat.data + fd);
+  CopInsSet32(ins + 0, stripe_sprdat[0]->data + fu); /* up */
+  CopInsSet32(ins + 2, stripe_sprdat[1]->data + fu);
+  CopInsSet32(ins + 4, stripe_sprdat[2]->data + fd); /* down */
+  CopInsSet32(ins + 6, stripe_sprdat[3]->data + fd);
+  CopInsSet32(ins + 8, stripe_sprdat[0]->data + fu); /* up */
+  CopInsSet32(ins + 10, stripe_sprdat[1]->data + fu);
+  CopInsSet32(ins + 12, stripe_sprdat[2]->data + fd); /* down */
+  CopInsSet32(ins + 14, stripe_sprdat[3]->data + fd);
 }
 
 #define HPOFF(x) HP(x + 32)
@@ -314,7 +299,35 @@ static void MakeSinTab8(void) {
 #define CP_BARS_SIZE (500)
 
 static void Load(void) {
+  short i, j;
+  
   MakeSinTab8();
+
+  for (i = 0; i < 4; i++) {
+    SprDataT *sprdat = MemAlloc(SprDataSize(HEIGHT + 64, 2),
+                                MEMF_CHIP|MEMF_CLEAR);
+    SprWordT *src, *dst;
+
+    stripe_sprdat[i] = sprdat;
+
+    src = (i & 1) ? arrow1_sprdat.data : arrow0_sprdat.data;
+    if (i & 2)
+      src += 64;
+
+    dst = MakeSprite(&sprdat, 320, false, &stripe[i]);
+    EndSprite(&sprdat);
+
+    for (j = 0; j < HEIGHT + 64; j += 64) {
+      memcpy(dst + j, src, 64 * sizeof(SprWordT));
+    }
+  }
+}
+
+static void UnLoad(void) {
+  short i;
+
+  for (i = 0; i < 4; i++)
+    MemFree(stripe_sprdat[i]);
 }
 
 static void Init(void) {
@@ -327,10 +340,10 @@ static void Init(void) {
   /* Place sprites 0-3 above playfield, and 4-7 below playfield. */
   custom->bplcon2 = BPLCON2_PF2PRI | BPLCON2_PF2P1 | BPLCON2_PF1P1;
 
-  SpriteUpdatePos(&stripes0, X(0), Y(0));
-  SpriteUpdatePos(&stripes1, X(0), Y(0));
-  SpriteUpdatePos(&stripes2, X(0), Y(0));
-  SpriteUpdatePos(&stripes3, X(0), Y(0));
+  SpriteUpdatePos(&stripe[0], X(0), Y(0));
+  SpriteUpdatePos(&stripe[1], X(0), Y(0));
+  SpriteUpdatePos(&stripe[2], X(0), Y(0));
+  SpriteUpdatePos(&stripe[3], X(0), Y(0));
 
   cpFull[0] = NewCopList(CP_FULL_SIZE);
   cpFull[1] = NewCopList(CP_FULL_SIZE);
@@ -443,4 +456,4 @@ static void Render(void) {
   active ^= 1;
 }
 
-EFFECT(Weave, Load, NULL, Init, Kill, Render);
+EFFECT(Weave, Load, UnLoad, Init, Kill, Render);
