@@ -31,18 +31,25 @@
 #define STRIPES 5
 #define BARS 4
 
-typedef struct State {
-  CopInsT *sprite;
+typedef struct StateBar {
   /* two halves of the screen: 4 bitplane pointers and bplcon1 */
   CopInsT *bar[4];
+  short bar_y[4];
+} StateBarT;
+
+typedef struct State {
+  StateBarT bars;
+  CopInsT *sprite;
   /* for each line five horizontal positions */
   u_short *stripes[HEIGHT];
 } StateT;
 
 static int active = 1;
-static CopListT *cp[2];
+static CopListT *cpFull[2];
+static CopListT *cpBars[2];
 static short sintab8[128 * 4];
 static StateT state[2];
+static StateBarT stateBars[2];
 
 /* These numbers must be odd due to optimizations. */
 static char StripePhase[STRIPES] = { 4, 24, 16, 8, 12 };
@@ -53,7 +60,7 @@ static inline void CopSpriteSetHP(CopListT *cp, short n) {
   CopMove16(cp, spr[n * 2 + 1].pos, 0);
 }
 
-static void MakeCopperList(CopListT *cp, StateT *state) {
+static void MakeCopperListFull(CopListT *cp, StateT *state) {
   short b, y;
 
   CopInit(cp);
@@ -98,7 +105,7 @@ static void MakeCopperList(CopListT *cp, StateT *state) {
     CopWaitSafe(cp, vp, 0);
 
     if (my == 0) {
-      state->bar[y >> 6] = cp->curr;
+      state->bars.bar[b] = cp->curr;
       CopMove32(cp, bplpt[0], NULL);
       CopMove32(cp, bplpt[1], NULL);
       CopMove32(cp, bplpt[2], NULL);
@@ -118,6 +125,7 @@ static void MakeCopperList(CopListT *cp, StateT *state) {
       /* Move back bitplane pointers to repeat the line. */
       CopMove16(cp, bpl1mod, -WIDTH / 8 - 2);
       CopMove16(cp, bpl2mod, -WIDTH / 8 - 2);
+      b++;
     }
 
     {
@@ -151,29 +159,94 @@ static void MakeCopperList(CopListT *cp, StateT *state) {
   CopEnd(cp);
 }
 
-static void UpdateBarState(StateT *state) {
+static void MakeCopperListBars(CopListT *cp, StateBarT *bars) {
+  short b, by, y;
+
+  for (b = 0; b < 4; b++) {
+    bars->bar[b] = NULL;
+    by = bars->bar_y[b];
+    if (by >= -33)
+      break;
+  }
+
+  CopInit(cp);
+
+  /* Setup initial bitplane pointers. */
+  CopMove32(cp, bplpt[0], bar.planes[0]);
+  CopMove32(cp, bplpt[1], bar.planes[1]);
+  CopMove32(cp, bplpt[2], bar.planes[2]);
+  CopMove32(cp, bplpt[3], bar.planes[3]);
+  CopMove16(cp, bplcon1, 0);
+
+  /* Move back bitplane pointers to repeat the line. */
+  CopMove16(cp, bpl1mod, -WIDTH / 8 - 2);
+  CopMove16(cp, bpl2mod, -WIDTH / 8 - 2);
+
+  for (y = -1; y < HEIGHT && b < 4; y++) {
+    short vp = Y(y);
+
+    CopWaitSafe(cp, vp, 0);
+
+    if (y == by - 1) {
+      bars->bar[b] = cp->curr;
+      CopMove32(cp, bplpt[0], NULL);
+      CopMove32(cp, bplpt[1], NULL);
+      CopMove32(cp, bplpt[2], NULL);
+      CopMove32(cp, bplpt[3], NULL);
+      CopMove16(cp, bplcon1, 0);
+
+      if (b & 1) {
+        CopLoadPal(cp, &bar_pal, 0);
+      } else {
+        CopLoadPal(cp, &bar2_pal, 0);
+      }
+    } else if (y == by) {
+      /* Advance bitplane pointers to display consecutive lines. */
+      CopMove16(cp, bpl1mod, bar_bplmod);
+      CopMove16(cp, bpl2mod, bar_bplmod);
+    } else if (y == by + 33) {
+      /* Move back bitplane pointers to repeat the line. */
+      CopMove16(cp, bpl1mod, -WIDTH / 8 - 2);
+      CopMove16(cp, bpl2mod, -WIDTH / 8 - 2);
+      by = bars->bar_y[++b];
+    }
+  }
+
+  CopEnd(cp);
+}
+
+static void UpdateBarState(StateBarT *bars) {
   short w = (bar_width - WIDTH) / 2;
   short f = frameCount * 16;
-  short bx = w + normfx(SIN(f) * w);
   short shift, offset, i;
 
   for (i = 0; i < BARS; i++) {
-    CopInsT *ins = state->bar[i];
+    CopInsT *ins = bars->bar[i];
+    short by = bars->bar_y[i];
+    short bx = w + normfx(SIN(f) * w);
 
-    offset = (bx >> 3) & -2;
-    shift = ~bx & 15;
+    if (ins) {
+      /* fixes a glitch on the right side of the screen */
+      if (bx >= bar_width - WIDTH - 1)
+        bx = bar_width - WIDTH - 1;
 
-    if (i & 1)
-      offset += bar_bytesPerRow * 33;
+      offset = (bx >> 3) & -2;
+      shift = ~bx & 15;
 
-    CopInsSet32(&ins[0], bar.planes[0] + offset);
-    CopInsSet32(&ins[2], bar.planes[1] + offset);
-    CopInsSet32(&ins[4], bar.planes[2] + offset);
-    CopInsSet32(&ins[6], bar.planes[3] + offset);
-    CopInsSet16(&ins[8], (shift << 4) | shift);
+      if (by < 0)
+        offset -= by * bar_bytesPerRow;
+
+      if (i & 1)
+        offset += bar_bytesPerRow * 33;
+
+      CopInsSet32(&ins[0], bar.planes[0] + offset);
+      CopInsSet32(&ins[2], bar.planes[1] + offset);
+      CopInsSet32(&ins[4], bar.planes[2] + offset);
+      CopInsSet32(&ins[6], bar.planes[3] + offset);
+      CopInsSet16(&ins[8], (shift << 4) | shift);
+    }
 
     f += SIN_HALF_PI;
-    bx = w + normfx(SIN(f) * w);
   }
 }
 
@@ -237,7 +310,8 @@ static void MakeSinTab8(void) {
   memcpy(&sintab8[256], &sintab8[0], 256 * sizeof(u_short));
 }
 
-#define COPLIST_SIZE (HEIGHT * 22 + 100)
+#define CP_FULL_SIZE (HEIGHT * 22 + 100)
+#define CP_BARS_SIZE (500)
 
 static void Load(void) {
   MakeSinTab8();
@@ -258,41 +332,113 @@ static void Init(void) {
   SpriteUpdatePos(&stripes2, X(0), Y(0));
   SpriteUpdatePos(&stripes3, X(0), Y(0));
 
-  cp[0] = NewCopList(COPLIST_SIZE);
-  cp[1] = NewCopList(COPLIST_SIZE);
+  cpFull[0] = NewCopList(CP_FULL_SIZE);
+  cpFull[1] = NewCopList(CP_FULL_SIZE);
 
-  MakeCopperList(cp[0], &state[0]);
-  MakeCopperList(cp[1], &state[1]);
+  MakeCopperListFull(cpFull[0], &state[0]);
+  MakeCopperListFull(cpFull[1], &state[1]);
 
-  UpdateBarState(&state[0]);
+  cpBars[0] = NewCopList(CP_BARS_SIZE);
+  cpBars[1] = NewCopList(CP_BARS_SIZE);
+  MakeCopperListBars(cpBars[0], &stateBars[0]);
+  MakeCopperListBars(cpBars[1], &stateBars[1]);
+
+  UpdateBarState(&stateBars[0]);
   UpdateSpriteState(&state[0]);
-  UpdateStripeState(&state[0]);
 
-  CopListActivate(cp[0]);
+  CopListActivate(cpBars[0]);
 
-  Log("CopperList: %ld instructions left\n",
-      COPLIST_SIZE - (cp[0]->curr - cp[0]->entry));
-  EnableDMA(DMAF_RASTER | DMAF_SPRITE);
+  Log("CopperListFull: %ld instructions left\n",
+      CP_FULL_SIZE - (cpFull[0]->curr - cpFull[0]->entry));
+  Log("CopperListBars: %ld instructions left\n",
+      CP_BARS_SIZE - (cpBars[0]->curr - cpBars[0]->entry));
+  EnableDMA(DMAF_RASTER);
 }
 
 static void Kill(void) {
-  DisableDMA(DMAF_RASTER | DMAF_COPPER);
-  DeleteCopList(cp[0]);
-  DeleteCopList(cp[1]);
   ResetSprites();
+  DisableDMA(DMAF_RASTER | DMAF_COPPER);
+  DeleteCopList(cpFull[0]);
+  DeleteCopList(cpFull[1]);
+  DeleteCopList(cpBars[0]);
+  DeleteCopList(cpBars[1]);
 }
 
 PROFILE(UpdateStripeState);
 
+#define BY0 (0 + 16)
+#define BY1 (64 + 16)
+#define BY2 (128 + 16)
+#define BY3 (192 + 16)
+
+static const short BarY[4] = { BY0, BY1, BY2, BY3 };
+
+static void ControlIntro(StateBarT *bars) {
+  short t = frameFromStart;
+  short b = 3;
+
+  bars->bar_y[0] = -100;
+  bars->bar_y[1] = -100;
+  bars->bar_y[2] = -100;
+  bars->bar_y[3] = -100;
+
+  for (b = 3; b >= 0; b--) {
+    if (t < 16) {
+      bars->bar_y[b] = normfx(SIN(t * 64) * BarY[b]);
+      break;
+    }
+
+    t -= 16;
+    bars->bar_y[b] = BarY[b];
+  }
+}
+
+static void ControlOutro(StateBarT *bars) {
+  short t = 64 - frameTillEnd;
+  short b = 3;
+
+  bars->bar_y[0] = BarY[0];
+  bars->bar_y[1] = BarY[1];
+  bars->bar_y[2] = BarY[2];
+  bars->bar_y[3] = BarY[3];
+
+  for (b = 3; b >= 0; b--) {
+    if (t < 16) {
+      bars->bar_y[b] = normfx(SIN(t * 64) * (HEIGHT - BarY[b])) + BarY[b];
+      break;
+    }
+
+    t -= 16;
+    bars->bar_y[b] = HEIGHT;
+  }
+}
+
+static void Control(StateBarT *bars) {
+  if (frameFromStart < 64)
+    ControlIntro(bars);
+  if (frameTillEnd < 64)
+    ControlOutro(bars);
+}
+
 static void Render(void) {
-  UpdateBarState(&state[active]);
-  UpdateSpriteState(&state[active]);
+  if (frameFromStart < 64 || frameTillEnd < 64) {
+    StateBarT *bars = &stateBars[active];
 
-  ProfilerStart(UpdateStripeState);
-  UpdateStripeState(&state[active]);
-  ProfilerStop(UpdateStripeState);
+    ResetSprites();
+    Control(bars);
+    MakeCopperListBars(cpBars[active], bars);
+    UpdateBarState(bars);
+    CopListRun(cpBars[active]);
+  } else {
+    EnableDMA(DMAF_SPRITE);
+    UpdateBarState(&state[active].bars);
+    UpdateSpriteState(&state[active]);
+    ProfilerStart(UpdateStripeState);
+    UpdateStripeState(&state[active]);
+    ProfilerStop(UpdateStripeState);
+    CopListRun(cpFull[active]);
+  }
 
-  CopListRun(cp[active]);
   WaitVBlank();
   active ^= 1;
 }
