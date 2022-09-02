@@ -8,7 +8,7 @@
 
 /* Add tile sized margins on every side to hide visual artifacts. */
 #define MARGIN 32
-#define WIDTH  (256 + MARGIN)
+#define WIDTH  (272 + MARGIN)
 #define HEIGHT (224 + MARGIN)
 #define DEPTH  4
 #define COLORS 16
@@ -244,73 +244,57 @@ static void DrawSeed(u_char *bpl) {
 #define BLTMOD (WIDTH / 8 - TILESIZE / 8 - 2)
 #define BLTSIZE ((TILESIZE << 6) | ((TILESIZE + 16) >> 4))
 
-static void MoveTiles(void *src, void *dst, short xshift, short yshift) {
+static void MoveTiles(void *src asm("a2"), void *dst asm("a3"),
+                      short xshift asm("d0"), short yshift asm("d1"),
+                      int *tile asm("a4"), CustomPtrT custom_ asm("a6")) {
+  register short m15 asm("d4") = 15;
+  register int mask1 asm("d5") = rorl(0xffff0000, xshift);
+  register int mask2 asm("d6") = rorl(0x0000ffff, xshift);
+  register int offset asm("d7") = yshift * WIDTH + xshift;
   short n = NTILES - 1;
-  int *tile = tiles[current_ff];
-  int offset;
 
-  register volatile void *bltptr asm("a4") = &custom->bltcon1;
-
-  custom->bltadat = 0xffff;
-  custom->bltbmod = BLTMOD;
-  custom->bltcmod = BLTMOD;
-  custom->bltdmod = BLTMOD;
-  custom->bltcon0 = (SRCB | SRCC | DEST) | (ABC | ABNC | NABC | NANBC);
-
-  offset = yshift * WIDTH + xshift;
+  custom_->bltadat = 0xffff;
+  custom_->bltbmod = BLTMOD;
+  custom_->bltcmod = BLTMOD;
+  custom_->bltdmod = BLTMOD;
+  custom_->bltcon0 = (SRCB | SRCC | DEST) | (ABC | ABNC | NABC | NANBC);
 
   do {
-    int srcoff = *tile++ + offset;
-    int dstoff = *tile++ + offset;
-    register void *srcpt asm("a2") = src + ((srcoff >> 3) & ~1);
-    register void *dstpt asm("a3") = dst + ((dstoff >> 3) & ~1);
-    short sx = srcoff;
-    short dx = dstoff;
-    u_short bltcon1;
+    register int srcoff asm("d2") = *tile++ + offset;
+    register int dstoff asm("d3") = *tile++ + offset;
+    register void *srcpt asm("a0") = src + (srcoff >> 3);
+    register void *dstpt asm("a1") = dst + (dstoff >> 3);
+    short dx = dstoff & m15;
+    short sx = srcoff & m15;
     u_int mask;
     short shift;
 
-    sx &= 15; dx &= 15;
-
     shift = dx - sx;
     if (shift >= 0) {
-      mask = 0xffff0000;
-      bltcon1 = rorw(shift, 4);
+      shift = rorw(shift, 4);
+      mask = mask1;
     } else {
-      mask = 0x0000ffff;
-      bltcon1 = rorw(-shift, 4) | BLITREVERSE;
+      shift = rorw(-shift, 4) | BLITREVERSE;
+      mask = mask2;
 
       srcpt += WIDTH * (TILESIZE - 1) / 8 + 2;
       dstpt += WIDTH * (TILESIZE - 1) / 8 + 2;
     }
 
-    mask = rorl(mask, dx);
+    /* Comment it out if you're feeling lucky! */
+    _WaitBlitter(custom_);
 
-#if 1
     {
-      volatile void *ptr = bltptr;
+      register volatile void *ptr asm("a5") = &custom_->bltcon1;
 
-      WaitBlitter();
-
-      *((short *)ptr)++ = bltcon1;
-      *((int *)ptr)++ = mask;
-      *((int *)ptr)++ = (int)dstpt;
-      *((int *)ptr)++ = (int)srcpt;
-      ptr += 4;
-      *((int *)ptr)++ = (int)dstpt;
-      *((short *)ptr)++ = BLTSIZE;
+      *((short *)ptr)++ = shift;        // bltcon1
+      *((int *)ptr)++ = mask;           // bltaltwm & bltafwm
+      *((int *)ptr)++ = (int)dstpt;     // bltcpt
+      *((int *)ptr)++ = (int)srcpt;     // bltbpt
+      ptr += 4;                         // bltapt
+      *((int *)ptr)++ = (int)dstpt;     // bltdpt
+      *((short *)ptr)++ = BLTSIZE;      // bltsize
     }
-#else
-    WaitBlitter();
-
-    custom->bltcon1 = bltcon1;
-    custom->bltalwm = mask;
-    custom->bltafwm = swap16(mask);
-    custom->bltcpt = dstpt;
-    custom->bltbpt = srcpt;
-    custom->bltdpt = dstpt;
-    custom->bltsize = BLTSIZE;
-#endif
   } while (--n >= 0);
 }
 
@@ -326,23 +310,25 @@ static void UpdateBitplanePointers(void) {
   }
 }
 
-PROFILE(TileZoomer);
+PROFILE(TileMover);
 
 static void Render(void) {
-  u_short i;
-  u_short* color = tilemover_pal.colors; // replace with some interpolated palette?
-  u_short blitGhostown;
-
-  ProfilerStart(TileZoomer);
-  blitGhostown = TrackValueGet(&TileMoverBlit, frameCount);
   current_ff = TrackValueGet(&TileMoverNumber, frameCount);
 
-  for (i = 0; i < COLORS; i++)
-    CopInsSet16(palptr[i], *color++);
+#if 0
+  {
+    short i;
+    // replace with some interpolated palette?
+    short *color = tilemover_pal.colors;
+    for (i = 0; i < COLORS; i++)
+      CopInsSet16(palptr[i], *color++);
+  }
+#endif
 
-  if (blitGhostown)
+  if (TrackValueGet(&TileMoverBlit, frameCount))
     BlitGhostown();
 
+  ProfilerStart(TileMover);
   if ((random() & 15) == 0)
     DrawSeed(screen->planes[active]);
   {
@@ -354,10 +340,10 @@ static void Render(void) {
       active = 0;
     dst = screen->planes[active];
 
-    MoveTiles(src, dst, xshift, yshift);
+    MoveTiles(src, dst, xshift, yshift, tiles[current_ff], custom);
   }
+  ProfilerStop(TileMover);
   UpdateBitplanePointers();
-  ProfilerStop(TileZoomer);
 
   TaskWaitVBlank();
 }
