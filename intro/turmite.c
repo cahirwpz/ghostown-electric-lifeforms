@@ -14,7 +14,7 @@
 #define WIDTH 256
 #define HEIGHT 256
 #define DEPTH 4
-#define NSTEPS (256 + 196)
+#define NSTEPS (256 + 256 + 80)
 
 #define GENERATION 1
 
@@ -206,126 +206,6 @@ static inline void SetPixel(u_char *bpl, u_short pos, u_char val) {
     case 15: PixelValue(bpl, bit, 15); break;
   }
 }
-#else
-static inline void SetPixel(u_char *bpl, u_short pos, u_char val) {
-  int offset = pos >> 3;
-  u_char bit = ~pos;
-
-  bpl += offset;
-
-  /*
-   * Each block of code that sets a single pixel has exactly 16 bytes.
-   * Since color is stored in `board` cell on upper 5 bits, we can choose
-   * upper four bit to index one of the code blocks.
-   *
-   * Looking at disassembly helps to understand what really happened here.
-   */
-
-  asm volatile(
-    "       lea     .end(pc),a1\n"
-    "       andi.w  #0xf0,%2\n"
-    "       jmp     .start(pc,%2.w)\n"
-
-    ".start:\n"
-
-    "       bclr    %1,(%0)\n"
-    "       bclr    %1,8192(%0)\n"
-    "       bclr    %1,16384(%0)\n"
-    "       bclr    %1,24576(%0)\n"
-    "       jmp     (a1)\n"
-
-    "       bset    %1,(%0)\n"
-    "       bclr    %1,8192(%0)\n"
-    "       bclr    %1,16384(%0)\n"
-    "       bclr    %1,24576(%0)\n"
-    "       jmp     (a1)\n"
-
-    "       bclr    %1,(%0)\n"
-    "       bset    %1,8192(%0)\n"
-    "       bclr    %1,16384(%0)\n"
-    "       bclr    %1,24576(%0)\n"
-    "       jmp     (a1)\n"
-
-    "       bset    %1,(%0)\n"
-    "       bset    %1,8192(%0)\n"
-    "       bclr    %1,16384(%0)\n"
-    "       bclr    %1,24576(%0)\n"
-    "       jmp     (a1)\n"
-
-    "       bclr    %1,(%0)\n"
-    "       bclr    %1,8192(%0)\n"
-    "       bset    %1,16384(%0)\n"
-    "       bclr    %1,24576(%0)\n"
-    "       jmp     (a1)\n"
-
-    "       bset    %1,(%0)\n"
-    "       bclr    %1,8192(%0)\n"
-    "       bset    %1,16384(%0)\n"
-    "       bclr    %1,24576(%0)\n"
-    "       jmp     (a1)\n"
-
-    "       bclr    %1,(%0)\n"
-    "       bset    %1,8192(%0)\n"
-    "       bset    %1,16384(%0)\n"
-    "       bclr    %1,24576(%0)\n"
-    "       jmp     (a1)\n"
-
-    "       bset    %1,(%0)\n"
-    "       bset    %1,8192(%0)\n"
-    "       bset    %1,16384(%0)\n"
-    "       bclr    %1,24576(%0)\n"
-    "       jmp     (a1)\n"
-
-    "       bclr    %1,(%0)\n"
-    "       bclr    %1,8192(%0)\n"
-    "       bclr    %1,16384(%0)\n"
-    "       bset    %1,24576(%0)\n"
-    "       jmp     (a1)\n"
-
-    "       bset    %1,(%0)\n"
-    "       bclr    %1,8192(%0)\n"
-    "       bclr    %1,16384(%0)\n"
-    "       bset    %1,24576(%0)\n"
-    "       jmp     (a1)\n"
-
-    "       bclr    %1,(%0)\n"
-    "       bset    %1,8192(%0)\n"
-    "       bclr    %1,16384(%0)\n"
-    "       bset    %1,24576(%0)\n"
-    "       jmp     (a1)\n"
-
-    "       bset    %1,(%0)\n"
-    "       bset    %1,8192(%0)\n"
-    "       bclr    %1,16384(%0)\n"
-    "       bset    %1,24576(%0)\n"
-    "       jmp     (a1)\n"
-
-    "       bclr    %1,(%0)\n"
-    "       bclr    %1,8192(%0)\n"
-    "       bset    %1,16384(%0)\n"
-    "       bset    %1,24576(%0)\n"
-    "       jmp     (a1)\n"
-
-    "       bset    %1,(%0)\n"
-    "       bclr    %1,8192(%0)\n"
-    "       bset    %1,16384(%0)\n"
-    "       bset    %1,24576(%0)\n"
-    "       jmp     (a1)\n"
-
-    "       bclr    %1,(%0)\n"
-    "       bset    %1,8192(%0)\n"
-    "       bset    %1,16384(%0)\n"
-    "       bset    %1,24576(%0)\n"
-    "       jmp     (a1)\n"
-
-    "       bset    %1,(%0)\n"
-    "       bset    %1,8192(%0)\n"
-    "       bset    %1,16384(%0)\n"
-    "       bset    %1,24576(%0)\n"
-    ".end:\n"
-    :
-    : "a" (bpl), "d" (bit), "d" (val)
-    : "2", "a1", "memory", "cc");
 }
 #endif
 
@@ -340,8 +220,6 @@ static TurmiteT *TheTurmite =
   &Irregular;
 #endif
 
-#define GetPosChange(dir) (*(short *)((void *)PosChange + (dir)))
-
 static void SimulateTurmite(TurmiteT *t asm("a2"), u_char *board asm("a3"),
                             u_char *bpl asm("a6")) {
   static const u_short PosChange[4] = {
@@ -352,28 +230,26 @@ static void SimulateTurmite(TurmiteT *t asm("a2"), u_char *board asm("a3"),
   };
 
   short n = NSTEPS - 1;
+  u_int pos = t->pos;
   short state = t->state;
   short dir = t->dir;
+  void **label = &&end;
+  register char m7 asm("d7") = 7;
 
 #if GENERATION
-  u_char val = generation;
+  u_short val = generation & 0xf0;
 #else
   u_char val;
 #endif
 
   do {
-    int pos = t->pos;
-    char col = board[pos];
-    short *rule;
-
-    {
-      short offset = (col & (STEP - 1)) + state;
-      rule = (void *)t->rules + offset;
-    }
+    char *colp = &board[pos];
+    char col = *colp;
+    short offset = (col & m7) + state;
+    short *rule = (void *)t->rules + offset;
 
     state = *rule++; /* r->nstate */
-    dir = (dir + (*rule++)) & 7;  /* r->ndir */
-    t->pos += GetPosChange(dir);
+    dir = (dir + (*rule++)) & m7;  /* r->ndir */
 
     {
       char newcol = *(char *)rule; /* r->ncolor */
@@ -386,12 +262,134 @@ static void SimulateTurmite(TurmiteT *t asm("a2"), u_char *board asm("a3"),
       newcol |= val;
 #endif
 
-      board[pos] = newcol;
+      *colp = newcol;
     }
 
-    SetPixel(bpl, pos, val);
+    /*
+     * Each block of code that sets a single pixel has exactly 16 bytes.
+     * Since color is stored in `board` cell on upper 5 bits, we can choose
+     * upper four bit to index one of the code blocks.
+     *
+     * Looking at disassembly helps to understand what really happened here.
+     */
+    asm volatile(
+      "       move.w  %1,d0\n"
+      "       lsr.w   #3,d0\n"
+      "       lea     (%0,d0.w),a0\n"
+      "       move.w  %1,d0\n"
+      "       not.w   d0\n"
+      "       jmp     .start(pc,%2.w)\n"
+
+      ".start:\n"
+
+      "       bclr    d0,(a0)\n"
+      "       bclr    d0,8192(a0)\n"
+      "       bclr    d0,16384(a0)\n"
+      "       bclr    d0,24576(a0)\n"
+      "       jmp     (%3)\n"
+
+      "       bset    d0,(a0)\n"
+      "       bclr    d0,8192(a0)\n"
+      "       bclr    d0,16384(a0)\n"
+      "       bclr    d0,24576(a0)\n"
+      "       jmp     (%3)\n"
+
+      "       bclr    d0,(a0)\n"
+      "       bset    d0,8192(a0)\n"
+      "       bclr    d0,16384(a0)\n"
+      "       bclr    d0,24576(a0)\n"
+      "       jmp     (%3)\n"
+
+      "       bset    d0,(a0)\n"
+      "       bset    d0,8192(a0)\n"
+      "       bclr    d0,16384(a0)\n"
+      "       bclr    d0,24576(a0)\n"
+      "       jmp     (%3)\n"
+
+      "       bclr    d0,(a0)\n"
+      "       bclr    d0,8192(a0)\n"
+      "       bset    d0,16384(a0)\n"
+      "       bclr    d0,24576(a0)\n"
+      "       jmp     (%3)\n"
+
+      "       bset    d0,(a0)\n"
+      "       bclr    d0,8192(a0)\n"
+      "       bset    d0,16384(a0)\n"
+      "       bclr    d0,24576(a0)\n"
+      "       jmp     (%3)\n"
+
+      "       bclr    d0,(a0)\n"
+      "       bset    d0,8192(a0)\n"
+      "       bset    d0,16384(a0)\n"
+      "       bclr    d0,24576(a0)\n"
+      "       jmp     (%3)\n"
+
+      "       bset    d0,(a0)\n"
+      "       bset    d0,8192(a0)\n"
+      "       bset    d0,16384(a0)\n"
+      "       bclr    d0,24576(a0)\n"
+      "       jmp     (%3)\n"
+
+      "       bclr    d0,(a0)\n"
+      "       bclr    d0,8192(a0)\n"
+      "       bclr    d0,16384(a0)\n"
+      "       bset    d0,24576(a0)\n"
+      "       jmp     (%3)\n"
+
+      "       bset    d0,(a0)\n"
+      "       bclr    d0,8192(a0)\n"
+      "       bclr    d0,16384(a0)\n"
+      "       bset    d0,24576(a0)\n"
+      "       jmp     (%3)\n"
+
+      "       bclr    d0,(a0)\n"
+      "       bset    d0,8192(a0)\n"
+      "       bclr    d0,16384(a0)\n"
+      "       bset    d0,24576(a0)\n"
+      "       jmp     (%3)\n"
+
+      "       bset    d0,(a0)\n"
+      "       bset    d0,8192(a0)\n"
+      "       bclr    d0,16384(a0)\n"
+      "       bset    d0,24576(a0)\n"
+      "       jmp     (%3)\n"
+
+      "       bclr    d0,(a0)\n"
+      "       bclr    d0,8192(a0)\n"
+      "       bset    d0,16384(a0)\n"
+      "       bset    d0,24576(a0)\n"
+      "       jmp     (%3)\n"
+
+      "       bset    d0,(a0)\n"
+      "       bclr    d0,8192(a0)\n"
+      "       bset    d0,16384(a0)\n"
+      "       bset    d0,24576(a0)\n"
+      "       jmp     (%3)\n"
+
+      "       bclr    d0,(a0)\n"
+      "       bset    d0,8192(a0)\n"
+      "       bset    d0,16384(a0)\n"
+      "       bset    d0,24576(a0)\n"
+      "       jmp     (%3)\n"
+
+      "       bset    d0,(a0)\n"
+      "       bset    d0,8192(a0)\n"
+      "       bset    d0,16384(a0)\n"
+      "       bset    d0,24576(a0)\n"
+      :
+      : "a" (bpl), "d" (pos), "d" (val), "a" (label)
+      : "d0", "a0", "a1", "memory", "cc");
+
+end:
+
+    // pos = (u_short)(pos + *(u_short *)((void *)PosChange + dir));
+    asm volatile(
+      "       add.w (%1,%2.w),%0\n"
+      : "+d" (pos)
+      : "a" (PosChange), "d" (dir));
   } while (--n != -1);
 
+  t->pos = pos;
   t->state = state;
   t->dir = dir;
 
