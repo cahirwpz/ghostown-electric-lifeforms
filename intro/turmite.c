@@ -14,7 +14,7 @@
 #define WIDTH 256
 #define HEIGHT 256
 #define DEPTH 4
-#define NSTEPS 256
+#define NSTEPS (256 + 196)
 
 #define GENERATION 1
 
@@ -60,10 +60,12 @@ static void Load(void) {
 #define NORTH 2
 #define EAST 3
 
+/* WARNING! The order of fields in `RuleT` and `Turmite` matters
+ * due to optimizations in `SimulateTurmites`. */
 typedef struct Rule {
-  short ncolor;
-  short ndir;
   short nstate;
+  short ndir;
+  char ncolor;
 } RuleT;
 
 #define RULESZ sizeof(RuleT)
@@ -76,8 +78,10 @@ typedef struct Turmite {
 } TurmiteT;
 
 /* board color is assumed to be binary */
-#define RULE(nc, nd, ns) \
-  (RuleT){ .ncolor = (nc) * RULESZ, .ndir = (nd), .nstate = (ns) * RULESZ * 2 }
+#define RULE(nc, nd, ns)                        \
+  (RuleT){ .ncolor = (nc) * RULESZ,             \
+           .ndir = (nd) * 2,                    \
+           .nstate = (ns) * RULESZ * 2 }
 #define POS(x, y) ((y) * WIDTH + (x))
 
 #if 0
@@ -160,15 +164,9 @@ static TurmiteT Credits = {
   }
 };
 
-static const u_short PosChange[4] = {
-  [SOUTH] = +WIDTH,
-  [WEST] = -1,
-  [NORTH] = -WIDTH,
-  [EAST] = +1,
-};
-
 #define BPLSIZE (WIDTH * HEIGHT / 8)
 
+#if 0
 static inline void BitValue(u_char *bpl, short offset, u_char bit, u_char val) {
   if (val)
     bset(bpl + offset, bit);
@@ -208,12 +206,128 @@ static inline void SetPixel(u_char *bpl, u_short pos, u_char val) {
     case 15: PixelValue(bpl, bit, 15); break;
   }
 }
+#else
+static inline void SetPixel(u_char *bpl, u_short pos, u_char val) {
+  int offset = pos >> 3;
+  u_char bit = ~pos;
 
-static inline RuleT *GetRule(TurmiteT *t, short col) {
-  void *rule = t->rules;
-  short offset = col + t->state;
-  return rule + offset;
+  bpl += offset;
+
+  /*
+   * Each block of code that sets a single pixel has exactly 16 bytes.
+   * Since color is stored in `board` cell on upper 5 bits, we can choose
+   * upper four bit to index one of the code blocks.
+   *
+   * Looking at disassembly helps to understand what really happened here.
+   */
+
+  asm volatile(
+    "       lea     .end(pc),a1\n"
+    "       andi.w  #0xf0,%2\n"
+    "       jmp     .start(pc,%2.w)\n"
+
+    ".start:\n"
+
+    "       bclr    %1,(%0)\n"
+    "       bclr    %1,8192(%0)\n"
+    "       bclr    %1,16384(%0)\n"
+    "       bclr    %1,24576(%0)\n"
+    "       jmp     (a1)\n"
+
+    "       bset    %1,(%0)\n"
+    "       bclr    %1,8192(%0)\n"
+    "       bclr    %1,16384(%0)\n"
+    "       bclr    %1,24576(%0)\n"
+    "       jmp     (a1)\n"
+
+    "       bclr    %1,(%0)\n"
+    "       bset    %1,8192(%0)\n"
+    "       bclr    %1,16384(%0)\n"
+    "       bclr    %1,24576(%0)\n"
+    "       jmp     (a1)\n"
+
+    "       bset    %1,(%0)\n"
+    "       bset    %1,8192(%0)\n"
+    "       bclr    %1,16384(%0)\n"
+    "       bclr    %1,24576(%0)\n"
+    "       jmp     (a1)\n"
+
+    "       bclr    %1,(%0)\n"
+    "       bclr    %1,8192(%0)\n"
+    "       bset    %1,16384(%0)\n"
+    "       bclr    %1,24576(%0)\n"
+    "       jmp     (a1)\n"
+
+    "       bset    %1,(%0)\n"
+    "       bclr    %1,8192(%0)\n"
+    "       bset    %1,16384(%0)\n"
+    "       bclr    %1,24576(%0)\n"
+    "       jmp     (a1)\n"
+
+    "       bclr    %1,(%0)\n"
+    "       bset    %1,8192(%0)\n"
+    "       bset    %1,16384(%0)\n"
+    "       bclr    %1,24576(%0)\n"
+    "       jmp     (a1)\n"
+
+    "       bset    %1,(%0)\n"
+    "       bset    %1,8192(%0)\n"
+    "       bset    %1,16384(%0)\n"
+    "       bclr    %1,24576(%0)\n"
+    "       jmp     (a1)\n"
+
+    "       bclr    %1,(%0)\n"
+    "       bclr    %1,8192(%0)\n"
+    "       bclr    %1,16384(%0)\n"
+    "       bset    %1,24576(%0)\n"
+    "       jmp     (a1)\n"
+
+    "       bset    %1,(%0)\n"
+    "       bclr    %1,8192(%0)\n"
+    "       bclr    %1,16384(%0)\n"
+    "       bset    %1,24576(%0)\n"
+    "       jmp     (a1)\n"
+
+    "       bclr    %1,(%0)\n"
+    "       bset    %1,8192(%0)\n"
+    "       bclr    %1,16384(%0)\n"
+    "       bset    %1,24576(%0)\n"
+    "       jmp     (a1)\n"
+
+    "       bset    %1,(%0)\n"
+    "       bset    %1,8192(%0)\n"
+    "       bclr    %1,16384(%0)\n"
+    "       bset    %1,24576(%0)\n"
+    "       jmp     (a1)\n"
+
+    "       bclr    %1,(%0)\n"
+    "       bclr    %1,8192(%0)\n"
+    "       bset    %1,16384(%0)\n"
+    "       bset    %1,24576(%0)\n"
+    "       jmp     (a1)\n"
+
+    "       bset    %1,(%0)\n"
+    "       bclr    %1,8192(%0)\n"
+    "       bset    %1,16384(%0)\n"
+    "       bset    %1,24576(%0)\n"
+    "       jmp     (a1)\n"
+
+    "       bclr    %1,(%0)\n"
+    "       bset    %1,8192(%0)\n"
+    "       bset    %1,16384(%0)\n"
+    "       bset    %1,24576(%0)\n"
+    "       jmp     (a1)\n"
+
+    "       bset    %1,(%0)\n"
+    "       bset    %1,8192(%0)\n"
+    "       bset    %1,16384(%0)\n"
+    "       bset    %1,24576(%0)\n"
+    ".end:\n"
+    :
+    : "a" (bpl), "d" (bit), "d" (val)
+    : "2", "a1", "memory", "cc");
 }
+#endif
 
 #if GENERATION
 static u_char generation = 0;
@@ -226,50 +340,60 @@ static TurmiteT *TheTurmite =
   &Irregular;
 #endif
 
-#if 1
-static inline
-#endif
-void TurmiteMove(TurmiteT *t, u_char *board, u_char *bpl) {
-  int pos = t->pos;
-  short col = board[pos];
-  RuleT *rule = GetRule(t, col & (STEP - 1));
+#define GetPosChange(dir) (*(short *)((void *)PosChange + (dir)))
 
-  t->state = rule->nstate;
+static void SimulateTurmite(TurmiteT *t asm("a2"), u_char *board asm("a3"),
+                            u_char *bpl asm("a6")) {
+  static const u_short PosChange[4] = {
+    [SOUTH] = +WIDTH,
+    [WEST] = -1,
+    [NORTH] = -WIDTH,
+    [EAST] = +1,
+  };
 
-  {
-    short newcol = rule->ncolor;
-    u_char val;
+  short n = NSTEPS - 1;
+  short state = t->state;
+  short dir = t->dir;
 
 #if GENERATION
-    val = generation;
+  u_char val = generation;
 #else
-    val = col & -STEP;
-    val += STEP;
-    if (val == 0)
-       val -= STEP;
-    newcol |= val;
+  u_char val;
 #endif
 
-    board[pos] = newcol;
+  do {
+    int pos = t->pos;
+    char col = board[pos];
+    short *rule;
+
+    {
+      short offset = (col & (STEP - 1)) + state;
+      rule = (void *)t->rules + offset;
+    }
+
+    state = *rule++; /* r->nstate */
+    dir = (dir + (*rule++)) & 7;  /* r->ndir */
+    t->pos += GetPosChange(dir);
+
+    {
+      char newcol = *(char *)rule; /* r->ncolor */
+
+#if !GENERATION
+      val = col & -STEP;
+      val += STEP;
+      if (val == 0)
+        val -= STEP;
+      newcol |= val;
+#endif
+
+      board[pos] = newcol;
+    }
 
     SetPixel(bpl, pos, val);
-  }
+  } while (--n != -1);
 
-  {
-    short dir = (t->dir + rule->ndir) & 3;
-
-    t->dir = dir;
-    t->pos += PosChange[dir];
-  }
-}
-
-void SimulateTurmite(void) {
-  u_char *bpl = screen->planes[0]; 
-  short i;
-
-  for (i = 0; i < NSTEPS; i++) {
-    TurmiteMove(TheTurmite, board, bpl);
-  }
+  t->state = state;
+  t->dir = dir;
 
 #if GENERATION
   generation += STEP;
@@ -319,7 +443,7 @@ PROFILE(SimulateTurmite);
 
 static void Render(void) {
   ProfilerStart(SimulateTurmite);
-  SimulateTurmite();
+  SimulateTurmite(TheTurmite, board, screen->planes[0]);
   ProfilerStop(SimulateTurmite);
 
   TaskWaitVBlank();
