@@ -6,6 +6,7 @@
 #include <circle.h>
 #include <line.h>
 #include <stdlib.h>
+#include <sync.h>
 #include <system/memory.h>
 
 #define WIDTH 320
@@ -21,6 +22,8 @@ static BitmapT *screen;
 static BitmapT *circles[DIAMETER / 2];
 
 #include "data/anemone-pal.c"
+
+extern TrackT SeaAnemoneVariant;
 
 static inline int fastrand(void) {
   static int m[2] = { 0x3E50B28C, 0xD461A7F9 };
@@ -97,9 +100,21 @@ static inline bool ArmsFull(ArmQueueT *arms) {
   return ((arms->head + 1) & NARMS) == arms->tail;
 }
 
+static short ArmVariant = 0;
+static short ArmAngleMask = 0;
+static short ArmAngleOffset = 0;
+
 static void MakeArm(ArmT *arm) {
-  arm->pos_x = fx4i(WIDTH / 2);
-  arm->pos_y = fx4i(HEIGHT / 2);
+  if (ArmVariant == 1) {
+    arm->pos_x = fx4i(WIDTH / 2);
+    arm->pos_y = fx4i(HEIGHT / 2);
+  } else if (ArmVariant == 2) {
+    arm->pos_x = fx4i((random() & 255) + 64);
+    arm->pos_y = fx4i(DIAMETER);
+  } else if (ArmVariant == 3) {
+    arm->pos_x = fx4i((random() & 255) + 64);
+    arm->pos_y = fx4i(HEIGHT - DIAMETER);
+  }
   arm->vel_x = 0;
   arm->vel_y = 0;
   arm->diameter = mod16(random() & 0x7fff, DIAMETER / 4) + DIAMETER * 3 / 4;
@@ -128,8 +143,7 @@ static inline void ArmsPop(ArmQueueT *arms) {
   arms->tail = (arms->tail + 1) & NARMS;
 }
 
-static void ArmMove(ArmT *arm) {
-  short angle = random();
+static void ArmMove(ArmT *arm, short angle) {
   short vx = arm->vel_x;
   short vy = arm->vel_y;
   int magSq;
@@ -200,6 +214,7 @@ static void Init(void) {
 
   EnableDMA(DMAF_RASTER | DMAF_BLITTER | DMAF_BLITHOG);
 
+  TrackInit(&SeaAnemoneVariant);
   ArmsReset(&AnemoneArms);
 
   /* Moved from DrawCircle, since we use only one type of blit. */
@@ -282,7 +297,8 @@ static void SeaAnemone(ArmQueueT *arms) {
     ArmT *last = ArmLast(arms);
 
     while (true) {
-      ArmMove(curr);
+      short angle = (random() & ArmAngleMask) + ArmAngleOffset;
+      ArmMove(curr, angle);
       if (curr->diameter > 1) {
         short d = curr->diameter;
         short r = d / 2;
@@ -309,6 +325,25 @@ static void SeaAnemone(ArmQueueT *arms) {
 PROFILE(SeaAnemone);
 
 static void Render(void) {
+  short val;
+  if ((val = TrackValueGet(&SeaAnemoneVariant, frameFromStart))) { 
+    BitmapClear(screen);
+    ArmsReset(&AnemoneArms);
+    if (val == 1) {
+      ArmAngleMask = 0xfff;
+      ArmAngleOffset = 0;
+      ArmVariant = 1;
+    } else if (val == 2) {
+      ArmAngleMask = 0x7ff;
+      ArmAngleOffset = 0;
+      ArmVariant = 2;
+    } else if (val == 3) {
+      ArmAngleMask = 0x7ff;
+      ArmAngleOffset = 0x800;
+      ArmVariant = 3;
+    }
+  }
+
   ProfilerStart(SeaAnemone);
   SeaAnemone(&AnemoneArms);
   ProfilerStop(SeaAnemone);

@@ -89,3 +89,9 @@ $0520 6
 # diamoeba
 $0530 3
 @end
+
+@track SeaAnemoneVariant
+$0000 1 !event
+$0020 2
+$0030 3
+@end
