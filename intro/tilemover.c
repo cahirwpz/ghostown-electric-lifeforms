@@ -37,8 +37,8 @@ static int tiles[NFLOWFIELDS][NTILES * 2];
 static u_short current_ff = 0;
 
 #include "data/tilemover-pal.c"
-#include "data/ghostown-logo-crop.c"
 
+extern const BitmapT ghostown_logo;
 extern TrackT TileMoverNumber;
 extern TrackT TileMoverBlit;
 

@@ -94,13 +94,14 @@ def do_bitmap(im, desc):
         raise SystemExit('Only 8-bit images supported.')
 
     param = parse(desc, ('name', str), (('width', 'height', 'depth'), dim),
-                  interleaved=False)
+                  interleaved=False, shared=False)
 
     name = param['name']
     has_width = param['width']
     has_height = param['height']
     has_depth = param['depth']
     interleaved = param['interleaved']
+    shared = param['shared']
 
     pix = array('B', im.getdata())
 
@@ -139,7 +140,7 @@ def do_bitmap(im, desc):
     print('#define %s_bplSize %d' % (name, bplSize))
     print('')
 
-    print('static const BitmapT %s = {' % name)
+    print('%sconst BitmapT %s = {' % ('' if shared else 'static ', name))
     print('  .width = %d,' % width)
     print('  .height = %d,' % height)
     print('  .depth = %s,' % depth)
