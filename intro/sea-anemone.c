@@ -307,7 +307,7 @@ static void SeaAnemone(ArmQueueT *arms) {
         if ((x < 0) || (y < 0) || (x >= WIDTH - d) || (y >= HEIGHT - d))
           continue;
         if (r < 16)
-          DrawCircle(circles[r - 1], x, y, 15 - r);
+          DrawCircle(circles[r - 1], x, y, 16 - r);
       }
       if (curr == last)
         break;
