@@ -79,6 +79,128 @@ final float maxspeed = MAX_Q12/2;
 final float maxforce = 0.5/2;
 final float orgSize = 10;
 
+int alignCoheseCircle[] = {
+  -2, -4,
+  -1, -4,
+  0, -4,
+  1, -4,
+  2, -4,
+
+  -3, -3,
+  -2, -3,
+  -1, -3,
+  0, -3,
+  1, -3,
+  2, -3,
+  3, -3,
+
+  -4, -2,
+  -3, -2,
+  -2, -2,
+  -1, -2,
+  0, -2,
+  1, -2,
+  2, -2,
+  3, -2,
+  4, -2,
+
+  -4, -1,
+  -3, -1,
+  -2, -1,
+  -1, -1,
+  0, -1,
+  1, -1,
+  2, -1,
+  3, -1,
+  4, -1,
+
+  -4, 0,
+  -3, 0,
+  -2, 0,
+  -1, 0,
+  0, 0,
+  1, 0,
+  2, 0,
+  3, 0,
+  4, 0,
+
+  -4, 1,
+  -3, 1,
+  -2, 1,
+  -1, 1,
+  0, 1,
+  1, 1,
+  2, 1,
+  3, 1,
+  4, 1,
+
+  -4, 2,
+  -3, 2,
+  -2, 2,
+  -1, 2,
+  0, 2,
+  1, 2,
+  2, 2,
+  3, 2,
+  4, 2,
+
+  -3, 3,
+  -2, 3,
+  -1, 3,
+  0, 3,
+  1, 3,
+  2, 3,
+  3, 3,
+
+  -2, 4,
+  -1, 4,
+  0, 4,
+  1, 4,
+  2, 4,
+};
+
+int separationCircle[] = {
+  0, -2,
+
+  -1, -1,
+  0, -1,
+  1, -1,
+
+  -2, 0,
+  -1, 0,
+  0, 0,
+  1, 0,
+  2, 0,
+
+  -1, 1,
+  0, 1,
+  1, 1,
+
+  0, 2,
+};
+
+ArrayList<Organism> getNeighbours(Organism self, int[] sepArea) {
+  ArrayList<Organism> res = new ArrayList<Organism>();
+  for (int i = 0; i < sepArea.length; i += 2) {
+    int neighbour = self.bucketid + sepArea[i] + (sepArea[i+1] * tilew);
+    if (neighbour < 0)
+      neighbour += tilew*tileh;
+    else if (neighbour >= tilew*tileh)
+      neighbour -= tilew*tileh;
+    Organism org = buckets[neighbour];
+    if (org != null) {
+      while (org.next != null) {
+        if (org != self)
+          res.add(org);
+        org = org.next;
+      }
+      if (org != self)
+        res.add(org);
+    }
+  }
+  return res;
+}
+
 class Organism {
   PVector pos;
   PVector vel;
@@ -214,20 +336,17 @@ class Organism {
     return steerForce(desired);
   }
   
-  PVector separate(Organism[] orgs) {
-    float desiredSep = orgSize * 1.5;
+  PVector separate() {
     PVector avg = new PVector();
     int cnt = 0;
     
-    for (Organism other : orgs) {
+    for (Organism other : getNeighbours(this, separationCircle)) {
       float d = PVector.dist(pos, other.pos);
-      if (d > 0 && d < desiredSep) {
-        PVector away = PVector.sub(pos, other.pos);
-        away.normalize();
-        away.div(d);
-        avg.add(away);
-        cnt++;
-      }
+      PVector away = PVector.sub(pos, other.pos);
+      away.normalize();
+      away.div(d);
+      avg.add(away);
+      cnt++;
     }
     
     if (cnt > 0) {
@@ -239,17 +358,13 @@ class Organism {
     return avg;
   }
   
-  PVector align(Organism[] orgs) {
-    float neighborDist = 32;
+  PVector align() {
     PVector avg = new PVector();
     int cnt = 0;
     
-    for (Organism other : orgs) {
-      float d = PVector.dist(pos, other.pos);
-      if (d > 0 && d < neighborDist) {
-        avg.add(other.vel);
-        cnt++;
-      }
+    for (Organism other : getNeighbours(this, alignCoheseCircle)) {
+      avg.add(other.vel);
+      cnt++;
     }
     
     if (cnt > 0) {
@@ -261,17 +376,13 @@ class Organism {
     return avg;
   }
   
-  PVector cohese(Organism[] orgs) {
-    float neighborDist = 32;
+  PVector cohese() {
     PVector avg = new PVector();
     int cnt = 0;
     
-    for (Organism other : orgs) {
-      float d = PVector.dist(pos, other.pos);
-      if (d > 0 && d < neighborDist) {
-        avg.add(other.pos);
-        cnt++;
-      }
+    for (Organism other : getNeighbours(this, alignCoheseCircle)) {
+      avg.add(other.pos);
+      cnt++;
     }
     
     if (cnt > 0) {
@@ -282,15 +393,15 @@ class Organism {
   }
   
   void applyBehaviors(Organism[] others) {
-    PVector sep = separate(others);
+    PVector sep = separate();
     PVector mouse = seek(new PVector(mouseX/scale, mouseY/scale));
     
     int x = int(pos.x / ff.ffw);
     int y = int(pos.y / ff.ffh);
     PVector ffForce = steerForce(PVector.mult(ff.get(x, y), 20), maxforce);
     
-    PVector alignment = align(others);
-    PVector cohesion = cohese(others);
+    PVector alignment = align();
+    PVector cohesion = cohese();
     
     sep.mult(weights[0]);
     mouse.mult(weights[1]);
@@ -335,7 +446,7 @@ void draw() {
   screen.clear();
   screen.scale(scale);
 
-  ff = new Flowfield(tilesize);
+  ff = new Flowfield(16);
   ff.draw();
   
   screen.fill(#ffffff);
