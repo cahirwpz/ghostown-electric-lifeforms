@@ -3,8 +3,6 @@
 $0000 0 !step
 # tilemover
 $0100 5
-# weave
-$0200 2
 # wireworld
 $0300 7
 # vitruvian
@@ -13,12 +11,12 @@ $0400 9
 $0420 8
 # tree
 $0600 4
-# tilemover
-$0800 5
+# sea anemone
+$0800 6
 # turmite
 $0A00 3
-# sea anemone
-$0D00 6
+# weave
+$0C00 2
 # wireworld
 $0E00 7
 # tilemover
@@ -51,6 +49,10 @@ $0100 2 !step
 $0110 0
 $0120 1
 $0130 3
+$0200 2
+$0210 0
+$0220 1
+$0230 3
 @end
 
 @track TileMoverBlit
@@ -92,6 +94,29 @@ $0530 3
 
 @track SeaAnemoneVariant
 $0000 1 !event
+$0010 1
 $0020 2
 $0030 3
+$0100 2
+$0110 3
+$0120 2
+$0130 3
+@end
+
+@track SeaAnemonePal
+$0000 1 !event
+$0010 2
+$0020 3
+$0030 4
+$0100 5
+$0110 1
+$0120 2
+$0130 3
+@end
+
+@track TurmiteBoard
+$0000 1 !event
+$0020 2
+$0100 3
+$0120 1
 @end

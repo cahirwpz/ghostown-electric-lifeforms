@@ -21,9 +21,23 @@ static CopInsT *bplptr[DEPTH];
 static BitmapT *screen;
 static BitmapT *circles[DIAMETER / 2];
 
-#include "data/anemone-pal.c"
+#include "data/sea-anemone-pal1.c"
+#include "data/sea-anemone-pal2.c"
+#include "data/sea-anemone-pal3.c"
+#include "data/sea-anemone-pal4.c"
+#include "data/sea-anemone-pal5.c"
+
+static const PaletteT *sea_anemone_pal[] = {
+  NULL,
+  &sea_anemone_pal1,
+  &sea_anemone_pal2,
+  &sea_anemone_pal3,
+  &sea_anemone_pal4,
+  &sea_anemone_pal5,
+};
 
 extern TrackT SeaAnemoneVariant;
+extern TrackT SeaAnemonePal;
 
 static inline int fastrand(void) {
   static int m[2] = { 0x3E50B28C, 0xD461A7F9 };
@@ -204,7 +218,7 @@ static void Init(void) {
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH);
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
-  LoadPalette(&anemone_pal, 0);
+  LoadPalette(&sea_anemone_pal1, 0);
 
   cp = NewCopList(50);
   CopInit(cp);
@@ -215,6 +229,7 @@ static void Init(void) {
   EnableDMA(DMAF_RASTER | DMAF_BLITTER | DMAF_BLITHOG);
 
   TrackInit(&SeaAnemoneVariant);
+  TrackInit(&SeaAnemonePal);
   ArmsReset(&AnemoneArms);
 
   /* Moved from DrawCircle, since we use only one type of blit. */
@@ -326,6 +341,7 @@ PROFILE(SeaAnemone);
 
 static void Render(void) {
   short val;
+
   if ((val = TrackValueGet(&SeaAnemoneVariant, frameFromStart))) { 
     BitmapClear(screen);
     ArmsReset(&AnemoneArms);
@@ -342,6 +358,10 @@ static void Render(void) {
       ArmAngleOffset = 0x800;
       ArmVariant = 3;
     }
+  }
+
+  if ((val = TrackValueGet(&SeaAnemonePal, frameFromStart))) {
+    LoadPalette(sea_anemone_pal[val], 0);
   }
 
   ProfilerStart(SeaAnemone);

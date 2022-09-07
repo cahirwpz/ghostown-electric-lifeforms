@@ -6,10 +6,13 @@
 #include "bitmap.h"
 #include "sprite.h"
 #include "fx.h"
+#include <sync.h>
 #include <system/memory.h>
 
 #include "data/turmite-pal.c"
 #include "data/turmite-credits-1.c"
+#include "data/turmite-credits-2.c"
+#include "data/turmite-credits-3.c"
 
 #define WIDTH 256
 #define HEIGHT 256
@@ -28,9 +31,13 @@ static BitmapT *screen;
 static u_char *board;
 static u_int lookup[256][2];
 
+extern TrackT TurmiteBoard;
+
 static const BitmapT *turmite_credits[] = {
-  &turmite_credits_1,
   NULL,
+  &turmite_credits_1,
+  &turmite_credits_2,
+  &turmite_credits_3,
 };
 
 static void BitmapToBoard(const BitmapT *bm, u_char *board) {
@@ -404,6 +411,14 @@ static void ResetTurmite(TurmiteT *t) {
   t->state = 0;
 }
 
+static void ChooseTurmiteBoard(short i) {
+  BitmapClear(screen);
+  BlitterCopyFastSetup(screen, 0, 0, turmite_credits[i]);
+  BlitterCopyFastStart(DEPTH - 1, 0);
+  BitmapToBoard(turmite_credits[i], board);
+  ResetTurmite(TheTurmite);
+}
+
 static void Init(void) {
   board = MemAlloc(WIDTH * HEIGHT, MEMF_PUBLIC|MEMF_CLEAR);
 
@@ -414,18 +429,16 @@ static void Init(void) {
   SetupMode(MODE_LORES, DEPTH);
   LoadPalette(&turmite_pal, 0);
 
+  TrackInit(&TurmiteBoard);
+
   EnableDMA(DMAF_BLITTER);
-  BlitterCopyFastSetup(screen, 0, 0, turmite_credits[0]);
-  BlitterCopyFastStart(DEPTH - 1, 0);
-  BitmapToBoard(turmite_credits[0], board);
+  ChooseTurmiteBoard(1);
 
   cp = NewCopList(100);
   CopInit(cp);
   CopSetupBitplanes(cp, NULL, screen, DEPTH);
   CopEnd(cp);
   CopListActivate(cp);
-
-  ResetTurmite(TheTurmite);
 
   EnableDMA(DMAF_RASTER);
 }
@@ -440,6 +453,11 @@ static void Kill(void) {
 PROFILE(SimulateTurmite);
 
 static void Render(void) {
+  short val;
+
+  if ((val = TrackValueGet(&TurmiteBoard, frameFromStart)))
+    ChooseTurmiteBoard(val);
+
   ProfilerStart(SimulateTurmite);
   SimulateTurmite(TheTurmite, board, screen->planes[0]);
   ProfilerStop(SimulateTurmite);
