@@ -1,6 +1,6 @@
 TOPDIR := $(realpath ..)
 
-ADPCM := 0
+ADPCM := 1
 DELTA := 0
 
 RLE2PNG = rle2png.py
@@ -28,8 +28,9 @@ CLEAN-FILES := main.o data/bar.c data/bar-2.c data/stripes.c data/colors.c \
 	data/electric-lifeforms-wireworld.c data/ghostown-logo-0[1-3].c \
 	data/turmite-credits-[1-3].c data/sea-anemone-pal[1-5].c
 
-SOURCES := main.c adpcm.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
-	   tilemover.c sea-anemone.c game-of-life.c vitruvian.c
+SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
+	   tilemover.c sea-anemone.c game-of-life.c vitruvian.c \
+	   adpcm.asm 
 MAIN := #
 
 PNG2C.bar := --bitmap bar,480x67x4 --palette bar_pal,16

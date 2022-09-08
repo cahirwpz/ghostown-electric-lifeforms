@@ -3,7 +3,8 @@
 
 #include <types.h>
 
-void AdpcmInit(void);
-void AdpcmDecode(uint8_t *input, int n, int8_t *output);
+void ADPCMDecoder_InitTables(void);
+void ADPCMDecoder(uint8_t *input asm("a0"), int size asm("d0"),
+                  int8_t *output asm("a1"));
 
 #endif /* !__ADPCM_H__ */

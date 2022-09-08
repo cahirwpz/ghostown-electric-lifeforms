@@ -76,8 +76,8 @@ static void DecodeSamples(u_char *smp, int size) {
 
   Log("[Init] Decoding ADPCM samples (%d bytes)\n", size);
 
-  AdpcmInit();
-  AdpcmDecode(copy, size * 2, smp);
+  ADPCMDecoder_InitTables();
+  ADPCMDecoder(copy, size * 2, smp);
 
   MemFree(copy);
 }
