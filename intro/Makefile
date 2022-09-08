@@ -1,27 +1,29 @@
 TOPDIR := $(realpath ..)
 
-ADPCM := 0
+ADPCM := 1
 DELTA := 0
+
+CTR_VER := Full
 SMP_TOTALSIZE := 181610
 
 RLE2PNG = rle2png.py
 ELECTRONS2C = electrons2c.py
 
-OBJECTS := data/JazzCat-ElectricLifeforms.ctr.o \
+OBJECTS := data/JazzCat-ElectricLifeforms-$(CTR_VER).ctr.o \
 	   data/text-scroll.o
 
 ifeq ($(ADPCM), 1)
-OBJECTS += data/JazzCat-ElectricLifeforms-ADPCM.smp.o
+OBJECTS += data/JazzCat-ElectricLifeforms-$(CTR_VER)-ADPCM.smp.o
 else ifeq ($(DELTA), 1)
-OBJECTS += data/JazzCat-ElectricLifeforms-Delta.smp.o
+OBJECTS += data/JazzCat-ElectricLifeforms-$(CTR_VER)-Delta.smp.o
 else
-OBJECTS += data/JazzCat-ElectricLifeforms.smp.o
+OBJECTS += data/JazzCat-ElectricLifeforms-$(CTR_VER).smp.o
 endif
 
 LIBS := libctr
 
 CLEAN-FILES := main.o data/bar.c data/bar-2.c data/stripes.c data/colors.c \
-	data/JazzCat-ElectricLifeforms*.smp data/text-scroll-font.c \
+	data/JazzCat-ElectricLifeforms*.{smp,o} data/text-scroll-font.c \
 	data/intro.c data/turmite-pal.c data/electric-lifeforms-0[1-2].c \
 	data/fruit.c data/tilemover-pal.c data/anemone-pal.c \
 	data/ghostown-logo-crop.c data/p46basedprng.c data/cell-gradient.c \
