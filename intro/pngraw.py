@@ -69,7 +69,7 @@ if __name__ == '__main__':
         elif ihdr.colour_type == ColourType.TRUECOLOR_ALPHA:
             bpp *= 4
 
-        row_size = (bpp * width + 7) // 8
+        row_size = (bpp * ihdr.width + 7) // 8
         pix_size = (bpp + 7) // 8
 
         hdr = struct.pack('>HHHH', ihdr.width, ihdr.height, row_size, pix_size)
