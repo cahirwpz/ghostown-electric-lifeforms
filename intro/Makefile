@@ -33,7 +33,7 @@ CLEAN-FILES := main.o data/bar.c data/bar-2.c data/stripes.c data/colors.c \
 
 SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   tilemover.c sea-anemone.c game-of-life.c vitruvian.c \
-	   adpcm.asm 
+	   adpcm.asm pngraw.c
 MAIN := #
 
 PNG2C.bar := --bitmap bar,480x67x4 --palette bar_pal,16
