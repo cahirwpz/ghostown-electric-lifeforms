@@ -1,16 +1,26 @@
 TOPDIR := $(realpath ..)
 
+ADPCM := 0
+DELTA := 0
+
 RLE2PNG = rle2png.py
 ELECTRONS2C = electrons2c.py
 
 OBJECTS := data/JazzCat-ElectricLifeforms.ctr.o \
-	   data/JazzCat-ElectricLifeforms-Delta.smp.o \
 	   data/text-scroll.o
+
+ifeq ($(ADPCM), 1)
+OBJECTS += data/JazzCat-ElectricLifeforms-ADPCM.smp.o
+else ifeq ($(DELTA), 1)
+OBJECTS += data/JazzCat-ElectricLifeforms-Delta.smp.o
+else
+OBJECTS += data/JazzCat-ElectricLifeforms.smp.o
+endif
 
 LIBS := libctr
 
 CLEAN-FILES := main.o data/bar.c data/bar-2.c data/stripes.c data/colors.c \
-	data/JazzCat-ElectricLifeforms.smp data/text-scroll-font.c \
+	data/JazzCat-ElectricLifeforms*.smp data/text-scroll-font.c \
 	data/intro.c data/turmite-pal.c data/electric-lifeforms-0[1-2].c \
 	data/fruit.c data/tilemover-pal.c data/anemone-pal.c \
 	data/ghostown-logo-crop.c data/p46basedprng.c data/cell-gradient.c \
@@ -18,7 +28,7 @@ CLEAN-FILES := main.o data/bar.c data/bar-2.c data/stripes.c data/colors.c \
 	data/electric-lifeforms-wireworld.c data/ghostown-logo-0[1-3].c \
 	data/turmite-credits-[1-3].c data/sea-anemone-pal[1-5].c
 
-SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
+SOURCES := main.c adpcm.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   tilemover.c sea-anemone.c game-of-life.c vitruvian.c
 MAIN := #
 
@@ -48,7 +58,7 @@ PNG2C.ghostown-logo-01 := --palette ghostown_logo_1_pal,8
 PNG2C.ghostown-logo-02 := --palette ghostown_logo_2_pal,8
 PNG2C.ghostown-logo-03 := --palette ghostown_logo_3_pal,8
 
-CPPFLAGS += -DINTRO -I.
+CPPFLAGS += -DINTRO -DADPCM=$(ADPCM) -DDELTA=$(DELTA) -I.
 
 data/%-electrons.c: data/%-electrons.png
 	@echo "[PNG] $(DIR)$< -> $(DIR)$@"
@@ -72,8 +82,12 @@ data/%.ctr.o: data/%.ctr
 	  --redefine-sym _binary_data_$(subst -,_,$*)_ctr_size=_CinterModuleSize \
 	  $^ $@
 
+data/%-ADPCM.smp: data/%.smp
+	@echo "[ADPCM] $(DIR)$< -> $(DIR)$@"
+	$(PYTHON3) adpcm.py $< $@
+
 data/%-Delta.smp: data/%.smp
-	@echo "[RLE] $(DIR)$< -> $(DIR)$@"
+	@echo "[DELTA] $(DIR)$< -> $(DIR)$@"
 	$(PYTHON3) delta.py $< $@
 
 data/%.smp.o: data/%.smp

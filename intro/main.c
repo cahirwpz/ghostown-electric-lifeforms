@@ -12,7 +12,7 @@
 static CinterPlayerT CinterPlayer[1];
 extern u_char CinterModule[];
 extern u_char CinterSamples[];
-extern u_char CinterSamplesEnd[];
+extern u_char CinterSamplesSize[];
 
 extern EffectT LogoEffect;
 extern EffectT WeaveEffect;
@@ -44,11 +44,13 @@ static EffectT *AllEffects[] = {
   NULL,
 };
 
-void DecodeSamples(u_char *smp, u_char *end) {
+#if DELTA == 1
+static void DecodeSamples(u_char *smp, int size) {
   u_char data = *smp++;
-  u_int size = end - smp;
   short n = (size + 7) / 8 - 1;
   short k = size & 7;
+
+  Log("[Init] Decoding delta samples (%d bytes)\n", size);
 
   switch (k) {
   case 0: do { data += *smp; *smp++ = data;
@@ -62,6 +64,24 @@ void DecodeSamples(u_char *smp, u_char *end) {
           } while (--n != -1);
   }
 }
+#endif
+
+#if ADPCM == 1
+
+#include "adpcm.h"
+
+static void DecodeSamples(u_char *smp, int size) {
+  char *copy = MemAlloc(size, MEMF_PUBLIC);
+  memcpy(copy, smp, size);
+
+  Log("[Init] Decoding ADPCM samples (%d bytes)\n", size);
+
+  AdpcmInit();
+  AdpcmDecode(copy, size * 2, smp);
+
+  MemFree(copy);
+}
+#endif
 
 static int CinterMusic(CinterPlayerT *player) {
   CinterPlay1(player);
@@ -126,8 +146,11 @@ int main(void) {
    * fetch segments locations to relocate symbol information read from file. */
   asm volatile("exg %d7,%d7");
 
+  Log("[Init] Generating Cinter samples\n");
   CinterInit(CinterModule, CinterSamples, CinterPlayer);
-  DecodeSamples(CinterSamples, CinterSamplesEnd);
+#if ADPCM == 1 || DELTA == 1
+  DecodeSamples(CinterSamples, (int)CinterSamplesSize);
+#endif
 
   TrackInit(&EffectNumber);
   LoadEffects(AllEffects);
