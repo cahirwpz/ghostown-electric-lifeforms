@@ -33,7 +33,7 @@ static BitmapT *logo_blit;
 
 /* for each tile following array stores source and destination offsets relative
  * to the beginning of a bitplane */
-static int tiles[NFLOWFIELDS][NTILES * 2];
+static short tiles[NFLOWFIELDS][NTILES];
 static u_short current_ff = 0;
 
 #include "data/tilemover-pal.c"
@@ -43,10 +43,12 @@ extern TrackT TileMoverNumber;
 extern TrackT TileMoverBlit;
 
 // fx, tx, fy, ty are arguments in pi-space (pi = 0x800, as in fx.h)
-void CalculateTiles(int *tile, short fx, short tx, short fy, short ty,
-                    u_short field_idx) {
+static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
+  short fx = *range++;
+  short tx = *range++;
+  short fy = *range++;
+  short ty = *range++;
   short x, y;
-  short dx, dy;
   short px, py;
   short px_real, py_real;
 
@@ -62,23 +64,21 @@ void CalculateTiles(int *tile, short fx, short tx, short fy, short ty,
   short py_step = (ty - fy) / (HTILES - 1);
   short py_real_step = (ty_real - fy_real) / (HTILES - 1);
 
-  for (y = 0, dy = 0, py = fy, py_real = fy_real; y < HTILES - 1;
-       y++, dy += TILESIZE, py += py_step, py_real += py_real_step) {
+  for (y = 0, py = fy, py_real = fy_real; y < HTILES - 1;
+       y++, py += py_step, py_real += py_real_step) {
     // multiplication could overflow
     // bare formulas:
     // short py = fy + ((int)(y) * (int)(ty - fy)) / (short)(HTILES - 1);
     // short py_real = fy_real + ((int)(y) * (int)(ty_real - fy_real)) /
     //                 (short)(HTILES - 1);
 
-    for (x = 0, dx = 0, px = fx, px_real = fx_real; x < WTILES - 1;
-         x++, dx += TILESIZE, px += px_step, px_real += px_real_step) {
+    for (x = 0, px = fx, px_real = fx_real; x < WTILES - 1;
+         x++, px += px_step, px_real += px_real_step) {
       // bare formulas:
       // short px = fx + ((int)(x) * (int)(tx - fx)) / (short)(WTILES - 1);
       // short px_real = fx_real + ((int)(x) * (int)(tx_real - fx_real)) /
       //                 (short)(WTILES - 1);
 
-      short sx = dx;
-      short sy = dy;
       short vx = 0;
       short vy = 0;
       int mag =
@@ -119,11 +119,8 @@ void CalculateTiles(int *tile, short fx, short tx, short fy, short ty,
       // Log("(%d %d): %d %d %d %d\n", px_real, py_real, mag, mag_sin, vx, vy);
 
       vx = -vx;
-      sx += vx;
-      sy += vy;
 
-      *tile++ = (dy * WIDTH + dx) >> 3; /* destination tile offset */
-      *tile++ = sy * WIDTH + sx;        /* source tile offset */
+      *tile++ = vy * WIDTH + vx; /* source tile offset */
     }
   }
 }
@@ -174,15 +171,9 @@ static void BlitGhostown(void) {
 }
 
 static void Load(void) {
-  u_short i;
-  short *rangetab = (short *)ranges;
-  for (i = 0; i < NFLOWFIELDS; i++) {
-    short fx = *rangetab++;
-    short tx = *rangetab++;
-    short fy = *rangetab++;
-    short ty = *rangetab++;
-    CalculateTiles(tiles[i], fx, tx, fy, ty, i);
-  }
+  short i;
+  for (i = 0; i < NFLOWFIELDS; i++)
+    CalculateTiles(tiles[i], ranges[i], i);
 
   {
     u_short w = ghostown_logo.width;
@@ -254,14 +245,15 @@ static void DrawSeed(u_char *bpl) {
 
 static void MoveTiles(void *src asm("a2"), void *dst asm("a3"),
                       short xshift asm("d0"), short yshift asm("d1"),
-                      int *tile asm("a4"), CustomPtrT custom_ asm("a6")) {
-  register int mask1 asm("d5") = rorl(0xffff0000, xshift);
-  register int mask2 asm("d6") = rorl(0x0000ffff, xshift);
+                      short *tile asm("a4"), CustomPtrT custom_ asm("a6")) {
+  register int mask1 asm("d4") = rorl(0xffff0000, xshift);
+  register int mask2 asm("d5") = rorl(0x0000ffff, xshift);
   int offset = yshift * WIDTH + xshift;
-  short n = NTILES - 1;
   short dx = offset & 15;
+  register short m asm("d6") = HTILES - 2;
 
-  dst += offset >> 3;
+  src += (offset & -16) >> 3;
+  dst += (offset & -16) >> 3;
 
   custom_->bltadat = 0xffff;
   custom_->bltbmod = BLTMOD;
@@ -270,39 +262,50 @@ static void MoveTiles(void *src asm("a2"), void *dst asm("a3"),
   custom_->bltcon0 = (SRCB | SRCC | DEST) | (ABC | ABNC | NABC | NANBC);
 
   do {
-    void *dstpt = dst + (*tile++);
-    int srcoff = *tile++ + offset;
-    void *srcpt = src + (srcoff >> 3);
-    short sx = srcoff & 15;
-    short shift = sx - dx;
-    u_int mask;
+    register short n asm("d7") = WTILES - 2;
 
-    if (shift < 0) {
-      shift = rorw(-shift, 4);
-      mask = mask1;
-    } else {
-      shift = rorw(shift, 4) | BLITREVERSE;
-      mask = mask2;
+    do {
+      void *dstpt = dst;
+      short srcoff = *tile++ + dx;
+      void *srcpt = src + (srcoff >> 3);
+      short sx = srcoff & 15;
+      short shift = sx - dx;
+      u_int mask;
 
-      srcpt += WIDTH * (TILESIZE - 1) / 8 + 2;
-      dstpt += WIDTH * (TILESIZE - 1) / 8 + 2;
-    }
 
-    /* Comment it out if you're feeling lucky! */
-    _WaitBlitter(custom_);
+      if (shift < 0) {
+        shift = rorw(-shift, 4);
+        mask = mask1;
+      } else {
+        srcpt += WIDTH * (TILESIZE - 1) / 8 + TILESIZE / 8;
+        dstpt += WIDTH * (TILESIZE - 1) / 8 + TILESIZE / 8;
 
-    {
-      register volatile void *ptr asm("a5") = &custom_->bltcon1;
+        shift = rorw(shift, 4) | BLITREVERSE;
+        mask = mask2;
+      }
 
-      *((short *)ptr)++ = shift;    // bltcon1
-      *((int *)ptr)++ = mask;       // bltaltwm & bltafwm
-      *((int *)ptr)++ = (int)dstpt; // bltcpt
-      *((int *)ptr)++ = (int)srcpt; // bltbpt
-      ptr += 4;                     // bltapt
-      *((int *)ptr)++ = (int)dstpt; // bltdpt
-      *((short *)ptr)++ = BLTSIZE;  // bltsize
-    }
-  } while (--n >= 0);
+      {
+        register volatile void *ptr asm("a5") = &custom_->bltcon1;
+
+        /* Comment it out if you're feeling lucky! */
+        _WaitBlitter(custom_);
+
+        *((short *)ptr)++ = shift;    // bltcon1
+        *((int *)ptr)++ = mask;      // bltaltwm & bltafwm
+        *((int *)ptr)++ = (int)dstpt; // bltcpt
+        *((int *)ptr)++ = (int)srcpt; // bltbpt
+        ptr += 4;                     // bltapt
+        *((int *)ptr)++ = (int)dstpt; // bltdpt
+        *((short *)ptr)++ = BLTSIZE;  // bltsize
+      }
+
+      src += TILESIZE / 8;
+      dst += TILESIZE / 8;
+    } while (--n != -1);
+
+    src += WIDTH * (TILESIZE - 1) / 8 + TILESIZE / 8;
+    dst += WIDTH * (TILESIZE - 1) / 8 + TILESIZE / 8;
+  } while (--m != -1);
 }
 
 static void UpdateBitplanePointers(void) {
