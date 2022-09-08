@@ -28,9 +28,10 @@ def encode(data_in):
     valpred = 0
     index = 0
     step = StepSizeTable[index]
-    bufferstep = 0
     outval = 0
     data_out = array('B')
+
+    bufferstep = 1
 
     for val in data_in:
         val <<= 8
@@ -98,7 +99,7 @@ def encode(data_in):
             outval |= delta & 0x0f
             data_out.append(outval)
 
-        bufferstep = not bufferstep
+        bufferstep = 1 - bufferstep
 
     # Output last step, if needed
     if not bufferstep:
@@ -117,11 +118,11 @@ def decode(data_in):
     for i in range(len(data_in) * 2):
         # Step 1 - get the delta value
         if bufferstep:
-            delta = data_in[i // 2] & 0xf
+            delta = data_in[i >> 1] & 0xf
         else:
-            delta = (data_in[i // 2] >> 4) & 0xf
+            delta = (data_in[i >> 1] >> 4) & 0xf
 
-        bufferstep = not bufferstep
+        bufferstep = 1 - bufferstep
 
         # Step 2 - Find new index value (for later)
         index += IndexTable[delta]

@@ -1,7 +1,8 @@
 TOPDIR := $(realpath ..)
 
-ADPCM := 1
+ADPCM := 0
 DELTA := 0
+SMP_TOTALSIZE := 181610
 
 RLE2PNG = rle2png.py
 ELECTRONS2C = electrons2c.py
@@ -73,7 +74,7 @@ data/%.ctr data/%.smp: data/%.mod
 # You MUST pad the section to size that is determined by the converter script.
 # Look for `total instrument memory` in the output.
 OBJCOPY-CHIP := --rename-section .data=.datachip,alloc,load,data,contents \
-	        --pad-to 181610
+	        --pad-to $(SMP_TOTALSIZE)
 
 data/%.ctr.o: data/%.ctr
 	@echo "[OBJCOPY] $(DIR)$< -> $(DIR)$@"
