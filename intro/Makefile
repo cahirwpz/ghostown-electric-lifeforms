@@ -1,7 +1,8 @@
 TOPDIR := $(realpath ..)
 
-ADPCM := 1
+ADPCM := 0
 DELTA := 0
+VQ := 1
 
 CTR_VER := Full
 SMP_TOTALSIZE := 181610
@@ -16,6 +17,8 @@ ifeq ($(ADPCM), 1)
 OBJECTS += data/JazzCat-ElectricLifeforms-$(CTR_VER)-ADPCM.smp.o
 else ifeq ($(DELTA), 1)
 OBJECTS += data/JazzCat-ElectricLifeforms-$(CTR_VER)-Delta.smp.o
+else ifeq ($(VQ), 1)
+OBJECTS += data/JazzCat-ElectricLifeforms-$(CTR_VER)-VQ.smp.o
 else
 OBJECTS += data/JazzCat-ElectricLifeforms-$(CTR_VER).smp.o
 endif
@@ -64,7 +67,7 @@ PNG2C.ghostown-logo-01 := --palette ghostown_logo_1_pal,8
 PNG2C.ghostown-logo-02 := --palette ghostown_logo_2_pal,8
 PNG2C.ghostown-logo-03 := --palette ghostown_logo_3_pal,8
 
-CPPFLAGS += -DINTRO -DADPCM=$(ADPCM) -DDELTA=$(DELTA) -I.
+CPPFLAGS += -DINTRO -DVQ=$(VQ) -DADPCM=$(ADPCM) -DDELTA=$(DELTA) -I.
 
 data/%-electrons.c: data/%-electrons.png
 	@echo "[PNG] $(DIR)$< -> $(DIR)$@"
@@ -95,6 +98,10 @@ data/%-ADPCM.smp: data/%.smp
 data/%-Delta.smp: data/%.smp
 	@echo "[DELTA] $(DIR)$< -> $(DIR)$@"
 	$(PYTHON3) delta.py $< $@
+
+data/%-VQ.smp: data/%.smp audiovq
+	@echo "[ADPCM] $(DIR)$< -> $(DIR)$@"
+	./audiovq $< $@
 
 data/%.smp.o: data/%.smp
 	@echo "[OBJCOPY] $(DIR)$< -> $(DIR)$@"

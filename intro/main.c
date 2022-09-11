@@ -83,6 +83,46 @@ static void DecodeSamples(u_char *smp, int size) {
 }
 #endif
 
+#if VQ == 1
+static void DecodeSamples(u_char *smp, int size) {
+  char *copy = MemAlloc(size, MEMF_PUBLIC);
+  memcpy(copy, smp, size);
+
+  Log("[Init] Decoding VQ samples (%d bytes)\n", size);
+  
+  {
+    u_char *data = copy;
+    u_char *out = smp;
+
+    for (;;) {
+      u_char *codebook;
+      short n;
+      
+      n = (*data++) << 8;
+      n |= *data++;
+      
+      if (n == 0)
+        break;
+
+      codebook = data;
+      data += 1024;
+      n--;
+
+      do {
+        short cwi = *data++ << 2;
+        u_char *cw = codebook + cwi;
+        *out++ = *cw++;
+        *out++ = *cw++;
+        *out++ = *cw++;
+        *out++ = *cw++;
+      } while (--n != -1);
+    }
+  }
+
+  MemFree(copy);
+}
+#endif
+
 static int CinterMusic(CinterPlayerT *player) {
   CinterPlay1(player);
   CinterPlay2(player);
@@ -148,7 +188,7 @@ int main(void) {
 
   Log("[Init] Generating Cinter samples\n");
   CinterInit(CinterModule, CinterSamples, CinterPlayer);
-#if ADPCM == 1 || DELTA == 1
+#if VQ == 1 || ADPCM == 1 || DELTA == 1
   DecodeSamples(CinterSamples, (int)CinterSamplesSize);
 #endif
 
