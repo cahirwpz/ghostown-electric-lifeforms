@@ -22,6 +22,8 @@ endif
 
 LIBS := libctr
 
+BUILD-FILES := audiovq
+
 CLEAN-FILES := main.o data/bar.c data/bar-2.c data/stripes.c data/colors.c \
 	data/JazzCat-ElectricLifeforms*.{smp,o} data/text-scroll-font.c \
 	data/intro.c data/turmite-pal.c data/electric-lifeforms-0[1-2].c \
@@ -113,3 +115,7 @@ data/%.o: data/%.txt
 data/%.png: data/%.rle
 	@echo "[RLE] $(DIR)$< -> $(DIR)$@"
 	$(PYTHON3) $(RLE2PNG) $< $@ || (rm -f $@ && exit 1)
+
+audiovq: audiovq.c
+	@echo "[HOSTCC] $(DIR)$< -> $(DIR)$@"
+	cc -O2 -march=native -Wall -o $@ $^
