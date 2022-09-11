@@ -99,12 +99,13 @@ static void UpdateCodeBook(vec_t *codebook, codestat_t *codestat,
 
 // K-Means++ algorithm adapted to 8-bit 4-element vectors
 // http://ilpubs.stanford.edu:8090/778/1/2006-13.pdf
-static float EncodeChunk(const vec_t *vec, size_t n, double epsilon) {
+static float EncodeChunk(const vec_t *vec, size_t n, double epsilon,
+                         FILE *f_out) {
   static vec_t codebook[CODEWORDS];
   static codestat_t codestat[CODEWORDS];
   static nearest_t nearest[MAXVECNUM];
 
-  long i, codewords;
+  long i, j, codewords;
 
   memset(codebook, 0, sizeof(codebook));
   memset(codestat, 0, sizeof(codestat));
@@ -163,12 +164,30 @@ static float EncodeChunk(const vec_t *vec, size_t n, double epsilon) {
     err = fabs(prev_avg_dist - avg_dist) / prev_avg_dist;
   }
 
+  static uint8_t cb[CODEWORDS][VECLEN];
+  for (i = 0; i < CODEWORDS; i++)
+    for (j = 0; j < VECLEN; j++)
+      cb[i][j] = codebook[i][j];
+  fwrite(cb, sizeof(cb), 1, f_out);
+
+  static uint8_t ni[MAXVECNUM];
+  for (i = 0; i < n; i++)
+    ni[i] = nearest[i].idx;
+  fwrite(ni, n, 1, f_out);
+
   // DumpCodeBook(codebook, codestat, CODEWORDS);
 
   return sqrt(avg_dist);
 }
 
-static void EncodeFile(FILE *f) {
+static void WriteWord(short n, FILE *f_out) {
+  uint8_t bin[2];
+  bin[0] = n >> 8;
+  bin[1] = n;
+  fwrite(bin, sizeof(bin), 1, f_out);
+}
+
+static void EncodeFile(FILE *f_in, FILE *f_out) {
   static int8_t data[MAXVECNUM * VECLEN];
   static vec_t vec[MAXVECNUM];
 
@@ -176,7 +195,7 @@ static void EncodeFile(FILE *f) {
   size_t len;
   int nchunks;
 
-  for (nchunks = 0; (len = fread(data, 1, sizeof(data), f)); nchunks++) {
+  for (nchunks = 0; (len = fread(data, 1, sizeof(data), f_in)); nchunks++) {
     if (len < sizeof(data))
       memset(data + len, 0, sizeof(data) - len);
 
@@ -184,23 +203,29 @@ static void EncodeFile(FILE *f) {
 
     for (int i = 0; i < n; i++)
       for (int j = 0; j < VECLEN; j++)
-        vec[i][j] = data[i * 4 + j] + 128;
+        vec[i][j] = data[i * 4 + j];
 
-    double avg_dist = EncodeChunk(vec, n, 0.001);
+    WriteWord(n, f_out);
+
+    double avg_dist = EncodeChunk(vec, n, 0.001, f_out);
 
     printf("chunk[%d] avg_dist %g\n", nchunks, avg_dist);
 
     sum_avg_dist += avg_dist;
   }
 
+  WriteWord(0, f_out);
+
   printf("average distortion: %g\n", sum_avg_dist / nchunks);
 }
 
 int main(int argc, char **argv) {
-  if (argc != 2)
+  if (argc != 3)
     return EXIT_FAILURE;
-  FILE *f = fopen(argv[1], "r");
-  EncodeFile(f);
-  fclose(f);
+  FILE *f_in = fopen(argv[1], "r");
+  FILE *f_out = fopen(argv[2], "w");
+  EncodeFile(f_in, f_out);
+  fclose(f_out);
+  fclose(f_in);
   return 0;
 }
