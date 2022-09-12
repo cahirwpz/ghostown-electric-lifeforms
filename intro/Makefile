@@ -1,6 +1,5 @@
 TOPDIR := $(realpath ..)
 
-ADPCM := 0
 DELTA := 0
 VQ := 1
 
@@ -13,9 +12,7 @@ ELECTRONS2C = electrons2c.py
 OBJECTS := data/JazzCat-ElectricLifeforms-$(CTR_VER).ctr.o \
 	   data/text-scroll.o
 
-ifeq ($(ADPCM), 1)
-OBJECTS += data/JazzCat-ElectricLifeforms-$(CTR_VER)-ADPCM.smp.o
-else ifeq ($(DELTA), 1)
+ifeq ($(DELTA), 1)
 OBJECTS += data/JazzCat-ElectricLifeforms-$(CTR_VER)-Delta.smp.o
 else ifeq ($(VQ), 1)
 OBJECTS += data/JazzCat-ElectricLifeforms-$(CTR_VER)-VQ.smp.o
@@ -37,8 +34,7 @@ CLEAN-FILES := main.o data/bar.c data/bar-2.c data/stripes.c data/colors.c \
 	data/turmite-credits-[1-3].c data/sea-anemone-pal[1-5].c
 
 SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
-	   tilemover.c sea-anemone.c game-of-life.c vitruvian.c \
-	   adpcm.asm 
+	   tilemover.c sea-anemone.c game-of-life.c vitruvian.c
 MAIN := #
 
 PNG2C.bar := --bitmap bar,480x67x4 --palette bar_pal,16
@@ -67,7 +63,7 @@ PNG2C.ghostown-logo-01 := --palette ghostown_logo_1_pal,8
 PNG2C.ghostown-logo-02 := --palette ghostown_logo_2_pal,8
 PNG2C.ghostown-logo-03 := --palette ghostown_logo_3_pal,8
 
-CPPFLAGS += -DINTRO -DVQ=$(VQ) -DADPCM=$(ADPCM) -DDELTA=$(DELTA) -I.
+CPPFLAGS += -DINTRO -DVQ=$(VQ) -DDELTA=$(DELTA) -I.
 
 data/%-electrons.c: data/%-electrons.png
 	@echo "[PNG] $(DIR)$< -> $(DIR)$@"
@@ -91,16 +87,12 @@ data/%.ctr.o: data/%.ctr
 	  --redefine-sym _binary_data_$(subst -,_,$*)_ctr_size=_CinterModuleSize \
 	  $^ $@
 
-data/%-ADPCM.smp: data/%.smp
-	@echo "[ADPCM] $(DIR)$< -> $(DIR)$@"
-	$(PYTHON3) adpcm.py $< $@
-
 data/%-Delta.smp: data/%.smp
 	@echo "[DELTA] $(DIR)$< -> $(DIR)$@"
 	$(PYTHON3) delta.py $< $@
 
 data/%-VQ.smp: data/%.smp audiovq
-	@echo "[ADPCM] $(DIR)$< -> $(DIR)$@"
+	@echo "[AUDIOVQ] $(DIR)$< -> $(DIR)$@"
 	./audiovq $< $@
 
 data/%.smp.o: data/%.smp

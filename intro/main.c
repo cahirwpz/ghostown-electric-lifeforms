@@ -66,23 +66,6 @@ static void DecodeSamples(u_char *smp, int size) {
 }
 #endif
 
-#if ADPCM == 1
-
-#include "adpcm.h"
-
-static void DecodeSamples(u_char *smp, int size) {
-  char *copy = MemAlloc(size, MEMF_PUBLIC);
-  memcpy(copy, smp, size);
-
-  Log("[Init] Decoding ADPCM samples (%d bytes)\n", size);
-
-  ADPCMDecoder_InitTables();
-  ADPCMDecoder(copy, size * 2, smp);
-
-  MemFree(copy);
-}
-#endif
-
 #if VQ == 1
 static void DecodeSamples(u_char *smp, int size) {
   char *copy = MemAlloc(size, MEMF_PUBLIC);
