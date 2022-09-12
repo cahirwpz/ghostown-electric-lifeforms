@@ -6,6 +6,8 @@ static final int tilew = w/tilesize;
 static final int tileh = h/tilesize;
 
 static final int orgcount = 30;
+static final int groupcount = 2; // more than 2 groups starts to look off
+static final int batchsize = orgcount/groupcount;
 
 PGraphics screen;
 
@@ -16,6 +18,11 @@ float weights[] = {0.9, 0, 0, 0.5, 0.3};
 
 boolean heatmap = false;
 boolean wallBounce = false;
+
+int adds;
+int muls;
+int divs;
+int invSqrts;
 
 class Flowfield {
   PVector[][] vectors;
@@ -30,10 +37,10 @@ class Flowfield {
     vectors = new PVector[w][h];
     for (int i = 0; i < ffw; i++) {
       for (int j = 0; j < ffh; j++) {
-        float sample = noise(map(i, 0, ffw-1, 0, 1), map(j, 0, ffh-1, 0, 1), float(frameCount)/100.0);
+        float sample = noise(map(i, 0, ffw-1, 0, 1), map(j, 0, ffh-1, 0, 1)/*, float(frameCount)/100.0*/);
         float theta = map(sample, 0, 1, -TWO_PI, TWO_PI);
         vectors[i][j] = new PVector(cos(theta), sin(theta));
-        float sample2 = noise(map(i, 0, ffw-1, 3, 6), map(j, 0, ffh-1, 3, 6), float(frameCount)/100.0);
+        float sample2 = noise(map(i, 0, ffw-1, 3, 6), map(j, 0, ffh-1, 3, 6)/*, float(frameCount)/100.0*/);
         vectors[i][j].limit(sample2);
       }
     }
@@ -183,10 +190,12 @@ ArrayList<Organism> getNeighbours(Organism self, int[] sepArea) {
   ArrayList<Organism> res = new ArrayList<Organism>();
   for (int i = 0; i < sepArea.length; i += 2) {
     int neighbour = self.bucketid + sepArea[i] + (sepArea[i+1] * tilew);
-    if (neighbour < 0)
-      neighbour += tilew*tileh;
-    else if (neighbour >= tilew*tileh)
-      neighbour -= tilew*tileh;
+    //if (neighbour < 0)
+    //  neighbour += tilew*tileh;
+    //else if (neighbour >= tilew*tileh)
+    //  neighbour -= tilew*tileh;
+    if (neighbour < 0 || neighbour >= tilew*tileh)
+      continue;
     Organism org = buckets[neighbour];
     if (org != null) {
       while (org.next != null) {
@@ -199,6 +208,10 @@ ArrayList<Organism> getNeighbours(Organism self, int[] sepArea) {
     }
   }
   return res;
+}
+
+float fastInvSqrt(float x) {
+  return 1.0 / sqrt(x);
 }
 
 class Organism {
@@ -223,7 +236,6 @@ class Organism {
     vel.add(accel);
     vel.limit(maxspeed);
     pos.add(vel);
-    accel.mult(0);
     Organism _buckets[] = buckets; // force to show up in debugger
     
     if (wallBounce) {
@@ -297,6 +309,7 @@ class Organism {
   
   void applyForce(PVector force) {
     accel.add(force);
+    adds += 2;
   }
   
   void applyDesiredVel(PVector desired) {
@@ -308,6 +321,9 @@ class Organism {
   PVector steerForce(PVector desiredVel) {
     PVector steer = PVector.sub(desiredVel, vel);
     steer.limit(maxforce);
+    adds += 2;
+    divs += 2;
+    muls += 4;
     return steer;
   }
   
@@ -319,8 +335,13 @@ class Organism {
   
   PVector seek(PVector target) {
     PVector desired = PVector.sub(target, pos);
+    // potentially not neeed normalization step? - it starts to look off though
+    // space between boids isn't maintained and they tend to lump together more often
     desired.normalize();
     desired.mult(maxspeed);
+    adds += 2;
+    divs += 2;
+    muls += 4;
     return steerForce(desired);
   }
   
@@ -341,19 +362,37 @@ class Organism {
     int cnt = 0;
     
     for (Organism other : getNeighbours(this, separationCircle)) {
-      float d = PVector.dist(pos, other.pos);
-      PVector away = PVector.sub(pos, other.pos);
-      away.normalize();
-      away.div(d);
-      avg.add(away);
-      cnt++;
+      float diffx = pos.x - other.pos.x;
+      float diffy = pos.y - other.pos.y;
+      float d = abs(diffx) + abs(diffy);
+      PVector away = new PVector(diffx, diffy);
+      // 32 - maximum manhattan distance between two boids in neighbourhood area
+      if (d <= 32) {
+        avg.add(away);
+        cnt++;
+      }
+      adds += 6;
     }
     
     if (cnt > 0) {
-      avg.div(cnt);
-      avg.normalize();
-      avg.mult(maxspeed);
-      avg = steerForce(avg);
+      // dividing by count and normalization step not needed - works well enough
+      //avg.div(cnt);
+      float norm = avg.x*avg.x + avg.y*avg.y;
+      norm = fastInvSqrt(norm);
+      avg.x *= norm;
+      avg.y *= norm;
+      avg.mult(maxspeed); // * 4
+      
+      PVector steer = PVector.sub(avg, vel);      
+      // this imitates steer.limit(maxforce) but instead of
+      // limiting vector length it remaps its lenght linearly
+      // from 0-8 to 0-maxforce (0.25)
+      steer.x /= 32;
+      steer.y /= 32;
+      adds += 3;
+      muls += 4;
+      invSqrts += 1;
+      avg = steer;
     }
     return avg;
   }
@@ -365,12 +404,19 @@ class Organism {
     for (Organism other : getNeighbours(this, alignCoheseCircle)) {
       avg.add(other.vel);
       cnt++;
+      adds += 3;
     }
     
     if (cnt > 0) {
-      avg.div(cnt);
-      avg.normalize();
-      avg.mult(maxspeed);
+      float norm = avg.x*avg.x + avg.y*avg.y;
+      norm = fastInvSqrt(norm);
+      avg.x *= norm;
+      avg.y *= norm;
+      avg.mult(maxspeed); // * 4
+
+      adds += 1;
+      muls += 2;
+      invSqrts += 1;
       avg = steerForce(avg);
     }
     return avg;
@@ -383,16 +429,19 @@ class Organism {
     for (Organism other : getNeighbours(this, alignCoheseCircle)) {
       avg.add(other.pos);
       cnt++;
+      adds += 3;
     }
     
     if (cnt > 0) {
       avg.div(cnt);
       avg = seek(avg);
+      divs += 2;
     }
     return avg;
   }
   
-  void applyBehaviors(Organism[] others) {
+  void applyBehaviors() {
+    accel.mult(0);
     PVector sep = separate();
     PVector mouse = seek(new PVector(mouseX/scale, mouseY/scale));
     
@@ -409,6 +458,8 @@ class Organism {
     alignment.mult(weights[3]);
     cohesion.mult(weights[4]);
     
+    muls += 4; // don't count mouse, can potentially be replaced with shifts and adds
+    
     applyForce(sep);
     applyForce(alignment);
     applyForce(cohesion);
@@ -422,6 +473,7 @@ void setup() {
   size(960, 768); //<>//
   noSmooth();
   randomSeed(42);
+  noiseSeed(38);
   screen = createGraphics(scale*w, scale*h);
 
   buckets = new Organism[tilew * tileh];
@@ -440,6 +492,10 @@ void setup() {
   }
 }
 
+int rasterBest = Integer.MAX_VALUE;
+int rasterWorst = Integer.MIN_VALUE;
+int group = 0;
+
 void draw() {
   clear();
   screen.beginDraw();
@@ -454,11 +510,29 @@ void draw() {
   screen.text(String.format("Separation: %.2f\nMouse: %.2f\nFlowfield: %.2f\nAlignment: %.2f\nCohesion: %.2f",
               weights[0], weights[1], weights[2], weights[3], weights[4]), 0, 10);
 
+  adds = 0;
+  muls = 0;
+  divs = 0;
+  invSqrts = 0;
+  
+  for (int i = group * batchsize; i < (group+1) * batchsize; i++)
+    organisms[i].applyBehaviors();
+
   for (Organism org : organisms) {
-    org.applyBehaviors(organisms);
     org.update();
     org.draw();
   }
+  
+  group = (group+1) % groupcount;
+  
+  int rasterlines = (adds*12+muls*70+divs*140)/450;
+  if (rasterlines < rasterBest)
+    rasterBest = rasterlines;
+  if (rasterlines > rasterWorst)
+    rasterWorst = rasterlines;
+  
+  print(String.format("adds: %d, muls: %d, divs: %d, raster lines: %d-%d-%d\n", 
+                       adds, muls, divs, rasterBest, rasterlines, rasterWorst));
 
   int count = 0;
   for (int i = 0; i < buckets.length; i++) {
