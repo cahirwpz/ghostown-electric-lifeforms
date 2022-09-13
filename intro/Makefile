@@ -1,9 +1,9 @@
 TOPDIR := $(realpath ..)
 
-ADPCM := 1
+ADPCM := 0
 DELTA := 0
 
-CTR_VER := Full
+CTR_VER := Fast
 SMP_TOTALSIZE := 181610
 
 RLE2PNG = rle2png.py
