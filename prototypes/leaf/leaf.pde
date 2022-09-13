@@ -7,6 +7,25 @@ final int CENTERY = HEIGHT / 2;
 
 PGraphics screen;
 
+color[] palette = new color[]{
+color(17,0,17),
+color(21,17,30),
+color(25,34,43),
+color(29,51,56),
+color(33,68,69),
+color(37,85,82),
+color(41,102,95),
+color(45,119,108),
+color(49,136,122),
+color(51,153,136),
+color(79,170,147),
+color(107,187,158),
+color(136,204,170),
+color(164,221,181),
+color(192,238,192),
+color(221,255,204),
+};
+
 void drawTriangle(PGraphics screen, float x_center, float y_center, float r, int i) {
   float angle = (frameCount/100.0 + sin(frameCount/1000.0*i/10.0))*60.0;
   float x1 = r*cos(0) + x_center;
@@ -39,7 +58,7 @@ void draw() {
   screen.noStroke();
   screen.rotate(radians(-90));
   for (int i = 0; i <= 15; i++) {
-    screen.fill(map(i, 0, 15, 16, 256));
+    screen.fill(palette[i]);
     drawTriangle(screen, 0, 0, 190-i*12, i);
   }
 
