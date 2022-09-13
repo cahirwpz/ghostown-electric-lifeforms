@@ -35,7 +35,3 @@ jobs:
         with:
           lfs: true
       - run: make
-      - uses: actions/upload-artifact@v3
-        with:
-          name: effects
-          path: effects/*/*.adf
