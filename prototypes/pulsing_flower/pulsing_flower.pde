@@ -6,7 +6,6 @@ final int CENTERX = WIDTH / 2;
 final int CENTERY = HEIGHT / 2;
 
 PGraphics screen;
-float maxSize;
 
 void setup() {
   size(640, 512);
@@ -14,7 +13,6 @@ void setup() {
 
   screen = createGraphics(WIDTH, HEIGHT);
   screen.noStroke();
-  frameRate(5);
 }
 
 float getAngle() {
@@ -51,14 +49,13 @@ void draw() {
   screen.background(0);
   screen.noStroke();
 
+  float timeFactor = constrain(abs(-cos(frameCount/30.)), 0.9, 1);
+  int paletteOffset = int(map(timeFactor, 0.9, 1, 0, 4));
 
   for (int i = 0; i <= 15; i++) {
-    //abs(cos(frameCount/30.)) > 0.9
-    screen.fill(frameCount % 120 <= 5 ? palette[i < 12 ? i+4 : 15] : palette[i]);
-
+    screen.fill(paletteOffset != 0 ? palette[i < 12 ? i+paletteOffset : 15] : palette[i]);
     drawFlower(screen, getSize(i), i);
   }
-  screen.text(frameCount, 100, 100);
   screen.endDraw();
 
   amigaPixels();
