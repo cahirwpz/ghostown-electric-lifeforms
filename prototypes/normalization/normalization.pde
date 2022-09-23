@@ -66,8 +66,7 @@ Vec2 normalize2(int x, int y) {
   y = abs(y);
   screen.strokeWeight(2);
   screen.stroke(255, 0, 0);
-  // while (x >= 1.0 || y >= 1.0) in 12.4
-  while (x >= 16 || y >= 16) {
+  while (x > 128 || y > 128) {
     screen.point(x+w/2, y+h/2);
     x >>= 1;
     y >>= 1;
