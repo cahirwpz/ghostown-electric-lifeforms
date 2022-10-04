@@ -80,15 +80,14 @@
 //#define DEBUG_KBD
 
 #ifdef DEBUG_KBD
-  #include <system/event.h>
-  #include <system/keyboard.h>
+#include <system/event.h>
+#include <system/keyboard.h>
 #endif
 
 #include "data/p46basedprng.c"
 #include "data/electric-lifeforms-wireworld.c"
 #include "data/cell-gradient.c"
 #include "data/logo-electrons.c"
-#include "games.c"
 
 extern TrackT GOLPaletteH;
 extern TrackT GOLPaletteS;
@@ -100,6 +99,8 @@ static BitmapT *current_board;
 
 // current board = boards[0], the rest is intermediate results
 static BitmapT *boards[BOARD_COUNT];
+
+#include "games.c"
 
 // pointers to copper instructions, for rewriting bitplane pointers
 static CopInsT *bplptr[DISP_DEPTH];
@@ -127,16 +128,11 @@ static u_short wireworld_step = 0;
 // are we running wireworld?
 static bool wireworld = false;
 
-static const GameDefinitionT* current_game;
+static const GameDefinitionT *current_game;
 
-static const GameDefinitionT* games[] = {
-  &classic_gol,
-  &coagulation,
-  &maze,
-  &diamoeba,
-  &stains,
-  &day_and_night,
-  &three_four,
+static const GameDefinitionT *games[] = {
+  &classic_gol, &coagulation,   &maze,       &diamoeba,
+  &stains,      &day_and_night, &three_four,
 };
 
 static PaletteT palette = {
@@ -162,7 +158,13 @@ static PaletteT palette = {
     },
 };
 
-static u_short* dynamic_pal;
+typedef struct PalState {
+  u_short *dynamic;
+  u_short *cur;
+  u_short phase;
+} PalStateT;
+
+static PalStateT pal;
 
 // Used by CPU to quickly transform 1x1 pixels into 2x1 pixels.
 static u_short double_pixels[256];
@@ -199,9 +201,10 @@ static void MakeDoublePixels(void) {
 //
 // Thus a, b and c are lined up properly to perform boolean function on them
 //
-static void BlitAdjacentHorizontal(const BitmapT *sourceA, __attribute__((unused)) const BitmapT* sourceB,
-                                   __attribute__((unused)) const BitmapT *sourceC, const BitmapT *target,
-                                   u_short minterms) {
+static void BlitAdjacentHorizontal(const BitmapT *sourceA,
+                                   __unused const BitmapT *sourceB,
+                                   __unused const BitmapT *sourceC,
+                                   const BitmapT *target, u_short minterms) {
   void *srcCenter = sourceA->planes[0] + sourceA->bytesPerRow;    // C channel
   void *srcRight = sourceA->planes[0] + sourceA->bytesPerRow + 2; // B channel
   void *srcLeft = sourceA->planes[0] + sourceA->bytesPerRow;      // A channel
@@ -209,19 +212,20 @@ static void BlitAdjacentHorizontal(const BitmapT *sourceA, __attribute__((unused
   custom->bltcon0 = ASHIFT(1) | minterms | (SRCA | SRCB | SRCC | DEST);
   custom->bltcon1 = BSHIFT(15);
 
-  custom->bltapt = srcLeft;
-  custom->bltbpt = srcRight;
   custom->bltcpt = srcCenter;
+  custom->bltbpt = srcRight;
+  custom->bltapt = srcLeft;
   custom->bltdpt = target->planes[0] + target->bytesPerRow;
   custom->bltsize = BLTSIZE;
 }
 
 // setup blitter to calculate a function of three vertically adjacent lit pixels
-static void BlitAdjacentVertical(const BitmapT *sourceA, __attribute__((unused)) const BitmapT* sourceB,
-                                 __attribute__((unused)) const BitmapT *sourceC, const BitmapT *target,
-                                 u_short minterms) {
+static void BlitAdjacentVertical(const BitmapT *sourceA,
+                                 __unused const BitmapT *sourceB,
+                                 __unused const BitmapT *sourceC,
+                                 const BitmapT *target, u_short minterms) {
   void *srcCenter = sourceA->planes[0] + sourceA->bytesPerRow;   // C channel
-  void *srcUp = sourceA->planes[0];                             // A channel
+  void *srcUp = sourceA->planes[0];                              // A channel
   void *srcDown = sourceA->planes[0] + 2 * sourceA->bytesPerRow; // B channel
 
   custom->bltcon0 = minterms | (SRCA | SRCB | SRCC | DEST);
@@ -248,16 +252,18 @@ static void BlitFunc(const BitmapT *sourceA, const BitmapT *sourceB,
   custom->bltsize = BLTSIZE;
 }
 
-static void SpawnElectrons(const ElectronsT *electrons, u_short board) {
-  u_short i;
-  for (i = 0; i < electrons->count; i++)
-  {
-    u_short bit = ((EXT_BOARD_WIDTH * (electrons->points[i].y + EXT_HEIGHT_TOP)) + 
-                  (EXT_WIDTH_LEFT + electrons->points[i].x));
-    u_short pos = bit / 8;
-    bit = 7 - (bit & 0x7);
-    bset((u_char*)boards[board]->planes[0]+pos, bit);
-  }
+static void SpawnElectrons(const ElectronsT *electrons, short board) {
+  u_char *bpl = boards[board]->planes[0];
+  short *pts = (short *)electrons->points;
+  short n = electrons->count - 1;
+  if (n < 0)
+    return;
+  do {
+    short x = (*pts++) + EXT_WIDTH_LEFT;
+    short y = (*pts++) + EXT_HEIGHT_TOP;
+    int pos = EXT_BOARD_WIDTH * y + x;
+    bset(bpl + (pos >> 3), ~pos);
+  } while (--n != -1);
 }
 
 // This is a bit hacky way to reuse the current interface for blitter phases
@@ -266,18 +272,18 @@ static void SpawnElectrons(const ElectronsT *electrons, u_short board) {
 // in alternating fashion, and the switch between them must be done precisely
 // when the board for a game finishes being calculated or things will break
 // in ways undebuggable by single-stepping the game state
-static void WireworldSwitch(__attribute__((unused)) const BitmapT *sourceA,
-                            __attribute__((unused)) const BitmapT *sourceB,
-                            __attribute__((unused)) const BitmapT *sourceC,
-                            __attribute__((unused)) const BitmapT *target,
-                            __attribute__((unused)) u_short minterms) {
+static void WireworldSwitch(__unused const BitmapT *sourceA,
+                            __unused const BitmapT *sourceB,
+                            __unused const BitmapT *sourceC,
+                            __unused const BitmapT *target,
+                            __unused u_short minterms) {
   current_board = boards[wireworld_step];
   current_game = wireworlds[wireworld_step];
   wireworld_step ^= 1;
 
   if ((stepCount & 0x7) == 0) {
     // set pixels on correct board
-    SpawnElectrons(&heads, wireworld_step^1);
+    SpawnElectrons(&heads, wireworld_step ^ 1);
     SpawnElectrons(&tails, wireworld_step);
   }
 }
@@ -306,9 +312,9 @@ static void MakePixelDoublingCode(const BitmapT *bitmap) {
   for (y = EXT_HEIGHT_TOP; y < bitmap->height - EXT_HEIGHT_BOTTOM; y++) {
     for (x = EXT_WIDTH_LEFT / 8; x < bitmap->bytesPerRow - EXT_WIDTH_RIGHT / 8;
          x++) {
-      *code++ = 0x4240; // clr.w  d0               # 4
+      *code++ = 0x7000; // moveq.l #0,d0           # 4
       *code++ = 0x1018; // move.b (a0)+,d0         # 8
-      *code++ = 0xd080; // add.l  d0,d0            # 6
+      *code++ = 0xd040; // add.w  d0,d0            # 4
       *code++ = 0x32f2;
       *code++ = 0x0000; // move.w (a2,d0.w),(a1)+  # 18
       // perform a lookup in the pixel doubling lookup table
@@ -324,25 +330,26 @@ static void MakePixelDoublingCode(const BitmapT *bitmap) {
   *code++ = 0x4e75; // rts
 }
 
-static void ChangePalette(const u_short* pal) {
-    u_short i, j;
-    
-    // unrolling this loop gives worse performance for some reason
-    // increment `pal` on every power of 2, essentially setting
-    // 4 consecutive colors from `pal` to 1, 2, 4 and 8 colors respectively
-    for (i = 1; i < COLORS;)
-    {
-      u_short next_i = i << 1;
-      for (j = i; j < next_i; j++)
-        CopInsSet16(palptr[j], *pal);
-      i = next_i;
-      pal++;
-    }
+static void ChangePalette(const u_short *pal) {
+  register u_short i asm("d6");
+  register u_short j asm("d7");
+
+  // unrolling this loop gives worse performance for some reason
+  // increment `pal` on every power of 2, essentially setting
+  // 4 consecutive colors from `pal` to 1, 2, 4 and 8 colors respectively
+  for (i = 1; i < COLORS;) {
+    u_short next_i = i + i;
+    CopInsT **ins = &palptr[i];
+    for (j = i; j < next_i; j++)
+      CopInsSet16(*ins++, *pal);
+    i = next_i;
+    pal++;
+  }
 }
 
 static void MakeCopperList(CopListT *cp) {
   u_short i;
-  u_short* color = palette.colors;
+  u_short *color = palette.colors;
 
   CopInit(cp);
   // initially previous states are empty
@@ -387,80 +394,89 @@ static void UpdateBitplanePointers(void) {
 // Forgive me, Cahir, for I have sinned...
 // https://stackoverflow.com/a/14733008
 
-u_short HsvToRgb(u_char h, u_char s, u_char v)
-{
-    u_char region, remainder, p, q, t;
-    u_char r, g, b;
+static u_short HsvToRgb(short h, short s, short v) {
+  short region, remainder, p, q, t;
+  u_char r, g, b;
 
-    if (s == 0)
-    {
-        v &= 0xf0;
-        return (v << 4) | v | (v >> 4);
-    }
+  if (s == 0) {
+    v &= 0xf0;
+    return (v << 4) | v | (v >> 4);
+  }
 
-    region = h / 43;
-    remainder = (h - (region * 43)) * 6; 
+  region = h / 43;
+  remainder = (h - (region * 43)) * 6;
 
-    p = (v * (255 - s)) >> 8;
-    q = (v * (255 - ((s * remainder) >> 8))) >> 8;
-    t = (v * (255 - ((s * (255 - remainder)) >> 8))) >> 8;
+  p = (v * (short)(255 - s)) >> 8;
+  q = (v * (short)(255 - ((s * remainder) >> 8))) >> 8;
+  t = (v * (short)(255 - ((s * (short)(255 - remainder)) >> 8))) >> 8;
 
-    switch (region)
-    {
-        case 0:
-            r = v; g = t; b = p;
-            break;
-        case 1:
-            r = q; g = v; b = p;
-            break;
-        case 2:
-            r = p; g = v; b = t;
-            break;
-        case 3:
-            r = p; g = q; b = v;
-            break;
-        case 4:
-            r = t; g = p; b = v;
-            break;
-        default:
-            r = v; g = p; b = q;
-            break;
-    }
+  switch (region) {
+    case 0:
+      r = v;
+      g = t;
+      b = p;
+      break;
+    case 1:
+      r = q;
+      g = v;
+      b = p;
+      break;
+    case 2:
+      r = p;
+      g = v;
+      b = t;
+      break;
+    case 3:
+      r = p;
+      g = q;
+      b = v;
+      break;
+    case 4:
+      r = t;
+      g = p;
+      b = v;
+      break;
+    default:
+      r = v;
+      g = p;
+      b = q;
+      break;
+  }
 
-    r &= 0xf0;
-    g &= 0xf0;
-    b &= 0xf0;
+  r &= 0xf0;
+  g &= 0xf0;
+  b &= 0xf0;
 
-    return (r << 4) | g | (b >> 4);
+  return (r << 4) | g | (b >> 4);
 }
 
-static u_short* cur_pal;
+static void CyclePalette(PalStateT *pal) {
+  u_short *end = (u_short *)(pal->dynamic) + 1024 - 4;
 
-static void CyclePalette(void) {
-  static u_short pal_phase = 0;
-  u_short* end = (u_short*)(dynamic_pal)+1024-4;
+  ChangePalette(pal->cur);
 
-  ChangePalette(cur_pal);
-
-  if (pal_phase)
-    cur_pal -= 4;
+  if (pal->phase)
+    pal->cur -= 4;
   else
-    cur_pal += 4;
+    pal->cur += 4;
 
-  if (cur_pal >= end || cur_pal <= dynamic_pal) {
-    pal_phase ^= 1;
-    if (pal_phase)
-      cur_pal -= 4;
+  if (pal->cur >= end || pal->cur <= pal->dynamic) {
+    pal->phase ^= 1;
+    if (pal->phase)
+      pal->cur -= 4;
     else
-      cur_pal += 4;
+      pal->cur += 4;
   }
 }
 
-void GameOfLife(void) {
+static void GameOfLife(void *boards) {
   ClearIRQ(INTF_BLIT);
   if (phase < current_game->num_phases) {
     const BlitterPhaseT *p = &current_game->phases[phase];
-    p->blitfunc(boards[p->srca], boards[p->srcb], boards[p->srcc], boards[p->dst], p->minterm);
+    p->blitfunc(*(const BitmapT **)(boards + p->srca),
+                *(const BitmapT **)(boards + p->srcb),
+                *(const BitmapT **)(boards + p->srcc),
+                *(const BitmapT **)(boards + p->dst), p->minterm);
   }
   phase++;
 }
@@ -479,7 +495,7 @@ static void Load(void) {
       boards[i] = NewBitmap(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH);
 
     for (i = 0; i < PREV_STATES_DEPTH; i++) {
-      // only needs half the vertical resolution, other half 
+      // only needs half the vertical resolution, other half
       // achieved via copper line doubling
       prev_states[i] = NewBitmap(DISP_WIDTH, DISP_HEIGHT / 2, BOARD_DEPTH);
     }
@@ -491,17 +507,17 @@ static void Load(void) {
     TrackInit(&GOLPaletteS);
     TrackInit(&GOLPaletteV);
 
-    dynamic_pal = MemAlloc(4*256*sizeof(u_short), MEMF_PUBLIC);
+    pal.dynamic = MemAlloc(4 * 256 * sizeof(u_short), MEMF_PUBLIC);
     for (i = 0; i < 256; i++) {
       u_char h = TrackValueGet(&GOLPaletteH, i);
       u_char s = TrackValueGet(&GOLPaletteS, i);
       u_char v = TrackValueGet(&GOLPaletteV, i);
-      dynamic_pal[4*i] = HsvToRgb(h, s, v/8);
-      dynamic_pal[4*i+1] = HsvToRgb(h, s, v/4);
-      dynamic_pal[4*i+2] = HsvToRgb(h, s, v/2);
-      dynamic_pal[4*i+3] = HsvToRgb(h, s, v);
+      pal.dynamic[4 * i] = HsvToRgb(h, s, v / 8);
+      pal.dynamic[4 * i + 1] = HsvToRgb(h, s, v / 4);
+      pal.dynamic[4 * i + 2] = HsvToRgb(h, s, v / 2);
+      pal.dynamic[4 * i + 3] = HsvToRgb(h, s, v);
     }
-    cur_pal = dynamic_pal;
+    pal.cur = pal.dynamic;
   }
 }
 
@@ -549,7 +565,7 @@ static void SharedPostInit(void) {
   ClearIRQ(INTF_BLIT);
   BlitterInit();
 
-  SetIntVector(INTB_BLIT, (IntHandlerT)GameOfLife, NULL);
+  SetIntVector(INTB_BLIT, (IntHandlerT)GameOfLife, boards);
   EnableINT(INTF_BLIT);
 }
 
@@ -598,19 +614,21 @@ PROFILE(GOLStep)
 
 static void GolStep(void) {
   void *dst = prev_states[states_head]->planes[0];
-  void *src = current_board->planes[0] + EXT_BOARD_WIDTH / 8 + EXT_WIDTH_LEFT / 8;
+  void *src =
+    current_board->planes[0] + EXT_BOARD_WIDTH / 8 + EXT_WIDTH_LEFT / 8;
 
   ProfilerStart(GOLStep);
   if (!wireworld)
     current_game = games[TrackValueGet(&GOLGame, frameCount)];
+  WaitBlitter();
   PixelDouble(src, dst, double_pixels);
   UpdateBitplanePointers();
   states_head++;
   if (states_head >= PREV_STATES_DEPTH)
     states_head -= PREV_STATES_DEPTH;
   phase = 0;
-  GameOfLife();
-  CyclePalette();
+  GameOfLife(boards);
+  CyclePalette(&pal);
   stepCount++;
 
   ProfilerStop(GOLStep);
