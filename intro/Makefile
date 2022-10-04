@@ -117,4 +117,4 @@ data/%.png: data/%.rle
 
 audiovq: audiovq.c
 	@echo "[HOSTCC] $(DIR)$< -> $(DIR)$@"
-	cc -O2 -march=native -Wall -o $@ $^
+	cc -O2 -march=native -Wall -o $@ $^ -lm
