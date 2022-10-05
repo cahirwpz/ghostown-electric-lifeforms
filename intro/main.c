@@ -4,9 +4,9 @@
 #include <sync.h>
 #include <system/interrupt.h>
 #include <system/task.h>
-#include <system/memory.h>
 
 #define _SYSTEM
+#include <system/memory.h>
 #include <system/cia.h>
 
 static CinterPlayerT CinterPlayer[1];
@@ -114,10 +114,15 @@ static int CinterMusic(CinterPlayerT *player) {
 
 INTSERVER(CinterMusicServer, 10, (IntFuncT)CinterMusic, CinterPlayer);
 
+static void ShowMemStats(void) {
+  Log("[Memory] CHIP: %d FAST: %d\n", MemAvail(MEMF_CHIP), MemAvail(MEMF_FAST));
+}
+
 static void LoadEffects(EffectT **effects) {
   EffectT *effect;
   for (effect = *effects; effect; effect = *effects++) { 
     EffectLoad(effect);
+    ShowMemStats();
   }
 }
 
@@ -140,11 +145,14 @@ static void RunEffects(void) {
     // Log("prev: %d, curr: %d, frameCount: %d\n", prev, curr, frameCount);
 
     if (prev != curr) {
-      if (prev >= 0)
+      if (prev >= 0) {
         EffectKill(AllEffects[prev]);
+        ShowMemStats();
+      }
       if (curr == -1)
         break;
       EffectInit(AllEffects[curr]);
+      ShowMemStats();
     }
 
     lastFrameCount = ReadFrameCounter() - 1;
