@@ -92,6 +92,39 @@ class EasyOCS {
     throw new IllegalStateException("invalid color number");
   }
 
+  void blitLine(int x1, int y1, int x2, int y2) {
+    if (y1 > y2) {
+      int xt = x1; x1 = x2; x2 = xt;
+      int yt = y1; y1 = y2; y2 = yt;
+    }
+
+    int dx = x2 - x1;
+    int dy = y2 - y1;
+
+    if (dy == 0)
+      return;
+
+    int di = dx / dy;
+    int df = abs(dx) % dy;
+    int xi = x1;
+    int xf = 0;
+    int s = (dx >= 0) ? 1 : -1;
+
+    loadPixels();
+
+    while (y1 < y2) {
+      // bxor(xi, y1++);
+      xi += di;
+      xf += df;
+      if (xf > dy) {
+        xf -= dy;
+        xi += s;
+      }
+    }
+    
+    updatePixels();
+  }
+
   void blitFill() {
     loadPixels();
     for (int j = 0; j < HEIGHT; j++) {
