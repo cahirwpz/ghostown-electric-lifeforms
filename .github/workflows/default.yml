@@ -13,10 +13,10 @@ jobs:
     name: Python Style
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-        with:
-          lfs: true
-      - uses: actions/setup-python@v3
+      - name: Checkout code
+        uses: nschloe/action-cached-lfs-checkout@v1
+      - name: Setup Python 3
+        uses: actions/setup-python@v3
         with:
           python-version: 3.9
       - name: Install dependencies
@@ -31,11 +31,7 @@ jobs:
     runs-on: ubuntu-latest
     container: cahirwpz/demoscene:latest
     steps:
-      - uses: actions/checkout@v3
-        with:
-          lfs: true
-      - run: make
-      - uses: actions/upload-artifact@v3
-        with:
-          name: effects
-          path: effects/*/*.adf
+      - name: Checkout code
+        uses: nschloe/action-cached-lfs-checkout@v1
+      - name: Build everything
+        run: make
