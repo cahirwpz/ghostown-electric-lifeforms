@@ -48,7 +48,7 @@ void draw() {
 
   for (int i = 0; i < 16; i++) {
     float angle = radians(frameCount + i * step);
-    float radius = 190 - i * 12;
+    float radius = (i + 1) * 12;
     fill(i);
     drawTriangle(WIDTH / 2, HEIGHT / 2, radius, angle);
     drawTriangle(WIDTH / 2, HEIGHT / 2, radius, -angle);
