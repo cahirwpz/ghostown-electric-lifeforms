@@ -19,41 +19,39 @@ final color[] palette = new color[] {
 
 EasyOCS ocs;
 
-void drawTriangle(float x_center, float y_center, float r, float angle) {
+void drawTriangle(float xc, float yc, float r, float angle) {
+  angle -= radians(90);
 
-  float x1 = r * cos(0) + x_center;
-  float y1 = r * sin(0) + y_center;
-  float x2 = r * cos(1./3*2*PI) + x_center;
-  float y2 = r * sin(1./3*2*PI) + y_center;
-  float x3 = r * cos(2./3*2*PI) + x_center;
-  float y3 = r * sin(2./3*2*PI) + y_center;
-  pushMatrix();
-  rotate(angle);
+  float x1 = r * cos(angle + TWO_PI * 0 / 3) + xc;
+  float y1 = r * sin(angle + TWO_PI * 0 / 3) + yc;
+  float x2 = r * cos(angle + TWO_PI * 1 / 3) + xc;
+  float y2 = r * sin(angle + TWO_PI * 1 / 3) + yc;
+  float x3 = r * cos(angle + TWO_PI * 2 / 3) + xc;
+  float y3 = r * sin(angle + TWO_PI * 2 / 3) + yc;
+
   triangle(x1, y1, x2, y2, x3, y3);
-  popMatrix();
-  pushMatrix();
-  rotate(-angle);
-  triangle(x1, y1, x2, y2, x3, y3);
-  popMatrix();
 }
 
 void setup() {
   size(640, 512);
   noSmooth();
-  
+
   ocs = new EasyOCS(4, false);
   ocs.setPalette(palette);
 }
 
 void draw() {
   background(0);
-  translate(WIDTH / 2, HEIGHT / 2);
   noStroke();
-  rotate(radians(-90));
+
+  float step = sin(radians(frameCount / PI)) * PI;
+
   for (int i = 0; i < 16; i++) {
-    float angle = radians((frameCount/100.0 + sin(frameCount/1000.0*i/10.0))*60.0);
+    float angle = radians(frameCount + i * step);
+    float radius = 190 - i * 12;
     fill(i);
-    drawTriangle(0, 0, 190 - i * 12, angle);
+    drawTriangle(WIDTH / 2, HEIGHT / 2, radius, angle);
+    drawTriangle(WIDTH / 2, HEIGHT / 2, radius, -angle);
   }
 
   ocs.update();
