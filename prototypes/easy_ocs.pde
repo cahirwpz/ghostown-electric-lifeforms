@@ -17,24 +17,24 @@ class EasyOCS {
     int idx;
     color col;
   };
-  
+
   color[] colorRegister;
   ColorChange[][] colorChange;
   color[] palette;
-  
+
   int depth = 6;
   boolean ham6 = true;
 
   EasyOCS(int depth, boolean ham6) {
     assert(width == WIDTH * 2);
     assert(height == HEIGHT * 2);
-    
+
     this.depth = depth;
     this.ham6 = ham6;
-    
+
     palette = new color[NCOLORS];
     colorRegister = new color[NCOLORS];
-    
+
     colorChange = new ColorChange[HEIGHT][CCSLOTS];
     for (int i = 0; i < HEIGHT; i++) {
       for (int j = 0; j < CCSLOTS; j++) {
@@ -43,15 +43,15 @@ class EasyOCS {
       }
     }
   }
-  
+
   void setColor(int i, color c) {
     assert(i >= 0 && i < 32);
     palette[i] = c & 0xf0f0f0;
   }
-  
+
   void addColorChange(int h, int i, color c) {
     int idx = -1;
-    
+
     for (int j = 0; j < CCSLOTS; j++) {
       if (colorChange[h][j].idx < 0 && idx < 0) {
         idx = j;
@@ -64,7 +64,7 @@ class EasyOCS {
     if (idx < 0) {
       throw new IllegalStateException("run out of slots");
     }
-    
+
     colorChange[h][idx].idx = i;
     colorChange[h][idx].col = c;
   }
@@ -74,7 +74,7 @@ class EasyOCS {
       colorChange[h][j].idx = -1;
     }
   }
-  
+
   void removeColorChange(int h, int i) {
     for (int j = 0; j < CCSLOTS; j++) {
       if (colorChange[h][j].idx == i) {
@@ -82,17 +82,29 @@ class EasyOCS {
         return;
       }
     }
-    
+
     throw new IllegalStateException("invalid color number");
   }
-  
+
+  void blitFill() {
+    loadPixels();
+    for (int j = 0; j < HEIGHT; j++) {
+      int p = 0;
+      for (int i = WIDTH - 1; i >= 0; i--) {
+        p ^= pixels[j * width + i];
+        pixels[j * width + i] = p | 0xff000000;
+      }
+    }
+    updatePixels();
+  }
+
   void update() {
     copy(0, 0, WIDTH, HEIGHT, WIDTH, HEIGHT, WIDTH, HEIGHT);
-    
+
     for (int i = 0; i < NCOLORS; i++) {
       colorRegister[i] = palette[i];
     }
-    
+
     loadPixels();
     for (int j = 0; j < HEIGHT; j++) {
       /*
@@ -104,7 +116,7 @@ class EasyOCS {
           colorRegister[i] = colorChange[j][i].col;
         }
       }
-  
+
       color p = colorRegister[0];
       for (int i = 0; i < WIDTH; i++) {
         int v = pixels[(j + HEIGHT) * width + (i + WIDTH)];
