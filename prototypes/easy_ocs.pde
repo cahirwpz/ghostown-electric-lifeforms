@@ -48,6 +48,12 @@ class EasyOCS {
     assert(i >= 0 && i < 32);
     palette[i] = c & 0xf0f0f0;
   }
+  
+  void setPalette(color[] pal) {
+    for (int i = 0; i < min(NCOLORS, pal.length); i++) {
+      setColor(i, pal[i]);
+    }
+  }
 
   void addColorChange(int h, int i, color c) {
     int idx = -1;
@@ -99,6 +105,7 @@ class EasyOCS {
   }
 
   void update() {
+    resetMatrix();
     copy(0, 0, WIDTH, HEIGHT, WIDTH, HEIGHT, WIDTH, HEIGHT);
 
     for (int i = 0; i < NCOLORS; i++) {
