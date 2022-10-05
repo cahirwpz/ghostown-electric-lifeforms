@@ -1,11 +1,15 @@
 final int WIDTH = 320;
 final int HEIGHT = 256;
 
-// On real Amiga color change slots is dependant
-// on the width of the screen
+/*
+ * On real Amiga number of color change slots
+ * is dependant on the width of the screen.
+ * Current CCSLOTS value is safe for width of 320,
+ * since I was able to reproduce it on real hardware.
+ */
 final int CCSLOTS = 13;
 
-// Number of color registers
+/* Number of color registers */
 final int NCOLORS = 32;
 
 class EasyOCS {
@@ -91,19 +95,21 @@ class EasyOCS {
     
     loadPixels();
     for (int j = 0; j < HEIGHT; j++) {
-      // emulates palette color exchange with copper between two raster lines
-      // (we don't perform color swapping while drawing the pixels)
+      /*
+       * emulates palette color exchange with copper between two raster lines
+       * (we don't perform color swapping while drawing the pixels)
+       */
       for (int i = 0; i < CCSLOTS; i++) {
         if (colorChange[j][i].idx >= 0) {
           colorRegister[i] = colorChange[j][i].col;
         }
       }
   
-      // HAM-6 emulation
       color p = colorRegister[0];
       for (int i = 0; i < WIDTH; i++) {
         int v = pixels[(j + HEIGHT) * width + (i + WIDTH)];
         if (ham6) {
+          // HAM-6 emulation
           int c = (v & 0x0f) << 4;
           int d = (v & 0x30) >> 4;
           if (d == 0) {
@@ -116,6 +122,7 @@ class EasyOCS {
             p = color(red(p), c, blue(p));
           }
         } else {
+          /* Regular palette indexing */
           p = palette[v & 31];
         }
         p &= 0x00f0f0f0;

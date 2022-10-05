@@ -1,7 +1,9 @@
 EasyOCS ocs;
 
 void setup() {
+  /* Size should be twice the size of Amiga resolution. */
   size(640, 512);
+  /* Turn off antialiasing since A500 is way too slow. */
   noSmooth();
   
   ocs = new EasyOCS(6, true);
@@ -11,6 +13,16 @@ void setup() {
 }
 
 void draw() {
+  /* 
+   * You're allowed to use normal drawing routines below.
+   *
+   * Colors that normally would be displayed as shade of grays
+   * will be translated to real colors using color registers
+   * (aka palette) that are part of `ocs` object.
+   *
+   * You can even change color registers mid-screen by using
+   * color change functions.
+   */
   background(0);
   stroke(15);
   fill(0+48);
