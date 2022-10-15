@@ -12,9 +12,10 @@ CRT0 = $(TOPDIR)/system/crt0.o
 MAIN ?= $(TOPDIR)/effects/main.o
 BOOTLOADER = $(TOPDIR)/bootloader.bin
 ROMSTARTUP = $(TOPDIR)/a500rom.bin
+BOOTBLOCK = $(TOPDIR)/addchip.bootblock.bin.68k
 
 EXTRA-FILES += $(DATA_GEN) $(EFFECT).img $(EFFECT).adf $(EFFECT).rom
-CLEAN-FILES += $(DATA_GEN) $(EFFECT).exe $(EFFECT).exe.dbg $(EFFECT).exe.map 
+CLEAN-FILES += $(DATA_GEN) $(EFFECT).exe $(EFFECT).exe.dbg $(EFFECT).exe.map
 
 all: build
 
@@ -92,6 +93,9 @@ run: $(EFFECT).rom $(EFFECT).exe.dbg $(EFFECT).adf
 
 debug: $(EFFECT).rom $(EFFECT).exe.dbg $(EFFECT).adf
 	$(LAUNCH) -d $(DEBUGGER) -r $(EFFECT).rom -e $(EFFECT).exe.dbg -f $(EFFECT).adf
+
+bootable: $(EFFECT).exe
+	$(PACK) $(EFFECT) $(BOOTBLOCK)
 
 .PHONY: run debug run-floppy debug-floppy
 .PRECIOUS: $(BOOTLOADER) $(EFFECT).img

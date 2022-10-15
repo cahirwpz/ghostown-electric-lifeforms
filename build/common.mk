@@ -32,7 +32,9 @@ CPPFLAGS += -D__CONSTLIBBASEDECL__=const
 # Default configuration
 FRAMES_PER_ROW ?= 6
 
+ifeq ($(BOOTABLE), 0)
 CPPFLAGS += -DUAE
+endif
 
 # Pass "VERBOSE=1" at command line to display command being invoked by GNU Make
 ifneq ($(VERBOSE), 1)
@@ -59,6 +61,7 @@ PSF2C := $(TOPDIR)/tools/psf2c.py
 SYNC2C := $(TOPDIR)/tools/sync2c/sync2c
 STRIP := m68k-amigaos-strip -s
 OBJCOPY := m68k-amigaos-objcopy
+PACK := $(TOPDIR)/tools/pack.sh
 
 # Generate dependencies automatically
 SOURCES_C = $(filter %.c,$(SOURCES))
