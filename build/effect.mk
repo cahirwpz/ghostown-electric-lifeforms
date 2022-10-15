@@ -15,7 +15,7 @@ ROMSTARTUP = $(TOPDIR)/a500rom.bin
 BOOTBLOCK = $(TOPDIR)/addchip.bootblock.bin.68k
 
 EXTRA-FILES += $(DATA_GEN) $(EFFECT).img $(EFFECT).adf $(EFFECT).rom
-CLEAN-FILES += $(DATA_GEN) $(EFFECT).exe $(EFFECT).exe.dbg $(EFFECT).exe.map
+CLEAN-FILES += $(DATA_GEN) $(EFFECT).exe $(EFFECT).exe.dbg $(EFFECT).exe.map $(EFFECT)_bootable.adf
 
 all: build
 
