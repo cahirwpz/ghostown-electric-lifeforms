@@ -4,9 +4,9 @@
 #include <sync.h>
 #include <system/interrupt.h>
 #include <system/task.h>
-#include <system/memory.h>
 
 #define _SYSTEM
+#include <system/memory.h>
 #include <system/cia.h>
 
 static CinterPlayerT CinterPlayer[1];
@@ -66,18 +66,41 @@ static void DecodeSamples(u_char *smp, int size) {
 }
 #endif
 
-#if ADPCM == 1
-
-#include "adpcm.h"
-
+#if VQ == 1
 static void DecodeSamples(u_char *smp, int size) {
   char *copy = MemAlloc(size, MEMF_PUBLIC);
   memcpy(copy, smp, size);
 
-  Log("[Init] Decoding ADPCM samples (%d bytes)\n", size);
+  Log("[Init] Decoding VQ samples (%d bytes)\n", size);
+  
+  {
+    u_char *data = copy;
+    u_char *out = smp;
 
-  ADPCMDecoder_InitTables();
-  ADPCMDecoder(copy, size * 2, smp);
+    for (;;) {
+      u_char *codebook;
+      short n;
+      
+      n = (*data++) << 8;
+      n |= *data++;
+      
+      if (n == 0)
+        break;
+
+      codebook = data;
+      data += 1024;
+      n--;
+
+      do {
+        short cwi = *data++ << 2;
+        u_char *cw = codebook + cwi;
+        *out++ = *cw++;
+        *out++ = *cw++;
+        *out++ = *cw++;
+        *out++ = *cw++;
+      } while (--n != -1);
+    }
+  }
 
   MemFree(copy);
 }
@@ -91,10 +114,15 @@ static int CinterMusic(CinterPlayerT *player) {
 
 INTSERVER(CinterMusicServer, 10, (IntFuncT)CinterMusic, CinterPlayer);
 
+static void ShowMemStats(void) {
+  Log("[Memory] CHIP: %d FAST: %d\n", MemAvail(MEMF_CHIP), MemAvail(MEMF_FAST));
+}
+
 static void LoadEffects(EffectT **effects) {
   EffectT *effect;
   for (effect = *effects; effect; effect = *effects++) { 
     EffectLoad(effect);
+    ShowMemStats();
   }
 }
 
@@ -117,11 +145,14 @@ static void RunEffects(void) {
     // Log("prev: %d, curr: %d, frameCount: %d\n", prev, curr, frameCount);
 
     if (prev != curr) {
-      if (prev >= 0)
+      if (prev >= 0) {
         EffectKill(AllEffects[prev]);
+        ShowMemStats();
+      }
       if (curr == -1)
         break;
       EffectInit(AllEffects[curr]);
+      ShowMemStats();
     }
 
     lastFrameCount = ReadFrameCounter() - 1;
@@ -148,7 +179,7 @@ int main(void) {
 
   Log("[Init] Generating Cinter samples\n");
   CinterInit(CinterModule, CinterSamples, CinterPlayer);
-#if ADPCM == 1 || DELTA == 1
+#if VQ == 1 || ADPCM == 1 || DELTA == 1
   DecodeSamples(CinterSamples, (int)CinterSamplesSize);
 #endif
 

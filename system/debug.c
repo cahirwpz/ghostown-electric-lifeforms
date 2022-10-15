@@ -3,7 +3,7 @@
 #ifndef UAE
 #include <stdarg.h>
 #include <stdio.h>
-// #include <system/cia.h>
+#include <system/cia.h>
 
 extern void DPutChar(void *ptr, char data);
 
