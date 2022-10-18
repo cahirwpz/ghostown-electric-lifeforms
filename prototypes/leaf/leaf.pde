@@ -32,7 +32,7 @@ void drawTriangle(float xc, float yc, float r, float angle) {
     r * cos(angle + TWO_PI * 2 / 3) + xc, 
     r * sin(angle + TWO_PI * 2 / 3) + yc);
 
-  rasterizeTriangle(p1, p2, p3);
+  addTriangle(p1, p2, p3);
 }
 
 void setup() {
@@ -45,8 +45,6 @@ void setup() {
 
 void draw() {
   background(0);
-  noStroke();
-  loadPixels();
 
   float step = sin(radians(frameCount / PI)) * PI;
 
@@ -58,7 +56,7 @@ void draw() {
     drawTriangle(WIDTH / 2, HEIGHT / 2, radius, -angle);
   }
 
-  updatePixels();
+  rasterize();
 
   ocs.update();
 }
