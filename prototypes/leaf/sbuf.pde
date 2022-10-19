@@ -35,16 +35,16 @@ class DepthComparator implements Comparator<Span>{
 class SpanBuffer {
   ArrayList<Span> spans[]; // as many as lines on the screen
 
-  SpanBuffer(int n) {
-    spans = new ArrayList[n];
+  SpanBuffer() {
+    spans = new ArrayList[HEIGHT];
 
-    for (int i = 0; i < n; i++) {
+    for (int i = 0; i < HEIGHT; i++) {
       spans[i] = new ArrayList<Span>();
     }
   }
 
   void add(Span s) {
-    if (s.ye < 0 || s.ys >= spans.length) {
+    if (s.ye < 0 || s.ys >= HEIGHT) {
       return;
     }
 
@@ -56,8 +56,8 @@ class SpanBuffer {
     }
 
     // clip against bottom of the screen
-    if (s.ye > spans.length) {
-      s.ye = spans.length;
+    if (s.ye > HEIGHT) {
+      s.ye = HEIGHT;
     }
 
     spans[s.ys].add(s);
@@ -73,11 +73,14 @@ class SpanBuffer {
       opened.sort(new DepthComparator());
 
       for (Span s : opened) {
-        int xsi = floor(s.xs + 0.5);
-        int xei = floor(s.xe + 0.5);
-
-        for (int x = xsi; x < xei; x++) {
-          if (x >= 0 && x < width) {
+        int xs = floor(s.xs + 0.5);
+        int xe = floor(s.xe + 0.5);
+        
+        if (xe > 0 && xs < WIDTH) {
+          xs = max(xs, 0);
+          xe = min(xe, WIDTH);
+ 
+          for (int x = xs; x < xe; x++) {
             pixels[s.ys * width + x] = s.c;
           }
         }
@@ -96,4 +99,4 @@ class SpanBuffer {
   }
 }
 
-SpanBuffer sbuf = new SpanBuffer(HEIGHT);
+SpanBuffer sbuf = new SpanBuffer();
