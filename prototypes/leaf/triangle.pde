@@ -9,7 +9,7 @@ void addSegment(float xs, float xe, float dxs, float dxe, float ys, float ye) {
   xs += prestep * dxs;
   xe += prestep * dxe;
 
-  spans.add(new Span(xs, xe, dxs, dxe, ysi, yei, g.fillColor));
+  sbuf.add(new Span(xs, xe, dxs, dxe, ysi, yei, g.fillColor));
 }
 
 

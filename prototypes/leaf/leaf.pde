@@ -56,7 +56,7 @@ void draw() {
     drawTriangle(WIDTH / 2, HEIGHT / 2, radius, -angle);
   }
 
-  rasterize();
+  sbuf.rasterize();
 
   ocs.update();
 }

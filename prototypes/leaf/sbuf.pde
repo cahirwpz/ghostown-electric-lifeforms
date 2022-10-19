@@ -1,6 +1,8 @@
-import java.util.*; 
+import java.util.Comparator;
+import java.util.Collections;
+import java.util.function.Predicate;
 
-class Span implements Comparable<Span> {
+class Span {
   int ys, ye;
   float xs, xe;
   float dxs, dxe;
@@ -15,59 +17,83 @@ class Span implements Comparable<Span> {
     this.ye = ye;
     this.c = c;
   }
-
-  @Override public int compareTo(Span other) {
-    return this.ys - other.ys;
-  }
 };
 
-ArrayList<Span> spans = new ArrayList<Span>();
+class SpanFinished implements Predicate<Span> {
+  @Override
+    public boolean test(Span s) {
+    return s.ys >= s.ye;
+  }
+}
 
-void rasterize() {
-  ArrayList<Span> opened = new ArrayList<Span>();
+class DepthComparator implements Comparator<Span>{  
+  @Override public int compare(Span s1, Span s2) {
+    return s1.c - s2.c;
+  }
+}
 
-  int next = 0;
+class SpanBuffer {
+  ArrayList<Span> spans[]; // as many as lines on the screen
 
-  Collections.sort(spans);
+  SpanBuffer(int n) {
+    spans = new ArrayList[n];
 
-  loadPixels();
+    for (int i = 0; i < n; i++) {
+      spans[i] = new ArrayList<Span>();
+    }
+  }
 
-  while (opened.size() > 0 || next < spans.size()) {
-    while (next < spans.size() && (opened.size() == 0 || spans.get(next).ys == opened.get(0).ys)) {
-      opened.add(spans.get(next++));
+  void add(Span s) {
+    if (s.ye < 0 || s.ys >= spans.length) {
+      return;
     }
 
-    ListIterator<Span> iter = opened.listIterator();
+    // clip against top of the screen
+    if (s.ys < 0) {
+      s.xs -= s.ys * s.dxs;
+      s.xe -= s.ys * s.dxe;
+      s.ys = 0;
+    }
 
-    // println("***");
+    // clip against bottom of the screen
+    if (s.ye > spans.length) {
+      s.ye = spans.length;
+    }
 
-    while (iter.hasNext()) {
-      Span s = iter.next();
+    spans[s.ys].add(s);
+  }
 
-      if (s.ys >= 0 && s.ys < height) {
+  void rasterize() {
+    ArrayList<Span> opened = new ArrayList<Span>();
+
+    loadPixels();
+
+    for (int y = 0; y < spans.length; y++) {
+      opened.addAll(spans[y]);
+      opened.sort(new DepthComparator());
+
+      for (Span s : opened) {
         int xsi = floor(s.xs + 0.5);
         int xei = floor(s.xe + 0.5);
-        
-        // println(xsi, xei);
-          
+
         for (int x = xsi; x < xei; x++) {
           if (x >= 0 && x < width) {
             pixels[s.ys * width + x] = s.c;
           }
         }
-      }  
 
-      s.xs += s.dxs;
-      s.xe += s.dxe;
-      s.ys += 1;
-
-      if (s.ys >= s.ye) {
-        iter.remove();
+        s.xs += s.dxs;
+        s.xe += s.dxe;
+        s.ys += 1;
       }
+
+      opened.removeIf(new SpanFinished());
+
+      spans[y].clear();
     }
+
+    updatePixels();
   }
-
-  updatePixels();
-
-  spans.clear();
 }
+
+SpanBuffer sbuf = new SpanBuffer(HEIGHT);
