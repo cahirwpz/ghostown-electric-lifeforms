@@ -1,72 +1,3 @@
-import java.util.*; 
-
-class Span implements Comparable<Span> {
-  int ys, ye;
-  float xs, xe;
-  float dxs, dxe;
-  color c;
-  
-  Span(float xs, float xe, float dxs, float dxe, int ys, int ye, color c) {
-    this.xs = xs;
-    this.xe = xe;
-    this.dxs = dxs;
-    this.dxe = dxe;
-    this.ys = ys;
-    this.ye = ye;
-    this.c = c;
-  }
-  
-  @Override public int compareTo(Span other) {
-    return this.ys - other.ys;
-  }
-};
-
-ArrayList<Span> inactive = new ArrayList<Span>();
-ArrayList<Span> active = new ArrayList<Span>();
-
-void rasterize() {
-  Collections.sort(inactive);
-
-  loadPixels();
-  
-  while (active.size() > 0 || inactive.size() > 0) {
-    if (active.size() == 0) {
-      active.add(inactive.remove(0));
-    }
-    
-    while (inactive.size() > 0 && inactive.get(0).ys == active.get(0).ys) {
-      active.add(inactive.remove(0));
-    }
-    
-    // println(active.get(0).ys, active.size(), inactive.size());
-    
-    for (Span s : active) {
-      if (s.ys >= 0 && s.ys < height) {
-        int xsi = floor(s.xs + 0.5);
-        int xei = floor(s.xe + 0.5);
-  
-        // println(xsi, xei);
-  
-        for (int x = xsi; x < xei; x++) {
-          if (x >= 0 && x < width) {
-            pixels[s.ys * width + x] = s.c;
-          }
-        }
-      }  
-    
-      s.xs += s.dxs;
-      s.xe += s.dxe;
-      s.ys++;
-    }
-    
-    while (active.size() > 0 && active.get(0).ys >= active.get(0).ye) {
-      active.remove(0);
-    }
-  }
-  
-  updatePixels();
-}
-
 void addSegment(float xs, float xe, float dxs, float dxe, float ys, float ye) {
   assert(ys <= ye);
   assert(xs <= xe);
@@ -77,8 +8,8 @@ void addSegment(float xs, float xe, float dxs, float dxe, float ys, float ye) {
 
   xs += prestep * dxs;
   xe += prestep * dxe;
-  
-  inactive.add(new Span(xs, ys, dxs, dxe, ysi, yei, g.fillColor));
+
+  spans.add(new Span(xs, xe, dxs, dxe, ysi, yei, g.fillColor));
 }
 
 
