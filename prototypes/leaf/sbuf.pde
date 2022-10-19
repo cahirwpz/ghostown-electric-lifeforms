@@ -2,13 +2,13 @@ import java.util.Comparator;
 import java.util.Collections;
 import java.util.function.Predicate;
 
-class Span {
+class Segment {
   int ys, ye;
   float xs, xe;
   float dxs, dxe;
   color c;
 
-  Span(float xs, float xe, float dxs, float dxe, int ys, int ye, color c) {
+  Segment(float xs, float xe, float dxs, float dxe, int ys, int ye, color c) {
     this.xs = xs;
     this.xe = xe;
     this.dxs = dxs;
@@ -19,31 +19,31 @@ class Span {
   }
 };
 
-class SpanFinished implements Predicate<Span> {
+class SegmentFinished implements Predicate<Segment> {
   @Override
-    public boolean test(Span s) {
+    public boolean test(Segment s) {
     return s.ys >= s.ye;
   }
 }
 
-class DepthComparator implements Comparator<Span>{  
-  @Override public int compare(Span s1, Span s2) {
+class SegmentDepth implements Comparator<Segment>{  
+  @Override public int compare(Segment s1, Segment s2) {
     return s1.c - s2.c;
   }
 }
 
-class SpanBuffer {
-  ArrayList<Span> spans[]; // as many as lines on the screen
+class SegmentBuffer {
+  ArrayList<Segment> segments[]; // as many as lines on the screen
 
-  SpanBuffer() {
-    spans = new ArrayList[HEIGHT];
+  SegmentBuffer() {
+    segments = new ArrayList[HEIGHT];
 
     for (int i = 0; i < HEIGHT; i++) {
-      spans[i] = new ArrayList<Span>();
+      segments[i] = new ArrayList<Segment>();
     }
   }
 
-  void add(Span s) {
+  void add(Segment s) {
     if (s.ye < 0 || s.ys >= HEIGHT) {
       return;
     }
@@ -60,19 +60,19 @@ class SpanBuffer {
       s.ye = HEIGHT;
     }
 
-    spans[s.ys].add(s);
+    segments[s.ys].add(s);
   }
 
   void rasterize() {
-    ArrayList<Span> opened = new ArrayList<Span>();
+    ArrayList<Segment> active = new ArrayList<Segment>();
 
     loadPixels();
 
-    for (int y = 0; y < spans.length; y++) {
-      opened.addAll(spans[y]);
-      opened.sort(new DepthComparator());
+    for (int y = 0; y < HEIGHT; y++) {
+      active.addAll(segments[y]);
+      active.sort(new SegmentDepth());
 
-      for (Span s : opened) {
+      for (Segment s : active) {
         int xs = floor(s.xs + 0.5);
         int xe = floor(s.xe + 0.5);
         
@@ -90,13 +90,13 @@ class SpanBuffer {
         s.ys += 1;
       }
 
-      opened.removeIf(new SpanFinished());
+      active.removeIf(new SegmentFinished());
 
-      spans[y].clear();
+      segments[y].clear();
     }
 
     updatePixels();
   }
 }
 
-SpanBuffer sbuf = new SpanBuffer();
+SegmentBuffer sbuf = new SegmentBuffer();

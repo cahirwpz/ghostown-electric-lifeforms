@@ -9,9 +9,8 @@ void addSegment(float xs, float xe, float dxs, float dxe, float ys, float ye) {
   xs += prestep * dxs;
   xe += prestep * dxe;
 
-  sbuf.add(new Span(xs, xe, dxs, dxe, ysi, yei, g.fillColor));
+  sbuf.add(new Segment(xs, xe, dxs, dxe, ysi, yei, g.fillColor));
 }
-
 
 void addTriangle(PVector p1, PVector p2, PVector p3) {
   PVector pt;
