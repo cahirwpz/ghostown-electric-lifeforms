@@ -13,6 +13,12 @@ class Span {
   }
 };
 
+class SpanFirst implements Comparator<Span> {  
+  @Override public int compare(Span s1, Span s2) {
+    return s1.xs - s2.xs;
+  }
+}
+
 class SpanDepth implements Comparator<Span> {  
   @Override public int compare(Span s1, Span s2) {
     return s1.c - s2.c;
@@ -37,8 +43,7 @@ class Segment {
 };
 
 class SegmentFinished implements Predicate<Segment> {
-  @Override
-    public boolean test(Segment s) {
+  @Override public boolean test(Segment s) {
     return s.ys >= s.ye;
   }
 }
@@ -84,8 +89,6 @@ class SegmentBuffer {
       active.addAll(segments[y]);
       segments[y].clear();
 
-      spans.clear();
-
       for (Segment s : active) {
         int xs = floor(s.xs + 0.5);
         int xe = floor(s.xe + 0.5);
@@ -108,6 +111,7 @@ class SegmentBuffer {
 
       while (spans.size() > 0) {
         Span s = spans.pop();
+
         for (int x = s.xs; x < s.xe; x++) {
           pixels[y * width + x] = s.c;
         }

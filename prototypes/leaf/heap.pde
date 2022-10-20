@@ -35,10 +35,26 @@ class BinaryHeap<E> extends ArrayList<E> {
     siftDown(0);
     return e;
   }
+  
+  E peek() {
+    return get(0);
+  }
+  
+  void push(E e) {
+    add(e);
+    siftUp(size() - 1);
+  }
 
   void heapify() {
     for (int i = size() / 2 - 1; i >= 0; i--) {
       siftDown(i);
+    }
+  }
+
+  void siftUp(int i) {
+    while (i > 0 && less(i, parent(i))) {
+      swap(i, parent(i));
+      i = parent(i);
     }
   }
 
