@@ -10,13 +10,15 @@
   Written by Frank Wille in 2013, 2016, 2017, 2018, 2019, 2020, 2021, 2022.
 */
 
-#ifndef EXEC_TYPES_H
-#include <exec/types.h>
-#endif
+/* (cahir) Originally the code used some external header files.
+ * I replaced them with reasonable counterparts. */
 
-#ifndef SDI_COMPILER_H
-#include <SDI_compiler.h>
-#endif
+#define ASM
+#define REG(r, decl) decl asm(#r)
+#define BYTE char
+#define UBYTE unsigned char
+#define WORD short
+#define UWORD unsigned short
 
 /*
   mt_install_cia(a6=CUSTOM, a0=VectorBase, d0=PALflag.b)
@@ -28,7 +30,7 @@
     (NTSC otherwise).
 */
 
-void ASM mt_install_cia(REG(a6, void *custom),
+void ASM mt_install_cia(REG(a6, void *Custom),
 	REG(a0, void *VectorBase), REG(d0, UBYTE PALflag));
 
 /*
@@ -36,7 +38,7 @@ void ASM mt_install_cia(REG(a6, void *custom),
     Remove the CIA-B music interrupt and restore the old vector.
 */
 
-void ASM mt_remove_cia(REG(a6, void *custom));
+void ASM mt_remove_cia(REG(a6, void *Custom));
 
 /*
   mt_init(a6=CUSTOM, a0=TrackerModule, a1=Samples|NULL, d0=InitialSongPos.b)
@@ -46,7 +48,7 @@ void ASM mt_remove_cia(REG(a6, void *custom));
     When a1 is NULL the samples are assumed to be stored after the patterns.
 */
 
-void ASM mt_init(REG(a6, void *custom),
+void ASM mt_init(REG(a6, void *Custom),
 	REG(a0, void *TrackerModule), REG(a1, void *Samples),
 	REG(d0, UBYTE InitialSongPos));
 
@@ -55,7 +57,7 @@ void ASM mt_init(REG(a6, void *custom),
     Stop playing current module.
 */
 
-void ASM mt_end(REG(a6, void *custom));
+void ASM mt_end(REG(a6, void *Custom));
 
 /*
   mt_soundfx(a6=CUSTOM, a0=SamplePointer,
@@ -65,7 +67,7 @@ void ASM mt_end(REG(a6, void *custom));
     You should call mt_playfx() instead.
 */
 
-void ASM mt_soundfx(REG(a6, void *custom),
+void ASM mt_soundfx(REG(a6, void *Custom),
 	REG(a0, void *SamplePointer), REG(d0, UWORD SampleLength),
 	REG(d1, UWORD SamplePeriod), REG(d2, UWORD SampleVolume));
 
@@ -108,7 +110,7 @@ typedef struct SfxChanStatus
   /* Rest of structure is currently not exported. Don't rely on it! */
 } SfxChanStatus;
 
-SfxChanStatus * ASM mt_playfx(REG(a6, void *custom),
+SfxChanStatus * ASM mt_playfx(REG(a6, void *Custom),
 	REG(a0, SfxStructure *SfxStructurePointer));
 
 /*
@@ -124,7 +126,7 @@ SfxChanStatus * ASM mt_playfx(REG(a6, void *custom),
     total length calculation, but excluded when actually playing the loop.
 */
 
-void ASM mt_loopfx(REG(a6, void *custom),
+void ASM mt_loopfx(REG(a6, void *Custom),
 	REG(a0, SfxStructure *SfxStructurePointer));
 
 /*
@@ -135,7 +137,7 @@ void ASM mt_loopfx(REG(a6, void *custom),
     replay completely (mt_end()).
 */
 
-void ASM mt_stopfx(REG(a6, void *custom),
+void ASM mt_stopfx(REG(a6, void *Custom),
 	REG(d0, UBYTE ChannelNo));
 
 /*
@@ -147,7 +149,7 @@ void ASM mt_stopfx(REG(a6, void *custom),
     The mask defaults to 0.
 */
 
-void ASM mt_musicmask(REG(a6, void *custom),
+void ASM mt_musicmask(REG(a6, void *Custom),
 	REG(d0, UBYTE ChannelMask));
 
 /*
@@ -157,7 +159,7 @@ void ASM mt_musicmask(REG(a6, void *custom),
     sound effects (which is desired).
 */
 
-void ASM mt_mastervol(REG(a6, void *custom),
+void ASM mt_mastervol(REG(a6, void *Custom),
 	REG(d0, UWORD MasterVolume));
 
 /*
@@ -178,7 +180,7 @@ void ASM mt_samplevol(REG(d0, UWORD SampleNumber), REG(d1, UBYTE Volume));
     this state on mt_init() and mt_end().
 */
 
-void ASM mt_channelmask(REG(a6, void *custom),
+void ASM mt_channelmask(REG(a6, void *Custom),
 	REG(d0, UBYTE ChannelMask));
 
 /*
@@ -188,7 +190,7 @@ void ASM mt_channelmask(REG(a6, void *custom),
     by Timer-A interrupts after mt_install_cia().
 */
 
-void ASM mt_music(REG(a6, void *custom));
+void ASM mt_music(REG(a6, void *Custom));
 
 /*
   mt_Enable
