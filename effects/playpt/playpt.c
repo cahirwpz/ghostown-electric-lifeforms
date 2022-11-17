@@ -14,6 +14,10 @@
 
 #include "data/lat2-08.c"
 
+extern u_char PtModule[];
+extern u_char PtModuleStart[];
+extern u_char PtModuleSize[];
+
 static BitmapT *screen;
 static CopListT *cp;
 static ConsoleT console;
