@@ -30,6 +30,7 @@ async def UaeLaunch(loop, args):
             await GdbStub(GdbConnection(reader, writer), uaeproc).run()
         except Exception:
             traceback.print_exc()
+            input('Press enter to quit...')
             # TODO: Better handling of gdbserver client disconnection
             #       Now it simply throws ValueError(data) exception
             #       in gdb.py:31 [recv_ack]
@@ -61,7 +62,8 @@ async def UaeLaunch(loop, args):
 
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.INFO,
+    # change from INFO to DEBUG to see messages exchanged with fsuae and gdb
+    logging.basicConfig(level=logging.DEBUG,
                         format='%(levelname)s: %(message)s')
     # logging.getLogger('asyncio').setLevel(logging.DEBUG)
 
