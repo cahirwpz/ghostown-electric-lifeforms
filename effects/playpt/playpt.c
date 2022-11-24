@@ -129,18 +129,19 @@ static void Kill(void) {
 static bool HandleEvent(void);
 
 static void Render(void) {
-  short i;
+  struct pt_mod *mod = mt_data.mt_mod;
+  short songPos = mt_data.mt_SongPos;
+  short pattPos = mt_data.mt_PatternPos >> 4;
 
   ConsoleSetCursor(&console, 0, 3);
-  ConsolePrint(&console, "Protracker Player\n\n");
+  ConsolePrint(&console, "Playing \"%s\"\n\n", mod->name);
 
-  ConsolePrint(&console, "%02x:%02x\n",
-               mt_data.mt_SongPos, mt_data.mt_PatternPos >> 4);
+  ConsolePrint(&console, "%02x:%02x\n", songPos, pattPos);
 
-  for (i = 0; i < 4; i++) {
-    struct mt_chan *channel = &mt_data.mt_chan[i];
-    ConsolePrint(&console, "CH%d: %04x %02x %02x\n",
-                 i, channel->n_note, channel->n_cmd, channel->n_cmdlo);
+  {
+    u_int *row = mod->pattern[songPos][pattPos];
+    ConsolePrint(&console, " %08x %08x %08x %08x\n",
+                 row[0], row[1], row[2], row[3]);
   }
 
   TaskWaitVBlank();

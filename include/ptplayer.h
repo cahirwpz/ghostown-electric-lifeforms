@@ -19,7 +19,28 @@
 #define UBYTE unsigned char
 #define WORD short
 #define UWORD unsigned short
+#define LONG int
+#define ULONG unsigned int
 #define APTR void *
+
+struct pt_sample {
+  BYTE name[22];
+  UWORD size;
+  BYTE finetune;
+  BYTE volume;
+  UWORD loop_start;
+  UWORD loop_size;
+} __attribute__((packed));
+
+struct pt_mod {
+  BYTE name[20];
+  struct pt_sample sample[31];
+  UBYTE len;
+  UBYTE restart;
+  UBYTE order[128];
+  UBYTE magic[4];
+  ULONG pattern[0][64][4];
+} __attribute__((packed));
 
 struct mt_chan {
   UWORD n_note;
@@ -71,7 +92,7 @@ struct mt_chan {
 struct mt_data {
   struct mt_chan mt_chan[4];
   APTR mt_SampleStarts[31];
-  APTR mt_mod;
+  struct pt_mod *mt_mod;
   APTR mt_oldLev6;
   APTR mt_timerval;
   UBYTE mt_oldtimers[4];
