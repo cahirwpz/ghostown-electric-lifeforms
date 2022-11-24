@@ -62,8 +62,9 @@ async def UaeLaunch(loop, args):
 
 
 if __name__ == '__main__':
-    # change from INFO to DEBUG to see messages exchanged with fsuae and gdb
-    logging.basicConfig(level=logging.DEBUG,
+    # XXX: change from INFO to DEBUG to display messages exchanged between
+    # fs-uae and code in `debug/uae.py`, gdb and code in `debug/gdb.py`
+    logging.basicConfig(level=logging.INFO,
                         format='%(levelname)s: %(message)s')
     # logging.getLogger('asyncio').setLevel(logging.DEBUG)
 
