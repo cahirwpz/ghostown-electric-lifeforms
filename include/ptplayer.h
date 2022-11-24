@@ -19,6 +19,74 @@
 #define UBYTE unsigned char
 #define WORD short
 #define UWORD unsigned short
+#define APTR void *
+
+struct mt_chan {
+  UWORD n_note;
+  UBYTE n_cmd;
+  UBYTE n_cmdlo;
+  UBYTE n_index;
+  UBYTE n_sfxpri;
+  UWORD n_reserved1;
+  APTR n_start;
+  APTR n_loopstart;
+  UWORD n_length;
+  UWORD n_replen;
+  UWORD n_period;
+  UWORD n_volume;
+  APTR n_pertab;
+  UWORD n_dmabit;
+  UWORD n_noteoff;
+  UWORD n_toneportspeed;
+  UWORD n_wantedperiod;
+  UWORD n_pattpos;
+  UWORD n_funk;
+  APTR n_wavestart;
+  UWORD n_reallength;
+  UWORD n_intbit;
+  APTR n_sfxptr;
+  UWORD n_sfxlen;
+  UWORD n_sfxper;
+  UWORD n_sfxvol;
+  BYTE n_looped;
+  BYTE n_minusft;
+  BYTE n_vibratoamp;
+  BYTE n_vibratospd;
+  BYTE n_vibratopos;
+  BYTE n_vibratoctrl;
+  BYTE n_tremoloamp;
+  BYTE n_tremolospd;
+  BYTE n_tremolopos;
+  BYTE n_tremoloctrl;
+  BYTE n_gliss;
+  BYTE n_sampleoffset;
+  BYTE n_loopcount;
+  BYTE n_funkoffset;
+  BYTE n_retrigcount;
+  BYTE n_freecnt;
+  BYTE n_musiconly;
+  BYTE n_enable;
+} __attribute__((packed));
+
+struct mt_data {
+  struct mt_chan mt_chan[4];
+  APTR mt_SampleStarts[31];
+  APTR mt_mod;
+  APTR mt_oldLev6;
+  APTR mt_timerval;
+  UBYTE mt_oldtimers[4];
+  APTR mt_Lev6Int;
+  UWORD mt_Lev6Ena;
+  UWORD mt_PatternPos;
+  UWORD mt_PBreakPos;
+  UBYTE mt_PosJumpFlag;
+  UBYTE mt_PBreakFlag;
+  UBYTE mt_Speed;
+  UBYTE mt_Counter;
+  UBYTE mt_SongPos;
+  UBYTE mt_PattDelTime;
+  UBYTE mt_PattDelTime2;
+} __attribute__((packed));
 
 /*
   mt_install_cia(a6=CUSTOM, a0=VectorBase, d0=PALflag.b)

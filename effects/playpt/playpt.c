@@ -21,6 +21,8 @@ static BitmapT *screen;
 static CopListT *cp;
 static ConsoleT console;
 
+extern struct mt_data mt_data;
+
 /* Extra variables to enhance replayer functionality */
 static bool stopped = true;
 
@@ -100,7 +102,7 @@ static void Init(void) {
   EnableDMA(DMAF_RASTER);
 
   ConsoleSetCursor(&console, 0, 0);
-  ConsolePutStr(&console, "Initializing Protracker replayer... please wait!\n");
+  ConsolePutStr(&console, "Initializing Protracker replayer...!\n");
 
   pt_install_cia();
   pt_init(module, 0);
@@ -127,6 +129,20 @@ static void Kill(void) {
 static bool HandleEvent(void);
 
 static void Render(void) {
+  short i;
+
+  ConsoleSetCursor(&console, 0, 3);
+  ConsolePrint(&console, "Protracker Player\n\n");
+
+  ConsolePrint(&console, "%02x:%02x\n",
+               mt_data.mt_SongPos, mt_data.mt_PatternPos >> 4);
+
+  for (i = 0; i < 4; i++) {
+    struct mt_chan *channel = &mt_data.mt_chan[i];
+    ConsolePrint(&console, "CH%d: %04x %02x %02x\n",
+                 i, channel->n_note, channel->n_cmd, channel->n_cmdlo);
+  }
+
   TaskWaitVBlank();
 
   exitLoop = !HandleEvent();

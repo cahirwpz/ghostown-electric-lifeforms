@@ -3386,6 +3386,8 @@ mt_E8Trigger	rs.b	1		; exported as _mt_E8Trigger
 mt_MusicChannels rs.b	1		; exported as _mt_MusicChannels
 mt_SongEnd	rs.b	1		; exported as _mt_SongEnd
 
+	xdef _mt_data
+_mt_data:
 mt_data:
 	ds.b	mt_Enable
 	xdef	_mt_Enable
