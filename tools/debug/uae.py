@@ -290,7 +290,8 @@ async def UaeDebugger(uaedbg):
                         cmd = await session.prompt_async()
                         cmd.strip()
                         # prompt_async removes our SIGINT handler :(
-                        loop.add_signal_handler(signal.SIGINT, uaedbg.interrupt)
+                        loop.add_signal_handler(signal.SIGINT,
+                                                uaedbg.interrupt)
                     uaedbg.send(cmd)
                 except EOFError:
                     uaedbg.resume()
