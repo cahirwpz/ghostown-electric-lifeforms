@@ -144,6 +144,20 @@ class GdbStub():
 
         return True
 
+    def handle_file(self, packet):
+        # Minimal support for `remote get` command to transfer empty files.
+        cmd, args = packet[0], packet[1].split(',')
+        if cmd == 'setfs':
+            self.gdb.send_ack('F0')
+        elif cmd == 'open':
+            self.gdb.send_ack('F0')
+        elif cmd == 'close':
+            self.gdb.send_ack('F0')
+        elif cmd == 'pread':
+            self.gdb.send_ack('F0;')  # `pread` command requires semicolon
+        else:
+            self.gdb.send_ack('')
+
     @staticmethod
     def binary_decode(data):
         # Decode GDB binary stream. See:
@@ -281,7 +295,10 @@ class GdbStub():
         elif packet[0] == 'v':
             # The correct reply to an unknown 'v' packet is to return the
             # empty string.
-            self.gdb.send_ack('')
+            if packet.startswith('vFile:'):
+                self.handle_file(packet.split(':')[1:])
+            else:
+                self.gdb.send_ack('')
 
         return True
 
