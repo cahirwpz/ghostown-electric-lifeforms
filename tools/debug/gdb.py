@@ -141,6 +141,13 @@ class GdbStub():
             # Notify the target that GDB is prepared to serve symbol
             # lookup requests.
             self.gdb.send_ack('OK')
+        elif packet.startswith('Rcmd,'):
+            # Forwards input from `monitor` command to UAE debugger.
+            raw_cmd = packet.split(',',maxsplit=1)[1]
+            cmd = bytes.fromhex(raw_cmd).decode('utf-8')
+            lines = await self.uae.communicate(cmd)
+            text = '\n'.join(lines) + '\n'
+            self.gdb.send_ack(text.encode('utf-8').hex())
 
         return True
 

@@ -80,9 +80,6 @@ class GDB(Launchable):
             '-ix={}'.format(HerePath('.gdbinit')),
             '-ex=set tcp connect-timeout 30',
             '-ex=target remote {}'.format(REMOTE),
-            '-ex=python import os, sys',
-            '-ex=python sys.path.append("{}")'.format(HerePath('tools')),
-            '-ex=python import gdbext',
             '--nh',
             '--silent',
             program]
