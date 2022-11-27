@@ -143,7 +143,7 @@ class GdbStub():
             self.gdb.send_ack('OK')
         elif packet.startswith('Rcmd,'):
             # Forwards input from `monitor` command to UAE debugger.
-            raw_cmd = packet.split(',',maxsplit=1)[1]
+            raw_cmd = packet.split(',', maxsplit=1)[1]
             cmd = bytes.fromhex(raw_cmd).decode('utf-8')
             lines = await self.uae.communicate(cmd)
             text = '\n'.join(lines) + '\n'
