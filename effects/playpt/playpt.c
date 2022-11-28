@@ -128,20 +128,58 @@ static void Kill(void) {
 
 static bool HandleEvent(void);
 
+static const char hex[16] = "0123456789ABCDEF";
+
+static inline void NumToHex(char *str, u_int n, short l) {
+  do {
+    str[--l] = hex[n & 15];
+    n >>= 4;
+    if (n == 0)
+      break;
+  } while (l > 0);
+}
+
+static void NoteToHex(char *str, u_short note, u_short cmd) {
+  /* instrument number */
+  NumToHex(&str[0], ((note >> 8) & 0xf0) | (cmd & 15), 2);
+  /* note period */
+  NumToHex(&str[2], note & 0xfff, 3);
+  /* effect command */
+  NumToHex(&str[5], cmd & 0xfff, 3);
+}
+
 static void Render(void) {
   struct pt_mod *mod = mt_data.mt_mod;
   short songPos = mt_data.mt_SongPos;
   short pattPos = mt_data.mt_PatternPos >> 4;
+  short i;
 
   ConsoleSetCursor(&console, 0, 3);
   ConsolePrint(&console, "Playing \"%s\"\n\n", mod->name);
 
-  ConsolePrint(&console, "%02x:%02x\n", songPos, pattPos);
+  ConsolePrint(&console, "Song position: %d\n\n", songPos);
 
-  {
-    u_int *row = mod->pattern[songPos][pattPos];
-    ConsolePrint(&console, " %08x %08x %08x %08x\n",
-                 row[0], row[1], row[2], row[3]);
+  for (i = pattPos - 4; i < pattPos + 4; i++) {
+    static char buf[41];
+
+    memset(buf, ' ', sizeof(buf));
+    buf[40] = '\0';
+
+    if ((i >= 0) && (i < 64)) {
+      u_short *row = (void *)mod->pattern[songPos][i];
+      NumToHex(&buf[0], i, 2);
+      buf[2] = ':';
+      NoteToHex(&buf[3], row[0], row[1]);
+      buf[11] = '|';
+      NoteToHex(&buf[12], row[2], row[3]);
+      buf[20] = '|';
+      NoteToHex(&buf[21], row[4], row[5]);
+      buf[29] = '|';
+      NoteToHex(&buf[30], row[6], row[7]);
+      buf[38] = '|';
+    }
+
+    ConsolePutStr(&console, buf);
   }
 
   TaskWaitVBlank();
