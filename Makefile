@@ -18,3 +18,6 @@ tags:
 
 cscope.out:
 	cscope -b $(FILES)
+
+gdb-dashboard:
+	wget -O $@ https://raw.githubusercontent.com/cyrus-and/gdb-dashboard/master/.gdbinit
