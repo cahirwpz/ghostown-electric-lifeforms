@@ -183,6 +183,15 @@ static void Render(void) {
     ConsolePutStr(&console, buf);
   }
 
+  ConsolePutChar(&console, '\n');
+
+  for (i = 0; i < 4; i++) {
+    struct mt_chan *chan = &mt_data.mt_chan[i];
+    ConsolePrint(&console, "CH%d: %08x %04x %08x %04x\n",
+                 i, (u_int)chan->n_start, chan->n_length,
+                 (u_int)chan->n_loopstart, chan->n_replen);
+  }
+
   TaskWaitVBlank();
 
   exitLoop = !HandleEvent();
