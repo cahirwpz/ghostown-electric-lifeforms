@@ -141,7 +141,7 @@ static inline void NumToHex(char *str, u_int n, short l) {
 
 static void NoteToHex(char *str, u_short note, u_short cmd) {
   /* instrument number */
-  NumToHex(&str[0], ((note >> 8) & 0xf0) | (cmd & 15), 2);
+  NumToHex(&str[0], ((note >> 8) & 0xf0) | ((cmd >> 12) & 15), 2);
   /* note period */
   NumToHex(&str[2], note & 0xfff, 3);
   /* effect command */
@@ -151,13 +151,14 @@ static void NoteToHex(char *str, u_short note, u_short cmd) {
 static void Render(void) {
   struct pt_mod *mod = mt_data.mt_mod;
   short songPos = mt_data.mt_SongPos;
+  short pattNum = mod->order[songPos];
   short pattPos = mt_data.mt_PatternPos >> 4;
+  u_int *pattern = (void *)mod->pattern[pattNum];
   short i;
 
   ConsoleSetCursor(&console, 0, 3);
   ConsolePrint(&console, "Playing \"%s\"\n\n", mod->name);
-
-  ConsolePrint(&console, "Song position: %d\n\n", songPos);
+  ConsolePrint(&console, "Song position: %d -> %d\n\n", songPos, pattNum);
 
   for (i = pattPos - 4; i < pattPos + 4; i++) {
     static char buf[41];
@@ -166,7 +167,7 @@ static void Render(void) {
     buf[40] = '\0';
 
     if ((i >= 0) && (i < 64)) {
-      u_short *row = (void *)mod->pattern[songPos][i];
+      u_short *row = (void *)&pattern[4 * i];
       NumToHex(&buf[0], i, 2);
       buf[2] = ':';
       NoteToHex(&buf[3], row[0], row[1]);
