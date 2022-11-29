@@ -1,13 +1,6 @@
 TOPDIR := $(realpath ..)
 
-# AMIGAOS => save & restore AmigaOS context
-#            (for intros or trackmos that can be launched from AmigaOS)
 CPPFLAGS += -D_SYSTEM
-# Pass "REAL=1" at command line to build for a real hardware
-ifeq ($(BOOTABLE), 1)
-CPPFLAGS += -DAMIGAOS
-endif
-
 
 LIBNAME := system
 SOURCES := \

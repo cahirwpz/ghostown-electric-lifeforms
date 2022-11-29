@@ -29,15 +29,17 @@ LDSCRIPT := $(TOPDIR)/system/amiga.lds
 # Don't reload library base for each call
 CPPFLAGS += -D__CONSTLIBBASEDECL__=const
 
-# Default configuration
-FRAMES_PER_ROW ?= 6
+include $(TOPDIR)/config.mk
 
-ifeq ($(BOOTABLE), 0)
+ifeq ($(UAE), 1)
 CPPFLAGS += -DUAE
 endif
 
-# Pass "VERBOSE=1" at command line to display command being invoked by GNU Make
-ifneq ($(VERBOSE), 1)
+ifeq ($(AMIGAOS), 1)
+CPPFLAGS += -DAMIGAOS
+endif
+
+ifeq ($(VERBOSE), 0)
 .SILENT:
 QUIET := --quiet
 endif
