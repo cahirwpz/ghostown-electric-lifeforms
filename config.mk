@@ -2,7 +2,13 @@
 #      to aid debugging and profiling. This may render executable files
 #      unusable (most likely crash) on real hardware.
 # 0 => Disable use of aforementioned features. Required for a release!
-UAE := 1
+UAE := 0
+
+# [only when UAE=0] Redirect diagnostic and log messages to:
+# 0 => null output (drop messages)
+# 1 => parallel port
+# 2 => serial port
+DEBUGOUT := 2
 
 # 1 => Make executable files compatible with AmigaOS. Created ADFs will
 #      be formatted with Old Filesystem (KS1.3) and contain special bootblock

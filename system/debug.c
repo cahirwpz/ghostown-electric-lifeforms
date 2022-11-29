@@ -1,40 +1,32 @@
 #include "debug.h"
 
-#ifndef UAE
+#if !defined(UAE) && DEBUGOUT > 0
 #include <stdarg.h>
 #include <stdio.h>
 
-#define PARPORT 0
-
-#if PARPORT
+#if DEBUGOUT == 1
 #include <system/cia.h>
 
 extern void DPutChar(void *ptr, char data);
-#else
+
+#define PUTCHAR DPutChar
+#define AUXDATA ciab
+#endif 
+
+#if DEBUGOUT == 2
 #include <custom.h>
 
-static void KPutChar(void *ptr, char data) {
-  CustomPtrT _custom = ptr;
+extern void KPutChar(void *ptr, char data);
 
-  while (!(_custom->serdatr & SERDATF_TBE));
-  _custom->serdat = data | 0x100;
-
-  if (data == '\n') {
-    while (!(_custom->serdatr & SERDATF_TBE));
-    _custom->serdat = '\r' | 0x100;
-  }
-}
+#define PUTCHAR KPutChar
+#define AUXDATA custom
 #endif
 
 void Log(const char *format, ...) {
   va_list args;
 
   va_start(args, format);
-#if PARPORT
-  kvprintf(DPutChar, (void *)ciab, format, args);
-#else
-  kvprintf(KPutChar, (void *)custom, format, args);
-#endif
+  kvprintf(PUTCHAR, (void *)AUXDATA, format, args);
 
   va_end(args);
 }
@@ -43,11 +35,7 @@ __noreturn void Panic(const char *format, ...) {
   va_list args;
 
   va_start(args, format);
-#if PARPORT
-  kvprintf(DPutChar, (void *)ciab, format, args);
-#else
-  kvprintf(KPutChar, (void *)custom, format, args);
-#endif
+  kvprintf(PUTCHAR, (void *)AUXDATA, format, args);
   va_end(args);
 
   PANIC();

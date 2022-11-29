@@ -7,7 +7,8 @@ SOURCES := \
 	amigaos.c \
 	autoinit.c \
 	debug.c \
-	debug-putchar.S \
+	dputchar.S \
+	kputchar.S \
 	effect.c \
 	loader.c \
 	profiler.c \
