@@ -1,10 +1,10 @@
 #include "debug.h"
 
-#if !defined(UAE) && DEBUGOUT > 0
+#if !defined(UAE) && LOGOUT > 0
 #include <stdarg.h>
 #include <stdio.h>
 
-#if DEBUGOUT == 1
+#if LOGOUT == 1
 #include <system/cia.h>
 
 extern void DPutChar(void *ptr, char data);
@@ -13,7 +13,7 @@ extern void DPutChar(void *ptr, char data);
 #define AUXDATA ciab
 #endif 
 
-#if DEBUGOUT == 2
+#if LOGOUT == 2
 #include <custom.h>
 
 extern void KPutChar(void *ptr, char data);

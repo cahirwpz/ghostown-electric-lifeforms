@@ -8,7 +8,7 @@ UAE := 0
 # 0 => null output (drop messages)
 # 1 => parallel port
 # 2 => serial port
-DEBUGOUT := 2
+LOGOUT := 2
 
 # 1 => Make executable files compatible with AmigaOS. Created ADFs will
 #      be formatted with Old Filesystem (KS1.3) and contain special bootblock

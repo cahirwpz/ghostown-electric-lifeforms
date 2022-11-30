@@ -28,8 +28,7 @@ LDSCRIPT := $(TOPDIR)/system/amiga.lds
 
 # Don't reload library base for each call
 CPPFLAGS += -D__CONSTLIBBASEDECL__=const
-CPPFLAGS += -DCHIPMEM_KB=$(CHIPMEM) -DFASTMEM_KB=$(FASTMEM)
-CPPFLAGS += -DDEBUGOUT=$(DEBUGOUT)
+CPPFLAGS += -DCHIPMEM_KB=$(CHIPMEM) -DFASTMEM_KB=$(FASTMEM) -DLOGOUT=$(LOGOUT)
 
 include $(TOPDIR)/config.mk
 

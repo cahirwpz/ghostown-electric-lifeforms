@@ -8,14 +8,14 @@
 #define Log(...) UaeLog(__VA_ARGS__);
 #define Panic(...) { UaeLog(__VA_ARGS__); PANIC(); }
 #else
-#if DEBUGOUT > 0
+#if LOGOUT > 0
 void Log(const char *format, ...)
   __attribute__ ((format (printf, 1, 2)));
 __noreturn void Panic(const char *format, ...)
   __attribute__ ((format (printf, 1, 2)));
 #else
 #define Log(...)
-#define Panic(...)
+#define Panic(...) HALT()
 #endif
 #endif
 
