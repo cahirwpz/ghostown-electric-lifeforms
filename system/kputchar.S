@@ -1,21 +1,25 @@
 #include <asm.h>
 #include <custom_regdef.h>
 
-# [a0] custom
+# [a0.l] custom
+# [d0.b] character
 ENTRY(KPutChar)
-        ext.w   d0
-        or.w    #256,d0         /* add stop bit (?) */
+        tst.b   d0              /* don't send character if it's zero */
+        beq.s   .Quit
 
-.Wait1: btst.b  #5,serdatr(a0)  /* loop until transmit buffer empty */
-        beq.s   .Wait1
-        move.w  d0,serdat(a0)   /* send the character */
+        move.w  d0,-(sp)
+        cmp.b   #10,d0          /* send '\r' first if the character is `\n` */
+        bne.s   .NoNL
+        moveq   #13,d0
+        bsr.s   .Send
+.NoNL:  move.w  (sp)+,d0
 
-        cmp.b   #10,d0          /* check if it was `\n` */
-        bne.s   .Quit
+.Send:  move.w  #0x100,d1       /* add stop bit */
+        move.b  d0,d1
 
-.Wait2: btst.b  #5,serdatr(a0)  /* loop until transmit buffer empty */
-        beq.s   .Wait2
-        move.w  #269,serdat(a0) /* send '\r' after `\n` */
+.Wait:  btst.b  #5,serdatr(a0)  /* loop until transmit buffer empty */
+        beq.s   .Wait
+        move.w  d1,serdat(a0)   /* send the character */
 
 .Quit:  rts
 END(KPutChar)
