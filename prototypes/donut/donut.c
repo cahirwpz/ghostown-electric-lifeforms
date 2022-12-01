@@ -1,8 +1,8 @@
 #include <SDL.h>
 #include <math.h>
 
-static const int WIDTH = 640/4;
-static const int HEIGHT = 512/4;
+static const int WIDTH = 640;
+static const int HEIGHT = 512;
 
 static const int MAX_STEPS = 100;
 static const float MAX_DIST = 100.0;
@@ -21,43 +21,55 @@ typedef struct mat4 {
   float m30, m31, m32, m33;
 } mat4;
 
-static float clamp(float v, float min, float max) {
+/* https://en.wikipedia.org/wiki/Fast_inverse_square_root */
+float Q_rsqrt(float number) {
+  union {
+    float f;
+    uint32_t i;
+  } conv = {.f = number};
+  conv.i = 0x5f3759df - (conv.i >> 1);
+  conv.f *= 1.5f - (number * 0.5f * conv.f * conv.f);
+  return conv.f;
+}
+
+float clamp(float v, float min, float max) {
   return fmin(fmax(v, min), max);
 }
 
-static vec3 v3_abs(vec3 p) {
+vec3 v3_abs(vec3 p) {
   return (vec3){fabs(p.x), fabs(p.y), fabs(p.z)};
 }
 
-static vec3 v3_max(vec3 p, float v) {
+vec3 v3_max(vec3 p, float v) {
   return (vec3){fmax(p.x, v), fmax(p.y, v), fmax(p.z, v)};
 }
 
-static vec3 v3_add(vec3 a, vec3 b) {
+vec3 v3_add(vec3 a, vec3 b) {
   return (vec3){a.x + b.x, a.y + b.y, a.z + b.z};
 }
 
-static vec3 v3_sub(vec3 a, vec3 b) {
+vec3 v3_sub(vec3 a, vec3 b) {
   return (vec3){a.x - b.x, a.y - b.y, a.z - b.z};
 }
 
-static vec3 v3_mul(vec3 a, float v) {
+vec3 v3_mul(vec3 a, float v) {
   return (vec3){a.x * v, a.y * v, a.z * v};
 }
 
-static float v3_dot(vec3 a, vec3 b) {
+float v3_dot(vec3 a, vec3 b) {
   return a.x * b.x + a.y * b.y + a.z * b.z;
 }
 
-static float v3_length(vec3 p) {
+float v3_length(vec3 p) {
   return sqrtf(p.x * p.x + p.y * p.y + p.z * p.z);
 }
 
-static vec3 v3_normalize(vec3 p) {
-  return v3_mul(p, 1.0 / v3_length(p));
+vec3 v3_normalize(vec3 p) {
+  /* return v3_mul(p, 1.0f / v3_length(p)); */
+  return v3_mul(p, Q_rsqrt(p.x * p.x + p.y * p.y + p.z * p.z));
 }
 
-static mat4 m4_mul(mat4 a, mat4 b) {
+mat4 m4_mul(mat4 a, mat4 b) {
   mat4 c;
 
   float *ma = (float *)&a.m00;
@@ -77,35 +89,35 @@ static mat4 m4_mul(mat4 a, mat4 b) {
 }
 
 /* @brief Rotate around X axis */
-static mat4 m4_rotateX(float angle) {
-  float s = sin(angle);
-  float c = cos(angle);
-  return (mat4) {1, 0, 0, 0, 0, c, -s, 0, 0, s, c, 0, 0, 0, 0, 1};
+mat4 m4_rotateX(float angle) {
+  float s = sinf(angle);
+  float c = cosf(angle);
+  return (mat4){1, 0, 0, 0, 0, c, -s, 0, 0, s, c, 0, 0, 0, 0, 1};
 }
 
 /* @brief Rotate around Y axis */
-static mat4 m4_rotateY(float angle) {
-  float s = sin(angle);
-  float c = cos(angle);
+mat4 m4_rotateY(float angle) {
+  float s = sinf(angle);
+  float c = cosf(angle);
   return (mat4){c, 0, s, 0, 0, 1, 0, 0, -s, 0, c, 0, 0, 0, 0, 1};
 }
 
 /* @brief Rotate around Z axis */
-static mat4 m4_rotateZ(float angle) {
-  float s = sin(angle);
-  float c = cos(angle);
+mat4 m4_rotateZ(float angle) {
+  float s = sinf(angle);
+  float c = cosf(angle);
   return (mat4){c, -s, 0, 0, s, c, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1};
 }
 
-static mat4 m4_move(float x, float y, float z) {
+mat4 m4_move(float x, float y, float z) {
   return (mat4){1, 0, 0, -x, 0, 1, 0, -y, 0, 0, 1, -z, 0, 0, 0, 1};
 }
 
-static mat4 m4_rotate(float x, float y, float z) {
+mat4 m4_rotate(float x, float y, float z) {
   return m4_mul(m4_mul(m4_rotateX(x), m4_rotateY(y)), m4_rotateZ(z));
 }
 
-static vec3 m4_translate(vec3 p, mat4 a) {
+vec3 m4_translate(vec3 p, mat4 a) {
   vec3 r;
 
   p.w = 1.0;
@@ -179,32 +191,69 @@ float CylinderDist(vec3 p, vec3 a, vec3 b, float r) {
 
   vec3 c = v3_add(a, v3_mul(ab, t));
   float x = v3_length(v3_sub(p, c)) - r;
-  float y = (abs(t - 0.5) - 0.5) * v3_length(ab);
+  float y = (fabs(t - 0.5) - 0.5) * v3_length(ab);
   float e = v3_length(v3_max((vec3){x, y}, 0.0));
   float i = fmin(fmax(x, y), 0.0);
 
   return e + i;
 }
 
-float GetDist(vec3 p) {
-  mat4 so = m4_move(0, 1, 5);
-  vec3 sp = m4_translate(p, so);
-  float sd = SphereDist(sp, 1.0);
+static mat4 bm, tm, sm;
+static vec3 lightPos;
 
-  float pd = PlaneDist(p);
-  
-  float cd = CapsuleDist(p, (vec3){3, 1, 8}, (vec3){3, 3, 8}, .5);
-  float ccd = CylinderDist(p, (vec3){2, 1, 6}, (vec3){3, 1, 4}, .5);
+void PerFrame(void) {
+  iTime = SDL_GetTicks() / 1000.0;
+
+  sm = m4_move(0, 1, 5);
 
   mat4 to = m4_move(-3, 1, 6);
   mat4 tr = m4_rotate(iTime, 0., 0.);
-  vec3 tp = m4_translate(p, m4_mul(tr, to));
-  float td = TorusDist(tp, 1.0, 0.25);
+  tm = m4_mul(tr, to);
 
   mat4 bo = m4_move(0, 1, 8);
   mat4 br = m4_rotate(0., iTime * .2, 0.);
-  vec3 bp = m4_translate(p, m4_mul(br, bo));
+  bm = m4_mul(br, bo);
+
+  lightPos = (vec3){0.0, 5.0, 6.0};
+  lightPos.x += sinf(iTime) * 2.0;
+  lightPos.z += cosf(iTime) * 2.0;
+}
+
+float GetDist(vec3 p) {
+#if 1
+  vec3 sp = m4_translate(p, sm);
+  float sd = SphereDist(sp, 1.0);
+#else
+  float sd = MAX_DIST;
+#endif
+
+#if 1
+  float pd = PlaneDist(p);
+#else
+  float pd = MAX_DIST;
+#endif
+
+#if 1
+  float cd = CapsuleDist(p, (vec3){3, 1, 8}, (vec3){3, 3, 8}, .5);
+#else
+  float cd = MAX_DIST;
+#endif
+
+#if 1
+  float ccd = CylinderDist(p, (vec3){2, 1, 6}, (vec3){3, 1, 4}, .5);
+#else
+  float ccd = MAX_DIST;
+#endif
+
+  vec3 tp = m4_translate(p, tm);
+  float td = TorusDist(tp, 1.0, 0.25);
+
+#if 1
+  vec3 bp = m4_translate(p, bm);
   float bd = BoxDist(bp, (vec3){1, 1, 1});
+#else
+  float bd = MAX_DIST;
+#endif
 
   return fmin(fmin(fmin(ccd, bd), fmin(sd, td)), fmin(pd, cd));
 }
@@ -238,11 +287,6 @@ float RayMarch(vec3 ro, vec3 rd) {
 }
 
 float GetLight(vec3 p) {
-  vec3 lightPos = {0.0, 5.0, 6.0};
-
-  lightPos.x += sinf(iTime) * 2.0;
-  lightPos.z += cosf(iTime) * 2.0;
-
   vec3 l = v3_normalize(v3_sub(lightPos, p));
   vec3 n = GetNormal(p);
 
@@ -256,18 +300,17 @@ float GetLight(vec3 p) {
   return clamp(diff, 0.0, 1.0);
 }
 
-void Draw(SDL_Surface *canvas) {
+void Render(SDL_Surface *canvas) {
   Uint32 *buffer = (Uint32 *)canvas->pixels;
 
-  iTime = SDL_GetTicks() / 1000.0;
+  uint32_t start = SDL_GetTicks();
 
   for (int y = 0; y < HEIGHT; y++) {
     // SDL_Log("y = %d\n", y);
     for (int x = 0; x < WIDTH; x++) {
       // Normalized pixel coordinates (from -1.0 to 1.0)
-      vec3 uv = (vec3){
-        (float)x * 2.0 / WIDTH - 1.0, 
-        1.0 - (float)y * 2.0 / HEIGHT};
+      vec3 uv =
+        (vec3){(float)x * 2.0 / WIDTH - 1.0, 1.0 - (float)y * 2.0 / HEIGHT};
 
       // Simple camera model
       vec3 ro = (vec3){0.0, 4.0, 0.0};
@@ -285,6 +328,10 @@ void Draw(SDL_Surface *canvas) {
       buffer[y * WIDTH + x] = SDL_MapRGBA(canvas->format, c, c, c, 255);
     }
   }
+
+  uint32_t end = SDL_GetTicks();
+
+  SDL_Log("Render took %dms\n", end - start);
 }
 
 int main(void) {
@@ -308,8 +355,10 @@ int main(void) {
       }
     }
 
+    PerFrame();
+
     SDL_LockSurface(canvas);
-    Draw(canvas);
+    Render(canvas);
     SDL_UnlockSurface(canvas);
 
     SDL_BlitSurface(canvas, 0, window_surface, 0);
