@@ -136,83 +136,22 @@ vec3 m4_translate(vec3 p, mat4 a) {
   return r;
 }
 
-/* @brief Calculate distance from sphere
- * @param p point of interest
- * @param r sphere radius
- * @return distance of s from p
- */
-float SphereDist(vec3 p, float r) {
-  return v3_length(p) - r;
-}
-
-/* @brief Calculate distance from plane at (0,0,0) origin
- * @param p point of interest
- * @return distance of plane from p
- */
-float PlaneDist(vec3 p) {
-  return p.y;
-}
-
-/* @brief Calculate distance from a capsule */
-float CapsuleDist(vec3 p, vec3 a, vec3 b, float r) {
-  vec3 ab = v3_sub(b, a);
-  vec3 ap = v3_sub(p, a);
-
-  float t = v3_dot(ab, ap) / v3_dot(ab, ab);
-
-  t = clamp(t, 0.0, 1.0);
-
-  vec3 c = v3_add(a, v3_mul(ab, t));
-
-  return v3_length(v3_sub(p, c)) - r;
-}
-
 /* @brief Calculate distance from a torus */
 float TorusDist(vec3 p, float r1, float r2) {
-  vec3 r = {p.x, p.z};
-  vec3 q = {v3_length(r) - r1, p.y};
-  return v3_length(q) - r2;
+  float r = sqrtf(p.x * p.x + p.z * p.z) - r1;
+  float q = sqrtf(r * r + p.y * p.y);
+  return q - r2;
 }
 
-/* @brief Calculate distance from a box */
-float BoxDist(vec3 p, vec3 s) {
-  vec3 d = v3_sub(v3_abs(p), s);
-  float e = v3_length(v3_max(d, 0.0));
-  float i = fmin(fmax(d.x, fmax(d.y, d.z)), 0.0);
-  return e + i;
-}
-
-/* @brief Calculate distance from a cylinder */
-float CylinderDist(vec3 p, vec3 a, vec3 b, float r) {
-  vec3 ab = v3_sub(b, a);
-  vec3 ap = v3_sub(p, a);
-
-  float t = v3_dot(ab, ap) / v3_dot(ab, ab);
-
-  vec3 c = v3_add(a, v3_mul(ab, t));
-  float x = v3_length(v3_sub(p, c)) - r;
-  float y = (fabs(t - 0.5) - 0.5) * v3_length(ab);
-  float e = v3_length(v3_max((vec3){x, y}, 0.0));
-  float i = fmin(fmax(x, y), 0.0);
-
-  return e + i;
-}
-
-static mat4 bm, tm, sm;
+static mat4 tm;
 static vec3 lightPos;
 
 void PerFrame(void) {
   iTime = SDL_GetTicks() / 1000.0;
 
-  sm = m4_move(0, 1, 5);
-
-  mat4 to = m4_move(-3, 1, 6);
-  mat4 tr = m4_rotate(iTime, 0., 0.);
+  mat4 to = m4_move(0, 0, 6);
+  mat4 tr = m4_rotate(iTime, iTime, 0.);
   tm = m4_mul(tr, to);
-
-  mat4 bo = m4_move(0, 1, 8);
-  mat4 br = m4_rotate(0., iTime * .2, 0.);
-  bm = m4_mul(br, bo);
 
   lightPos = (vec3){0.0, 5.0, 6.0};
   lightPos.x += sinf(iTime) * 2.0;
@@ -220,42 +159,7 @@ void PerFrame(void) {
 }
 
 float GetDist(vec3 p) {
-#if 1
-  vec3 sp = m4_translate(p, sm);
-  float sd = SphereDist(sp, 1.0);
-#else
-  float sd = MAX_DIST;
-#endif
-
-#if 1
-  float pd = PlaneDist(p);
-#else
-  float pd = MAX_DIST;
-#endif
-
-#if 1
-  float cd = CapsuleDist(p, (vec3){3, 1, 8}, (vec3){3, 3, 8}, .5);
-#else
-  float cd = MAX_DIST;
-#endif
-
-#if 1
-  float ccd = CylinderDist(p, (vec3){2, 1, 6}, (vec3){3, 1, 4}, .5);
-#else
-  float ccd = MAX_DIST;
-#endif
-
-  vec3 tp = m4_translate(p, tm);
-  float td = TorusDist(tp, 1.0, 0.25);
-
-#if 1
-  vec3 bp = m4_translate(p, bm);
-  float bd = BoxDist(bp, (vec3){1, 1, 1});
-#else
-  float bd = MAX_DIST;
-#endif
-
-  return fmin(fmin(fmin(ccd, bd), fmin(sd, td)), fmin(pd, cd));
+  return TorusDist(m4_translate(p, tm), 2.0, 0.666);
 }
 
 vec3 GetNormal(vec3 p) {
