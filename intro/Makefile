@@ -26,12 +26,13 @@ BUILD-FILES := audiovq
 
 CLEAN-FILES := main.o data/bar.c data/bar-2.c data/stripes.c data/colors.c \
 	data/JazzCat-ElectricLifeforms*.{smp,o} data/text-scroll-font.c \
-	data/intro.c data/turmite-pal.c data/electric-lifeforms-0[1-2].c \
+	data/intro.c data/electric-lifeforms-0[1-2].c \
 	data/fruit.c data/tilemover-pal.c data/anemone-pal.c \
 	data/ghostown-logo-crop.c data/p46basedprng.c data/cell-gradient.c \
 	data/logo-electrons.c data/electric-lifeforms.c \
 	data/electric-lifeforms-wireworld.c data/ghostown-logo-0[1-3].c \
-	data/turmite-credits-[1-3].c data/sea-anemone-pal[1-5].c
+	data/turmite-credits-[1-3].c data/sea-anemone-pal[1-5].c \
+	data/turmite-pal-[1-3]-*.c
 
 SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   tilemover.c sea-anemone.c game-of-life.c vitruvian.c
@@ -62,6 +63,16 @@ PNG2C.ghostown-logo-crop := --bitmap ghostown_logo,196x127x3,+shared
 PNG2C.ghostown-logo-01 := --palette ghostown_logo_1_pal,8
 PNG2C.ghostown-logo-02 := --palette ghostown_logo_2_pal,8
 PNG2C.ghostown-logo-03 := --palette ghostown_logo_3_pal,8
+
+PNG2C.turmite-pal-1 := --palette turmite_pal_1,16
+PNG2C.turmite-pal-1-dark := --palette turmite_pal_1_dark,16
+PNG2C.turmite-pal-1-light := --palette turmite_pal_1_light,16
+PNG2C.turmite-pal-2 := --palette turmite_pal_2,16
+PNG2C.turmite-pal-2-dark := --palette turmite_pal_2_dark,16
+PNG2C.turmite-pal-2-light := --palette turmite_pal_2_light,16
+PNG2C.turmite-pal-3 := --palette turmite_pal_3,16
+PNG2C.turmite-pal-3-dark := --palette turmite_pal_3_dark,16
+PNG2C.turmite-pal-3-light := --palette turmite_pal_3_light,16
 
 CPPFLAGS += -DINTRO -DVQ=$(VQ) -DDELTA=$(DELTA) -I.
 
