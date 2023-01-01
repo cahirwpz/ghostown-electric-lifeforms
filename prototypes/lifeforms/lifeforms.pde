@@ -14,7 +14,7 @@ PGraphics screen;
 Organism buckets[];
 Organism organisms[];
 Flowfield ff;
-int weights[] = {9, 0, 0, 5, 3};
+int weights[] = {6, 0, 0, 3, 2};
 
 boolean heatmap = false;
 boolean wallBounce = false;
@@ -32,9 +32,9 @@ void init_normtab() {
     for (int x = 0; x < 128; x++) {
       PVector v = new PVector((float)x, (float)y);
       v.normalize();
-      // convert back to 3.4
-      int nx = (int)(v.x*16);
-      int ny = (int)(v.y*16);
+      // convert back to 3.12
+      int nx = (int)(v.x*4096);
+      int ny = (int)(v.y*4096);
       normtab[(y<<7)+x] = new Vec2(nx, ny);
     }
   }
@@ -161,15 +161,25 @@ final int MIN_SHORT = -(1<<15);
 
 final int maxspeed = MAX_SHORT/2;
 final int maxspeedSq = maxspeed*maxspeed;
-final float maxforce = 0.5/2;
-final float orgSize = 10;
+final int maxforce = MAX_SHORT/32;
+final int maxforceSq = maxforce*maxforce;
+final int orgSize = 10;
 
-void limitMaxspeed(Vec2 vel) {
+void limitMaxspeed(Vec2 vel) { //<>//
   int dsq = vel.x * vel.x + vel.y * vel.y;
-  if (dsq < maxspeedSq) {
+  if (dsq > maxspeedSq) {
     vel.normalize();
     vel.x <<= 2;
-    vel.y <<= 2; // steer.mult(maxspeed);
+    vel.y <<= 2; // vel.mult(maxspeed);
+  }
+}
+
+void limitMaxforce(Vec2 force) {
+  int dsq = force.x * force.x + force.y * force.y;
+  if (dsq > maxforceSq) {
+    force.normalize();
+    force.x >>= 2;
+    force.y >>= 2; // force.mult(maxforce);
   }
 }
 
@@ -310,7 +320,7 @@ class Organism {
   
   Organism(int x, int y, int id) {
     pos = new Vec2(x<<4, y<<4);
-    vel = new Vec2((int)random(0, MAX_USHORT), (int)random(0, MAX_USHORT));
+    vel = new Vec2((int)random(-maxspeed/2, maxspeed/2), (int)random(-maxspeed/2, maxspeed/2));
     accel = new Vec2(0, 0);
     bucketid = id;
     next = null;
@@ -347,8 +357,8 @@ class Organism {
         pos.y -= h<<4;
     }
 
-    int tx = constrain(pos.x / tilesize, 0, tilew-1);
-    int ty = constrain(pos.y / tilesize, 0, tileh-1);
+    int tx = constrain((pos.x>>4) / tilesize, 0, tilew-1);
+    int ty = constrain((pos.y>>4) / tilesize, 0, tileh-1);
     int bucket = ty*tilew + tx;
 
     Organism org = buckets[bucketid];
@@ -392,8 +402,9 @@ class Organism {
     screen.circle(posf.x, posf.y, orgSize);
     
     screen.stroke(#FF0000);
-    screen.line(pos.x, pos.y, pos.x + velf.x*4, pos.y + velf.y*4);
+    screen.line(posf.x, posf.y, posf.x + velf.x*4, posf.y + velf.y*4);
     screen.fill(#0000FF);
+    //screen.text(String.format("%.2f %.2f", velf.x, velf.y), posf.x, posf.y);
   }
   
   void applyForce(Vec2 force) {
@@ -403,14 +414,14 @@ class Organism {
   void applyDesiredVel(Vec2 desired) {
     Vec2 steer = new Vec2(desired);
     steer.sub(vel);
-    limitMaxspeed(steer);
+    limitMaxforce(steer);
     applyForce(steer);
-  }
+  } //<>//
   
   Vec2 steerForce(Vec2 desiredVel) {
     Vec2 steer = new Vec2(desiredVel);
     steer.sub(vel);
-    limitMaxspeed(steer);
+    limitMaxforce(steer);
     return steer;
   }
   
@@ -432,31 +443,17 @@ class Organism {
     for (Organism other : getNeighbours(this, separationCircle)) {
       int diffx = pos.x - other.pos.x;
       int diffy = pos.y - other.pos.y;
-      int d = abs(diffx) + abs(diffy);
       Vec2 away = new Vec2(diffx, diffy);
-      // 32 - maximum manhattan distance between two boids in neighbourhood area
-      if (d <= 32) {
-        avg.add(away);
-        cnt++;
-      }
+      avg.add(away);
+      cnt++;
       adds += 6;
     }
     
     if (cnt > 0) {
-      // dividing by count and normalization step not needed - works well enough
-      //avg.div(cnt);
       avg.normalize();
       avg.x <<= 2;
       avg.y <<= 2; // avg.mult(maxspeed);
-      
-      Vec2 steer = new Vec2(avg);
-      steer.sub(vel);
-      // this imitates steer.limit(maxforce) but instead of
-      // limiting vector length it remaps its lenght linearly
-      // from 0-8 to 0-maxforce (0.25)
-      steer.x /= 32;
-      steer.y /= 32;
-      avg = steer;
+      avg = steerForce(avg);
     }
     return avg;
   }
@@ -501,17 +498,20 @@ class Organism {
     accel.x = 0;
     accel.y = 0;
     Vec2 sep = separate();
-    //PVector mouse = seek(new PVector(mouseX/scale, mouseY/scale));
+    sep.div(10);
+    Vec2 mouse = seek(new Vec2(16*mouseX/scale, 16*mouseY/scale));
     
     int x = pos.x / ff.ffw;
     int y = pos.y / ff.ffh;
     //PVector ffForce = steerForce(PVector.mult(ff.get(x, y), 20), maxforce);
     
     Vec2 alignment = align();
+    alignment.div(10);
     Vec2 cohesion = cohese();
+    cohesion.div(10);
     
     sep.mult(weights[0]);
-    //mouse.mult(weights[1]);
+    mouse.mult(weights[1]);
     //ffForce.mult(weights[2]);
     alignment.mult(weights[3]);
     cohesion.mult(weights[4]);
@@ -521,9 +521,8 @@ class Organism {
     applyForce(sep);
     applyForce(alignment);
     applyForce(cohesion);
-    //applyForce(mouse);
+    applyForce(mouse);
     //applyForce(ffForce);
-    print(String.format("sep: (%d, %d), align: (%d, %d), coh: (%d, %d)\n", sep.x, sep.y, alignment.x, alignment.y, cohesion.x, cohesion.y)); 
   }
   
 }
