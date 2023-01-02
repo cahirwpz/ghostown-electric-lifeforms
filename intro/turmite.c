@@ -46,7 +46,7 @@ static u_int lookup[256][2];
 extern TrackT TurmiteBoard;
 extern TrackT TurmitePal;
 
-short activeBoard = 1;
+static short activeBoard = 1;
 static short lightLevel = 0;
 
 static const BitmapT *turmite_credits[] = {
@@ -339,7 +339,7 @@ static inline void SetPixel(u_char *bpl, u_short pos, u_char val) {
 
 #if GENERATION
 static u_char generation = 0;
-static short desc = 0;
+static short gen_inc = 0;
 #endif
 
 static TurmiteT *TheTurmite =
@@ -526,12 +526,12 @@ end:
 
 #if GENERATION
  if (generation == 0) {
-    desc = 0;
+    gen_inc = STEP;
   }
   if (generation == 248) {
-    desc = 1;
+    gen_inc = -STEP;
   }
-  if (desc) {
+  if (gen_inc) {
     generation -= STEP;
   } else {
     generation += STEP;
@@ -539,13 +539,10 @@ end:
 #endif
 }
 
-static void ResetTurmite(TurmiteT *t1, TurmiteT *t2) {
-  t1->pos = POS(60, 60);
-  t1->dir = 0;
-  t1->state = 0;
-  t2->pos = POS(160, 160);
-  t2->dir = 0;
-  t2->state = 0;
+static void ResetTurmite(TurmiteT *t, u_short pos) {
+  t->pos = pos;
+  t->dir = 0;
+  t->state = 0;
 }
 
 static void ChooseTurmiteBoard(short i) {
@@ -557,7 +554,8 @@ static void ChooseTurmiteBoard(short i) {
   BitmapToBoard(turmite_credits[i], board);
   TheTurmite = turmite_types[i][0];
   TheTurmite2 = turmite_types[i][1];
-  ResetTurmite(TheTurmite, TheTurmite2);
+  ResetTurmite(TheTurmite, POS(60, 60));
+  ResetTurmite(TheTurmite2, POS(160, 160));
 }
 
 static int PaletteBlip(void) {
@@ -598,11 +596,11 @@ static void Init(void) {
 }
 
 static void Kill(void) {
+  RemIntServer(INTB_VERTB, BlipPaletteInterrupt);
   DisableDMA(DMAF_RASTER|DMAF_COPPER);
   DeleteCopList(cp);
   DeleteBitmap(screen);
   MemFree(board);
-  RemIntServer(INTB_VERTB, BlipPaletteInterrupt);
 }
 
 PROFILE(SimulateTurmite);
