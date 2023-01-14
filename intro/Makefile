@@ -24,7 +24,7 @@ LIBS := libctr
 
 BUILD-FILES := audiovq
 
-CLEAN-FILES := main.o data/bar.c data/bar-2.c data/stripes.c data/colors.c \
+CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
 	data/JazzCat-ElectricLifeforms*.{smp,o} data/text-scroll-font.c \
 	data/intro.c data/turmite-pal.c data/electric-lifeforms-0[1-2].c \
 	data/fruit.c data/tilemover-pal.c data/anemone-pal.c \
@@ -37,8 +37,7 @@ SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   tilemover.c sea-anemone.c game-of-life.c vitruvian.c
 MAIN := #
 
-PNG2C.bar := --bitmap bar,480x67x4 --palette bar_pal,16
-PNG2C.bar-2 := --palette bar2_pal,16
+PNG2C.bar := --bitmap bar,480x67x4,+limit_depth --palette bar_pal,32
 PNG2C.stripes := --sprite arrow,128,2,+onlydata
 PNG2C.colors := --palette stripes_pal,16
 PNG2C.text-scroll-font := --bitmap font,768x8x1 --palette font_pal,2
