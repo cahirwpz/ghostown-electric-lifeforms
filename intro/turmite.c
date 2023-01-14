@@ -56,14 +56,14 @@ static const BitmapT *turmite_credits[] = {
   &turmite_credits_3,
 };
 
-static const PaletteT *turmite_palettes[] = {
+typedef const PaletteT *TurmitePalT[4];
+
+static TurmitePalT turmite_palettes = {
   NULL,
   &turmite_pal_1,
   &turmite_pal_2,
   &turmite_pal_3,
 };
-
-typedef const PaletteT *TurmitePalT[4];
 
 static TurmitePalT turmite_pal1 = {
   NULL,
@@ -579,10 +579,6 @@ static void ChooseTurmiteBoard(short i) {
   TheTurmite2 = turmite_types[i][1];
   ResetTurmite(TheTurmite, POS(60, 60));
   ResetTurmite(TheTurmite2, POS(160, 160));
-  Log("initial addr: %p \n", active_pal);
-  Log("pal1 addr: %p \n", turmite_pal1);
-  Log("pal2 addr: %p \n", turmite_pal2);
-  Log("pal3 addr: %p \n", turmite_pal3);
   if (i == 1) {
     active_pal = &turmite_pal1;
   } else if (i == 2) {
@@ -590,16 +586,12 @@ static void ChooseTurmiteBoard(short i) {
   } else if (i == 3) {
     active_pal = &turmite_pal3;
   }
-  Log("active pal addr: %p \n", active_pal);
 }
 
 static int PaletteBlip(void) {
-  short ll;
   if (lightLevel) {
-    ll = blip_sequence[lightLevel];
-    Log("pal1 addr: %p \n", turmite_pal1);
-    Log("active_pal addr %p \n", *active_pal);
-    LoadPalette(*active_pal[ll], 0);
+    short ll = blip_sequence[lightLevel];
+    LoadPalette((*active_pal)[ll], 0);
     lightLevel--;
   }
   return 0;
