@@ -65,28 +65,35 @@ static TurmitePalT turmite_palettes = {
   &turmite_pal_3,
 };
 
-static TurmitePalT turmite_pal1 = {
+static TurmitePalT turmite1_pal = {
   NULL,
   &turmite_pal_1_light,
   &turmite_pal_1,
   &turmite_pal_1_dark,
 };
 
-static TurmitePalT turmite_pal2 = {
+static TurmitePalT turmite2_pal = {
   NULL,
   &turmite_pal_2_light,
   &turmite_pal_2,
   &turmite_pal_2_dark,
 };
 
-static TurmitePalT turmite_pal3 = {
+static TurmitePalT turmite3_pal = {
   NULL,
   &turmite_pal_3_light,
   &turmite_pal_3,
   &turmite_pal_3_dark,
 };
 
-static TurmitePalT *active_pal = &turmite_pal1;
+static TurmitePalT *turmite_pal[4] = {
+  NULL,
+  &turmite1_pal,
+  &turmite2_pal,
+  &turmite3_pal,
+};
+
+static TurmitePalT *active_pal = &turmite1_pal;
 
 static const short blip_sequence[] = {
   0, 2, 1, 1, 1, 2, 2, 2, 3, 3, 3
@@ -365,14 +372,12 @@ static u_char generation = 0;
 static short gen_inc = 0;
 #endif
 
-static TurmiteT *TheTurmite =
+static TurmiteT *TheTurmite[2] =
 #if GENERATION
-  &SquarePattern;
+{ &SquarePattern, &SquarePattern2};
 #else
-  &Irregular;
+{ &Irregular, &Irregular2};
 #endif
-
-static TurmiteT *TheTurmite2 = &SquarePattern2;
 
 static void SimulateTurmite(TurmiteT *t asm("a2"), u_char *board asm("a3"),
                             u_char *bpl asm("a6")) {
@@ -575,23 +580,16 @@ static void ChooseTurmiteBoard(short i) {
   BlitterCopyFastSetup(screen, 0, 0, turmite_credits[i]);
   BlitterCopyFastStart(DEPTH - 1, 0);
   BitmapToBoard(turmite_credits[i], board);
-  TheTurmite = turmite_types[i][0];
-  TheTurmite2 = turmite_types[i][1];
-  ResetTurmite(TheTurmite, POS(60, 60));
-  ResetTurmite(TheTurmite2, POS(160, 160));
-  if (i == 1) {
-    active_pal = &turmite_pal1;
-  } else if (i == 2) {
-    active_pal = &turmite_pal2;
-  } else if (i == 3) {
-    active_pal = &turmite_pal3;
-  }
+  TheTurmite[0] = turmite_types[i][0];
+  TheTurmite[1] = turmite_types[i][1];
+  ResetTurmite(TheTurmite[0], POS(60, 60));
+  ResetTurmite(TheTurmite[1], POS(160, 160));
+  active_pal = turmite_pal[i];
 }
 
 static int PaletteBlip(void) {
   if (lightLevel) {
-    short ll = blip_sequence[lightLevel];
-    LoadPalette((*active_pal)[ll], 0);
+    LoadPalette((*active_pal)[blip_sequence[lightLevel]], 0);
     lightLevel--;
   }
   return 0;
@@ -645,8 +643,8 @@ static void Render(void) {
     ChooseTurmiteBoard(val);
 
   ProfilerStart(SimulateTurmite);
-  SimulateTurmite(TheTurmite, board, screen->planes[0]);
-  SimulateTurmite(TheTurmite2, board, screen->planes[0]);
+  SimulateTurmite(TheTurmite[0], board, screen->planes[0]);
+  SimulateTurmite(TheTurmite[1], board, screen->planes[0]);
   ProfilerStop(SimulateTurmite);
 
   TaskWaitVBlank();
