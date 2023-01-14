@@ -8,8 +8,20 @@
 #include "fx.h"
 #include <sync.h>
 #include <system/memory.h>
+#include <system/interrupt.h>
 
-#include "data/turmite-pal.c"
+#include "data/turmite-pal-1.c"
+#include "data/turmite-pal-1-dark.c"
+#include "data/turmite-pal-1-light.c"
+
+#include "data/turmite-pal-2.c"
+#include "data/turmite-pal-2-dark.c"
+#include "data/turmite-pal-2-light.c"
+
+#include "data/turmite-pal-3.c"
+#include "data/turmite-pal-3-dark.c"
+#include "data/turmite-pal-3-light.c"
+
 #include "data/turmite-credits-1.c"
 #include "data/turmite-credits-2.c"
 #include "data/turmite-credits-3.c"
@@ -32,12 +44,59 @@ static u_char *board;
 static u_int lookup[256][2];
 
 extern TrackT TurmiteBoard;
+extern TrackT TurmitePal;
+
+static short activeBoard = 1;
+static short lightLevel = 0;
 
 static const BitmapT *turmite_credits[] = {
   NULL,
   &turmite_credits_1,
   &turmite_credits_2,
   &turmite_credits_3,
+};
+
+typedef const PaletteT *TurmitePalT[4];
+
+static TurmitePalT turmite_palettes = {
+  NULL,
+  &turmite_pal_1,
+  &turmite_pal_2,
+  &turmite_pal_3,
+};
+
+static TurmitePalT turmite1_pal = {
+  NULL,
+  &turmite_pal_1_light,
+  &turmite_pal_1,
+  &turmite_pal_1_dark,
+};
+
+static TurmitePalT turmite2_pal = {
+  NULL,
+  &turmite_pal_2_light,
+  &turmite_pal_2,
+  &turmite_pal_2_dark,
+};
+
+static TurmitePalT turmite3_pal = {
+  NULL,
+  &turmite_pal_3_light,
+  &turmite_pal_3,
+  &turmite_pal_3_dark,
+};
+
+static TurmitePalT *turmite_pal[4] = {
+  NULL,
+  &turmite1_pal,
+  &turmite2_pal,
+  &turmite3_pal,
+};
+
+static TurmitePalT *active_pal = &turmite1_pal;
+
+static const short blip_sequence[] = {
+  0, 2, 1, 1, 1, 2, 2, 2, 3, 3, 3
 };
 
 static void BitmapToBoard(const BitmapT *bm, u_char *board) {
@@ -156,19 +215,111 @@ static TurmiteT Irregular = {
 };
 #endif
 
-static TurmiteT Credits = {
-  .pos = POS(128,128),
+static TurmiteT SquarePattern = {
+  .pos = POS(60,60),
   .dir = 0,
   .state = 0,
   .rules = {
     {
-      RULE(0, 1, 1),
-      RULE(0, -1, 0),
-    }, {
-      RULE(1, -1, 1),
-      RULE(1, 0, 0),
+      RULE(1 ,1 ,1),
+      RULE(1 ,1 ,0)
+    },
+    {
+      RULE(0 ,1 ,0),
+      RULE(1 ,0 ,1)
+    },
+  }
+};
+
+static TurmiteT SquarePattern2 = {
+  .pos = POS(160,160),
+  .dir = 0,
+  .state = 0,
+  .rules = {
+    {
+      RULE(1 ,1 ,1),
+      RULE(1 ,0 ,0)
+    },
+    {
+      RULE(1 ,0 ,0),
+      RULE(0 ,0 ,1)
+    },
+  }
+};
+
+static TurmiteT AroundLetters = {
+  .pos = POS(60,60),
+  .dir = 0,
+  .state = 0,
+  .rules = {
+    {
+      RULE(0 ,1 ,1),
+      RULE(1 ,1 ,1)
+    },
+    {
+      RULE(0 ,-1 ,2),
+      RULE(0 ,-1 ,0)
+    },
+    {
+      RULE(1 ,1 ,2),
+      RULE(1 ,-1 ,0)
     }
   }
+};
+
+static TurmiteT AroundLetters2 = {
+  .pos = POS(160,160),
+  .dir = 0,
+  .state = 0,
+  .rules = {
+    {
+      RULE(1 ,-1 ,1),
+      RULE(0, -1, 0),
+    }, 
+    {
+      RULE(1, 1, 1),
+      RULE(1, 1, 0),
+    }
+  }
+};
+
+static TurmiteT Spiral = {
+  .pos = POS(60,60),
+  .dir = 0,
+  .state = 0,
+  .rules = {
+    {
+      RULE(1 ,1 ,1),
+      RULE(0 ,1 ,1)
+    },
+    {
+      RULE(1 ,0 ,0),
+      RULE(1 ,0 ,1)
+    },
+  }
+};
+
+static TurmiteT Spiral2 = {
+  .pos = POS(160,160),
+  .dir = 0,
+  .state = 0,
+  .rules = {
+    {
+      RULE(1 ,1 ,0),
+      RULE(1 ,1 ,1)
+    },
+    {
+      RULE(0 ,0 ,0),
+      RULE(0 ,0 ,1)
+    },
+  }
+};
+
+static TurmiteT *turmite_types[4][2] = {
+  { NULL, NULL },
+  { &SquarePattern, &SquarePattern2 },
+  { &AroundLetters, &AroundLetters2 },
+  { &Spiral,  &Spiral2 },
 };
 
 #define BPLSIZE (WIDTH * HEIGHT / 8)
@@ -218,13 +369,14 @@ static inline void SetPixel(u_char *bpl, u_short pos, u_char val) {
 
 #if GENERATION
 static u_char generation = 0;
+static short gen_inc = 0;
 #endif
 
-static TurmiteT *TheTurmite =
+static TurmiteT *TheTurmite[2] =
 #if GENERATION
-  &Credits;
+{ &SquarePattern, &SquarePattern2};
 #else
-  &Irregular;
+{ &Irregular, &Irregular2};
 #endif
 
 static void SimulateTurmite(TurmiteT *t asm("a2"), u_char *board asm("a3"),
@@ -401,23 +553,49 @@ end:
   t->dir = dir;
 
 #if GENERATION
-  generation += STEP;
+ if (generation == 0) {
+    gen_inc = STEP;
+  }
+  if (generation == 248) {
+    gen_inc = -STEP;
+  }
+  if (gen_inc) {
+    generation -= STEP;
+  } else {
+    generation += STEP;
+  }
 #endif
 }
 
-static void ResetTurmite(TurmiteT *t) {
-  t->pos = POS(128, 128);
+static void ResetTurmite(TurmiteT *t, u_short pos) {
+  t->pos = pos;
   t->dir = 0;
   t->state = 0;
 }
 
 static void ChooseTurmiteBoard(short i) {
+  activeBoard = i;
   BitmapClear(screen);
+  LoadPalette(turmite_palettes[i], 0);
   BlitterCopyFastSetup(screen, 0, 0, turmite_credits[i]);
   BlitterCopyFastStart(DEPTH - 1, 0);
   BitmapToBoard(turmite_credits[i], board);
-  ResetTurmite(TheTurmite);
+  TheTurmite[0] = turmite_types[i][0];
+  TheTurmite[1] = turmite_types[i][1];
+  ResetTurmite(TheTurmite[0], POS(60, 60));
+  ResetTurmite(TheTurmite[1], POS(160, 160));
+  active_pal = turmite_pal[i];
 }
+
+static int PaletteBlip(void) {
+  if (lightLevel) {
+    LoadPalette((*active_pal)[blip_sequence[lightLevel]], 0);
+    lightLevel--;
+  }
+  return 0;
+}
+
+INTSERVER(BlipPaletteInterrupt, 0, (IntFuncT)PaletteBlip, NULL);
 
 static void Init(void) {
   board = MemAlloc(WIDTH * HEIGHT, MEMF_PUBLIC|MEMF_CLEAR);
@@ -427,10 +605,11 @@ static void Init(void) {
   SetupDisplayWindow(MODE_LORES, X(32), Y(0), WIDTH, HEIGHT);
   SetupBitplaneFetch(MODE_LORES, X(32), WIDTH);
   SetupMode(MODE_LORES, DEPTH);
-  LoadPalette(&turmite_pal, 0);
+  LoadPalette(&turmite_pal_1, 0);
 
   TrackInit(&TurmiteBoard);
-
+  TrackInit(&TurmitePal);
+  
   EnableDMA(DMAF_BLITTER);
   ChooseTurmiteBoard(1);
 
@@ -441,9 +620,12 @@ static void Init(void) {
   CopListActivate(cp);
 
   EnableDMA(DMAF_RASTER);
+
+  AddIntServer(INTB_VERTB, BlipPaletteInterrupt);
 }
 
 static void Kill(void) {
+  RemIntServer(INTB_VERTB, BlipPaletteInterrupt);
   DisableDMA(DMAF_RASTER|DMAF_COPPER);
   DeleteCopList(cp);
   DeleteBitmap(screen);
@@ -453,13 +635,16 @@ static void Kill(void) {
 PROFILE(SimulateTurmite);
 
 static void Render(void) {
-  short val;
+  short val, valPal;
+  if ((valPal = TrackValueGet(&TurmitePal, frameFromStart)))
+    lightLevel = valPal;
 
   if ((val = TrackValueGet(&TurmiteBoard, frameFromStart)))
     ChooseTurmiteBoard(val);
 
   ProfilerStart(SimulateTurmite);
-  SimulateTurmite(TheTurmite, board, screen->planes[0]);
+  SimulateTurmite(TheTurmite[0], board, screen->planes[0]);
+  SimulateTurmite(TheTurmite[1], board, screen->planes[0]);
   ProfilerStop(SimulateTurmite);
 
   TaskWaitVBlank();

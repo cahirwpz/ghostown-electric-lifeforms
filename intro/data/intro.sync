@@ -118,5 +118,34 @@ $0130 3
 $0000 1 !event
 $0020 2
 $0100 3
-$0120 1
+@end
+
+@track TurmitePal
+$0005 10 !event
+$000A 10 !event
+$000E 10 !event
+$0010 10 !event
+$0015 10 !event
+$001A 10 !event
+$001E 10 !event
+$0020 10 !event
+$0025 10 !event
+$002A 10 !event
+$002E 10 !event
+$0030 10 !event
+$0035 10 !event
+$003A 10 !event
+$003E 10 !event
+$0100 10 !event
+$0105 10 !event
+$010A 10 !event
+$010E 10 !event
+$0110 10 !event
+$0115 10 !event
+$011A 10 !event
+$011E 10 !event
+$0120 10 !event
+$0125 10 !event
+$012A 10 !event
+$012E 10 !event
 @end
