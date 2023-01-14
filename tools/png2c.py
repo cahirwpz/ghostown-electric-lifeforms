@@ -94,7 +94,7 @@ def do_bitmap(im, desc):
         raise SystemExit('Only 8-bit images supported.')
 
     param = parse(desc, ('name', str), (('width', 'height', 'depth'), dim),
-                  interleaved=False, shared=False)
+                  interleaved=False, shared=False, limit_depth=False)
 
     name = param['name']
     has_width = param['width']
@@ -102,12 +102,15 @@ def do_bitmap(im, desc):
     has_depth = param['depth']
     interleaved = param['interleaved']
     shared = param['shared']
+    limit_depth = param['limit_depth']
 
     pix = array('B', im.getdata())
 
     width, height = im.size
     colors = im.getextrema()[1] + 1
     depth = int(ceil(log(colors, 2)))
+    if limit_depth:
+        depth = min(depth, has_depth)
 
     if width != has_width or height != has_height or depth != has_depth:
         raise SystemExit(

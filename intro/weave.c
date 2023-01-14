@@ -10,7 +10,6 @@
 #include <system/memory.h>
 
 #include "data/bar.c"
-#include "data/bar-2.c"
 #include "data/colors.c"
 #include "data/stripes.c"
 
@@ -100,9 +99,9 @@ static void MakeCopperListFull(CopListT *cp, StateT *state) {
       CopMove16(cp, bplcon1, 0);
     } else if (my == 8) {
       if (y & 64) {
-        CopLoadPal(cp, &bar_pal, 0);
+        CopLoadColorArray(cp, &bar_pal.colors[16], 16, 0);
       } else {
-        CopLoadPal(cp, &bar2_pal, 0);
+        CopLoadColorArray(cp, &bar_pal.colors[0], 16, 0);
       }
     } else if (my == 16) {
       /* Advance bitplane pointers to display consecutive lines. */
@@ -179,9 +178,9 @@ static void MakeCopperListBars(CopListT *cp, StateBarT *bars) {
       CopMove16(cp, bplcon1, 0);
 
       if (b & 1) {
-        CopLoadPal(cp, &bar_pal, 0);
+        CopLoadColorArray(cp, &bar_pal.colors[16], 16, 0);
       } else {
-        CopLoadPal(cp, &bar2_pal, 0);
+        CopLoadColorArray(cp, &bar_pal.colors[0], 16, 0);
       }
     } else if (y == by) {
       /* Advance bitplane pointers to display consecutive lines. */
