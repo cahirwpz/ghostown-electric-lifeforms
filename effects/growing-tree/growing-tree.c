@@ -429,7 +429,7 @@ static void Render(void) {
   if (lastBranch == branches) {
     MakeBranch((WIDTH-60) / 2, HEIGHT - fruit_height / 2 - 1);
     mTableIdx++; mTableIdx &= 3;
-    canSee++;
+    //canSee++;
     greetsIdx = 0;
   }
 
