@@ -6,18 +6,31 @@
 #include <fx.h>
 #include <sync.h>
 
-/* Add tile sized margins on every side to hide visual artifacts. */
-#define MARGIN 32
-#define WIDTH (272 + MARGIN)
-#define HEIGHT (224 + MARGIN)
+/*
+ * Display window position within render buffer is always constant.
+ * Target window changes position every frame and it always covers display
+ * window, hence an extra tile around display window is needed to accommodate
+ * for target window jitter. For each tile in target window we calculate source
+ * tile position based on target tile position and a X/Y offset (in [-15..15]
+ * range) fetched from vector field. Since resulting position can lie outside
+ * target window we need to surround it by clean tiles. In the end we need an
+ * extra layer of tiles around target window.
+ */
+#define TILESIZE 16
+#define S_WIDTH 272
+#define S_HEIGHT 224
 #define DEPTH 4
 #define COLORS 16
 #define NFLOWFIELDS 5
 
-#define TILESIZE 16
-#define WTILES (WIDTH / TILESIZE)
-#define HTILES (HEIGHT / TILESIZE)
-#define NTILES ((WTILES - 1) * (HTILES - 1))
+#define MARGIN (2 * TILESIZE)
+#define WIDTH (S_WIDTH + MARGIN * 2)
+#define HEIGHT (S_HEIGHT + MARGIN * 2)
+
+/* Tiles have to cover target window, i.e. display window plus one tile. */
+#define WTILES (S_WIDTH / TILESIZE + 1)
+#define HTILES (S_HEIGHT / TILESIZE + 1)
+#define NTILES (WTILES * HTILES)
 
 #define TWO_PI 25736
 #define PI 12868
@@ -28,13 +41,12 @@ static CopListT *cp;
 static CopInsT *bplptr[DEPTH + 1];
 static CopInsT *palptr[COLORS];
 
-// 1 bit version of logo for blitting
+/* 1 bit version of logo for blitting */
 static BitmapT *logo_blit;
 
 /* for each tile following array stores source and destination offsets relative
  * to the beginning of a bitplane */
 static short tiles[NFLOWFIELDS][NTILES];
-static u_short current_ff = 0;
 
 #include "data/tilemover-pal.c"
 
@@ -42,7 +54,7 @@ extern const BitmapT ghostown_logo;
 extern TrackT TileMoverNumber;
 extern TrackT TileMoverBlit;
 
-// fx, tx, fy, ty are arguments in pi-space (pi = 0x800, as in fx.h)
+/* fx, tx, fy, ty are arguments in pi-space (pi = 0x800, as in fx.h) */
 static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
   short fx = *range++;
   short tx = *range++;
@@ -52,33 +64,38 @@ static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
   short px, py;
   short px_real, py_real;
 
-  // convert x and y ranges from pi-space to 4.12 space
-  // (pi = 12868 = 3.1416015625 in 4.12)
+  /*
+   * convert x and y ranges from pi-space to Q4.12 space
+   * (pi = 12868 = 3.1416015625 in Q4.12)
+   */
   short fx_real = normfx((int)(fx) * (int)(TWO_PI));
   short tx_real = normfx((int)(tx) * (int)(TWO_PI));
   short fy_real = normfx((int)(fy) * (int)(TWO_PI));
   short ty_real = normfx((int)(ty) * (int)(TWO_PI));
 
-  short px_step = (tx - fx) / (WTILES - 1);
-  short px_real_step = (tx_real - fx_real) / (WTILES - 1);
-  short py_step = (ty - fy) / (HTILES - 1);
-  short py_real_step = (ty_real - fy_real) / (HTILES - 1);
+  short px_step = (tx - fx) / WTILES;
+  short px_real_step = (tx_real - fx_real) / WTILES;
+  short py_step = (ty - fy) / HTILES;
+  short py_real_step = (ty_real - fy_real) / HTILES;
 
-  for (y = 0, py = fy, py_real = fy_real; y < HTILES - 1;
+  for (y = 0, py = fy, py_real = fy_real; y < HTILES;
        y++, py += py_step, py_real += py_real_step) {
-    // multiplication could overflow
-    // bare formulas:
-    // short py = fy + ((int)(y) * (int)(ty - fy)) / (short)(HTILES - 1);
-    // short py_real = fy_real + ((int)(y) * (int)(ty_real - fy_real)) /
-    //                 (short)(HTILES - 1);
+    /*
+     * multiplication could overflow
+     * bare formulas:
+     * short py = fy + ((int)(y) * (int)(ty - fy)) / (short)HTILES;
+     * short py_real =
+     *   fy_real + ((int)(y) * (int)(ty_real - fy_real)) / (short)HTILES;
+     */
 
-    for (x = 0, px = fx, px_real = fx_real; x < WTILES - 1;
+    for (x = 0, px = fx, px_real = fx_real; x < WTILES;
          x++, px += px_step, px_real += px_real_step) {
-      // bare formulas:
-      // short px = fx + ((int)(x) * (int)(tx - fx)) / (short)(WTILES - 1);
-      // short px_real = fx_real + ((int)(x) * (int)(tx_real - fx_real)) /
-      //                 (short)(WTILES - 1);
-
+      /*
+       * bare formulas:
+       * short px = fx + ((int)(x) * (int)(tx - fx)) / (short)WTILES;
+       * short px_real =
+       *   fx_real + ((int)(x) * (int)(tx_real - fx_real)) / (short)WTILES;
+       */
       short vx = 0;
       short vy = 0;
       int mag =
@@ -87,30 +104,32 @@ static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
 
       switch (field_idx) {
         case 0:
-          // SIN_PI/3, SIN_PI, -SIN_PI/3, SIN_PI/12
-          vx = (SIN(mag_sin)) >> 8;
-          vy = ((COS(mag_sin)) >> 8) - (py_real >> 9);
+          /* SIN_PI/3, SIN_PI, -SIN_PI/3, SIN_PI/12 */
+          vx = SIN(mag_sin) >> 8;
+          vy = (COS(mag_sin) >> 8) - (py_real >> 9);
           break;
         case 1:
-          // -SIN_PI/2, SIN_PI/2, 0, SIN_PI/2,
+          /* -SIN_PI/2, SIN_PI/2, 0, SIN_PI/2 */
           vx = min(py_real, normfx(px_real * py_real)) >> 9;
           vy = mag >> 9;
           break;
         case 2:
-          // -SIN_PI/3, SIN_PI/3, -SIN_PI/3, SIN_PI/3
-          // this is also good with range:
-          // SIN_PI/12, SIN_PI/4, -SIN_PI/12, SIN_PI/24
+          /*
+           * -SIN_PI/3, SIN_PI/3, -SIN_PI/3, SIN_PI/3
+           * this is also good with range:
+           * SIN_PI/12, SIN_PI/4, -SIN_PI/12, SIN_PI/24
+           */
           vx = (SIN(py * 6) / 2) >> 9;
           vy = (SIN(px * 6) / 2) >> 9;
           break;
         case 3:
-          // -2 * SIN_PI, 2 * SIN_PI, -SIN_PI, SIN_PI
+          /* -2 * SIN_PI, 2 * SIN_PI, -SIN_PI, SIN_PI */
           vx = (SIN(py) / 2) >> 9;
           vy = 0;
           break;
         case 4:
-          // -SIN_PI / 4, SIN_PI / 4, -SIN_PI, SIN_PI,
-          vx = ((COS(px) / 2) + 127) >> 8;
+          /* -SIN_PI / 4, SIN_PI / 4, -SIN_PI, SIN_PI */
+          vx = (COS(px) / 2 + 127) >> 8;
           vy = (px_real + 127) >> 8;
           break;
         default:
@@ -120,7 +139,8 @@ static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
 
       vx = -vx;
 
-      *tile++ = vy * WIDTH + vx; /* source tile offset */
+      /* source tile offset */
+      *tile++ = vy * WIDTH + vx;
     }
   }
 }
@@ -157,8 +177,8 @@ static void BlitSimple(void *sourceA, void *sourceB, void *sourceC,
 static void BlitGhostown(void) {
   short i;
   short j = active;
-  BlitterCopySetup(screen, (WIDTH - MARGIN - logo_blit->width) / 2 + 6,
-                   (HEIGHT - MARGIN - logo_blit->height) / 2, logo_blit);
+  BlitterCopySetup(screen, MARGIN + (S_WIDTH - logo_blit->width) / 2 + 6,
+                   MARGIN + (S_HEIGHT - logo_blit->height) / 2, logo_blit);
   // monkeypatch minterms to perform screen = screen | logo_blit
   custom->bltcon0 = (SRCB | SRCC | DEST) | (ABC | ANBC | ABNC);
 
@@ -205,15 +225,15 @@ static void Init(void) {
 
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1);
 
-  SetupPlayfield(MODE_LORES, DEPTH, X(MARGIN), Y((256 - HEIGHT + MARGIN) / 2),
-                 WIDTH - MARGIN, HEIGHT - MARGIN);
+  SetupPlayfield(MODE_LORES, DEPTH, X(MARGIN), Y((256 - S_HEIGHT) / 2),
+                 S_WIDTH, S_HEIGHT);
   LoadPalette(&tilemover_pal, 0);
 
   cp = NewCopList(100);
   CopInit(cp);
   CopSetupBitplanes(cp, bplptr, screen, DEPTH);
-  CopMove16(cp, bpl1mod, MARGIN / 8);
-  CopMove16(cp, bpl2mod, MARGIN / 8);
+  CopMove16(cp, bpl1mod, (WIDTH - S_WIDTH) / 8);
+  CopMove16(cp, bpl2mod, (WIDTH - S_WIDTH) / 8);
   for (i = 0; i < COLORS; i++)
     palptr[i] = CopSetColor(cp, i, *color++);
   CopEnd(cp);
@@ -250,10 +270,12 @@ static void MoveTiles(void *src asm("a2"), void *dst asm("a3"),
   register int mask2 asm("d5") = rorl(0x0000ffff, xshift);
   int offset = yshift * WIDTH + xshift;
   short dx = offset & 15;
-  register short m asm("d6") = HTILES - 2;
+  register short m asm("d6") = HTILES - 1;
 
   src += (offset & -16) >> 3;
   dst += (offset & -16) >> 3;
+
+  _WaitBlitter(custom_);
 
   custom_->bltadat = 0xffff;
   custom_->bltbmod = BLTMOD;
@@ -262,7 +284,7 @@ static void MoveTiles(void *src asm("a2"), void *dst asm("a3"),
   custom_->bltcon0 = (SRCB | SRCC | DEST) | (ABC | ABNC | NABC | NANBC);
 
   do {
-    register short n asm("d7") = WTILES - 2;
+    register short n asm("d7") = WTILES - 1;
 
     do {
       void *dstpt = dst;
@@ -272,13 +294,12 @@ static void MoveTiles(void *src asm("a2"), void *dst asm("a3"),
       short shift = sx - dx;
       u_int mask;
 
-
       if (shift < 0) {
         shift = rorw(-shift, 4);
         mask = mask1;
       } else {
-        srcpt += WIDTH * (TILESIZE - 1) / 8 + TILESIZE / 8;
-        dstpt += WIDTH * (TILESIZE - 1) / 8 + TILESIZE / 8;
+        srcpt += (WIDTH * (TILESIZE - 1) + TILESIZE) / 8;
+        dstpt += (WIDTH * (TILESIZE - 1) + TILESIZE) / 8;
 
         shift = rorw(shift, 4) | BLITREVERSE;
         mask = mask2;
@@ -291,7 +312,7 @@ static void MoveTiles(void *src asm("a2"), void *dst asm("a3"),
         _WaitBlitter(custom_);
 
         *((short *)ptr)++ = shift;    // bltcon1
-        *((int *)ptr)++ = mask;      // bltaltwm & bltafwm
+        *((int *)ptr)++ = mask;       // bltaltwm & bltafwm
         *((int *)ptr)++ = (int)dstpt; // bltcpt
         *((int *)ptr)++ = (int)srcpt; // bltbpt
         ptr += 4;                     // bltapt
@@ -303,13 +324,13 @@ static void MoveTiles(void *src asm("a2"), void *dst asm("a3"),
       dst += TILESIZE / 8;
     } while (--n != -1);
 
-    src += WIDTH * (TILESIZE - 1) / 8 + TILESIZE / 8;
-    dst += WIDTH * (TILESIZE - 1) / 8 + TILESIZE / 8;
+    src += (WIDTH * (TILESIZE - 1) + 3 * TILESIZE) / 8;
+    dst += (WIDTH * (TILESIZE - 1) + 3 * TILESIZE) / 8;
   } while (--m != -1);
 }
 
 static void UpdateBitplanePointers(void) {
-  int offset = (TILESIZE + WIDTH * TILESIZE) / 8;
+  int offset = (MARGIN + WIDTH * MARGIN) / 8;
   short i;
   short j = active;
   for (i = DEPTH - 1; i >= 0; i--) {
@@ -323,7 +344,7 @@ static void UpdateBitplanePointers(void) {
 PROFILE(TileMover);
 
 static void Render(void) {
-  current_ff = TrackValueGet(&TileMoverNumber, frameCount);
+  short current_ff = TrackValueGet(&TileMoverNumber, frameCount);
 
 #if 0
   {
@@ -349,6 +370,21 @@ static void Render(void) {
     if (++active == DEPTH + 1)
       active = 0;
     dst = screen->planes[active];
+
+    /* Clear margin around destination display window,
+     * to avoid moving garbage while rendering next frame. */
+    BlitterClearArea(screen, active,
+                     (&(Area2D){TILESIZE, TILESIZE, TILESIZE, S_HEIGHT}));
+    BlitterClearArea(screen, active,
+                     (&(Area2D){WIDTH - MARGIN, TILESIZE, TILESIZE, S_HEIGHT}));
+    BlitterClearArea(screen, active,
+                     (&(Area2D){MARGIN, TILESIZE, S_WIDTH, TILESIZE}));
+    BlitterClearArea(screen, active,
+                     (&(Area2D){MARGIN, HEIGHT - MARGIN, S_WIDTH, TILESIZE}));
+
+    /* Move to target window origin minus offset. */
+    src += (WIDTH * TILESIZE + TILESIZE) / 8;
+    dst += (WIDTH * TILESIZE + TILESIZE) / 8;
 
     MoveTiles(src, dst, xshift, yshift, tiles[current_ff], custom);
   }
