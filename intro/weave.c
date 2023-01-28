@@ -10,7 +10,6 @@
 #include <system/memory.h>
 
 #include "data/bar.c"
-#include "data/colors.c"
 #include "data/stripes.c"
 
 #define bar_bplmod ((bar_width - WIDTH) / 8 - 2)
@@ -51,7 +50,7 @@ static CopListT *cpBars[2];
 static short sintab8[128 * 4];
 static StateT state[2];
 static StateBarT stateBars[2];
-static SpriteT stripe[4];
+static SpriteT stripe[NSPRITES];
 
 /* These numbers must be odd due to optimizations. */
 static char StripePhase[STRIPES] = { 4, 24, 16, 8, 12 };
@@ -78,13 +77,13 @@ static void MakeCopperListFull(CopListT *cp, StateT *state) {
 
   /* Load default sprite settings */
   for (i = 0; i < NSPRITES; i++)
-    CopMove32(cp, sprpt[i], stripe[i & 3].sprdat);
+    CopMove32(cp, sprpt[i], stripe[i].sprdat);
 
   CopWait(cp, Y(-1), 0);
 
   state->sprite = cp->curr;
   for (i = 0; i < NSPRITES; i++)
-    CopMove32(cp, sprpt[i], stripe[i & 3].sprdat->data);
+    CopMove32(cp, sprpt[i], stripe[i].sprdat->data);
 
   for (y = 0, b = 0; y < HEIGHT; y++) {
     short vp = Y(y);
@@ -238,7 +237,7 @@ static void UpdateSpriteState(StateT *state) {
   short i;
 
   for (i = 0; i < NSPRITES; i++, ins += 2)
-    CopInsSet32(ins, stripe[i & 3].sprdat->data + ((i & 2) ? fd : fu));
+    CopInsSet32(ins, stripe[i].sprdat->data + ((i & 2) ? fd : fu));
 }
 
 #define HPOFF(x) HP(x + 32)
@@ -289,40 +288,47 @@ static void MakeSinTab8(void) {
 #define CP_FULL_SIZE (HEIGHT * 22 + 100)
 #define CP_BARS_SIZE (500)
 
+/* For both {Copy,Zero}SpriteTiles `t` controls which quarter of stripe,
+ * i.e. tile has to be copied or cleared respectively. Note that all 8
+ * stripes will be affected. */
+#define TILEPTR(i, t)                                                          \
+  (stripe[(i)].sprdat->data +                                                  \
+   (((i) & 2) ? (t) * stripes_height : HEIGHT - (t) * stripes_height))
+
 static void ZeroSpriteTiles(int t) {
   short i;
 
-  for (i = 0; i < 4; i++) {
-    SprWordT *dst = stripe[i].sprdat->data;
-    bzero(dst + ((i & 2) ? t * 64 : 256 - t * 64), 64 * sizeof(SprWordT));
+  for (i = 0; i < NSPRITES; i++) {
+    SprWordT *dst = TILEPTR(i, t);
+    bzero(dst, stripes_height * sizeof(SprWordT));
   }
 }
 
 static void CopySpriteTiles(int t) {
-  short i;
+  short i, j;
 
-  for (i = 0; i < 4; i++) {
-    SprWordT *src, *dst;
+  for (i = 0; i < NSPRITES; i++) {
+    u_short *src = &_stripes_bpl[i];
+    u_short *dst = (u_short *)TILEPTR(i, t);
 
-    src = (i & 1) ? arrow1_sprdat.data : arrow0_sprdat.data;
-    if (i & 2)
-      src += 64;
-
-    dst = stripe[i].sprdat->data;
-
-    memcpy(dst + ((i & 2) ? t * 64 : 256 - t * 64), src, 64 * sizeof(SprWordT));
+    for (j = 0; j < stripes_height; j++) {
+      *dst++ = *src;
+      src += stripes_bytesPerRow / sizeof(u_short);
+      *dst++ = *src;
+      src += stripes_bytesPerRow / sizeof(u_short);
+    }
   }
 }
 
 static void Load(void) {
   short i;
-  
+
   MakeSinTab8();
 
-  for (i = 0; i < 4; i++) {
-    SprDataT *sprdat = MemAlloc(SprDataSize(HEIGHT + 64, 2),
-                                MEMF_CHIP|MEMF_CLEAR);
-    MakeSprite(&sprdat, 320, false, &stripe[i]);
+  for (i = 0; i < NSPRITES; i++) {
+    SprDataT *sprdat =
+      MemAlloc(SprDataSize(HEIGHT + stripes_height, 2), MEMF_CHIP | MEMF_CLEAR);
+    MakeSprite(&sprdat, HEIGHT + stripes_height, false, &stripe[i]);
     EndSprite(&sprdat);
   }
 }
@@ -330,7 +336,7 @@ static void Load(void) {
 static void UnLoad(void) {
   short i;
 
-  for (i = 0; i < 4; i++)
+  for (i = 0; i < NSPRITES; i++)
     MemFree(stripe[i].sprdat);
 }
 
@@ -346,7 +352,7 @@ static void Init(void) {
   /* Place sprites 0-3 above playfield, and 4-7 below playfield. */
   custom->bplcon2 = BPLCON2_PF2PRI | BPLCON2_PF2P1 | BPLCON2_PF1P1;
 
-  for (i = 0; i < NSPRITES / 2; i++)
+  for (i = 0; i < NSPRITES; i++)
     SpriteUpdatePos(&stripe[i], X(0), Y(0));
 
   cpFull[0] = NewCopList(CP_FULL_SIZE);
