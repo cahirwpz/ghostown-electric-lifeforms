@@ -165,23 +165,21 @@ static short ArmAngleOffset = 0;
 
 static void MakeArm(ArmQueueT *arms, ArmT *arm) {
   if (ArmVariant == 1) {
-    // CAVE
-    if (arms->head%2==0) {
+    if (arms->head % 2 == 0) {
       arm->pos_x = fx4i((random() & 255) + 64);
       arm->pos_y = fx4i(DIAMETER);
     } else {
       arm->pos_x = fx4i((random() & 255) + 64);
       arm->pos_y = fx4i(HEIGHT - DIAMETER);
-    };
+    }
   } else if (ArmVariant == 2) {
-    // EHHH
+    arm->pos_x = fx4i(WIDTH / 2) + (short)( (SIN(arms->head * 280) * 120) >> 8);
     arm->pos_y = fx4i(HEIGHT - 60) + (short)( (COS(arms->head * 280) * 50) >> 8);
-    arm->pos_x = fx4i(WIDTH/2) + (short)( (SIN(arms->head * 280) * 120) >> 8);
   } else if (ArmVariant == 3 || ArmVariant == 4 ) {
-    // STARFISH/MOVING STARFISH
-    arm->pos_x = fx4i(WIDTH/2)  + (short)( (SIN(arms->head * 240) * 60) >> 8);
-    arm->pos_y = fx4i(HEIGHT/2) + (short)( (COS(arms->head * 240) * 60) >> 8);
-  };
+    arm->pos_x = fx4i(WIDTH / 2)  + (short)( (SIN(arms->head * 240) * 60) >> 8);
+    arm->pos_y = fx4i(HEIGHT / 2) + (short)( (COS(arms->head * 240) * 60) >> 8);
+  }
+
   arm->vel_x = 0;
   arm->vel_y = 0;
   arm->diameter = mod16(random() & 0x7fff, DIAMETER / 4) + DIAMETER * 3 / 4;
@@ -279,12 +277,12 @@ static int PaletteBlip(void) {
 INTSERVER(PulsatePaletteInterrupt, 0, (IntFuncT)PaletteBlip, NULL);
 
 static void Init(void) {
-  screen = NewBitmap(WIDTH, HEIGHT*4, DEPTH);
+  screen = NewBitmap(WIDTH, HEIGHT * 4, DEPTH);
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
   LoadPalette(&anemone_pal_1, 0);
 
-  cp = NewCopList(50 + HEIGHT*4);
+  cp = NewCopList(50 + HEIGHT * 4);
   CopInit(cp);
   CopSetupBitplanes(cp, bplptr, screen, DEPTH);
   CopEnd(cp);
@@ -384,24 +382,24 @@ static void SeaAnemone(ArmQueueT *arms, int vShift) {
       short qy = (curr->pos_y >> 4);
       short angle = (random() & ArmAngleMask) + ArmAngleOffset;
 
-      if (ArmVariant == 1) {
-	if (curr->pos_y >> 4 > HEIGHT/2) {
-	  angle = (random() & 0x7ff) + 0x800;
-	} else {
+    if (ArmVariant == 1) {
+	  if (curr->pos_y >> 4 > HEIGHT/2) {
+	    angle = (random() & 0x7ff) + 0x800;
+	  } else {
 	  angle = (random() & 0x7ff);
-	};
-      };
+	  }
+    }
 
-      if (ArmVariant == 3) {
-        angle = (random() & 0x7FF) + 0x700;
-        if (qx > WIDTH / 2 && qy > HEIGHT / 2) {
-          angle = ((0x1000 - random()) & 0x7FF) + 0xE00; 
-        } else if (qx < WIDTH / 2 && qy > HEIGHT / 2) {
-         angle = ((0x1000 - random()) & 0x7FF) + 0x200;
-        } else if (qx > WIDTH / 2 && qy < HEIGHT / 2) {
+    if (ArmVariant == 3) {
+      angle = (random() & 0x7FF) + 0x700; 
+      if (qx > WIDTH / 2 && qy > HEIGHT / 2) {
+       angle = ((0x1000 - random()) & 0x7FF) + 0xE00; 
+      } else if (qx < WIDTH / 2 && qy > HEIGHT / 2) {
+        angle = ((0x1000 - random()) & 0x7FF) + 0x200;
+      } else if (qx > WIDTH / 2 && qy < HEIGHT / 2) {
          angle = (random() & 0x7FF) + 0xA00;
-        }
-      };
+      }
+    }
 
 
       ArmMove(curr, angle);
@@ -420,8 +418,6 @@ static void SeaAnemone(ArmQueueT *arms, int vShift) {
       curr = ArmPrev(arms, curr);
     }
 
-    // Log("head: %d, tail: %d\n", arms.head, arms.tail);
-
     while (ArmsNonEmpty(arms) && ArmLast(arms)->diameter < 1) {
       ArmsPop(arms);
     }
@@ -431,25 +427,17 @@ static void SeaAnemone(ArmQueueT *arms, int vShift) {
 PROFILE(SeaAnemone);
 
 static void Render(void) {
-  int vShift = 0;
+  short vShift = 0;
+  short lineOffset = 0;
   short val, valPal;
 
   if ((val = TrackValueGet(&SeaAnemoneVariant, frameFromStart))) { 
     BitmapClear(screen);
     ArmsReset(&AnemoneArms);
-    if (val == 1) {
-      ArmVariant = 1;
-    } else if (val == 2) {
-      ArmAngleMask = 0x7ff;
-      ArmAngleOffset = 0x800;
-      ArmVariant = 2;
-    } else if (val == 3) {
-      ArmVariant = 3;
-    } else if (val == 4) {
-      ArmAngleMask = 0x7ff;
-      ArmAngleOffset = 0x800;
-      ArmVariant = 4;
-    }
+    ArmVariant = val;
+    // Default angle mask and offset
+    ArmAngleMask = 0x7ff;
+    ArmAngleOffset = 0x800;
   }
 
   if ((val = TrackValueGet(&SeaAnemonePal, frameFromStart))) {
@@ -457,6 +445,7 @@ static void Render(void) {
     active_pal = sea_anemone_pal[val];
   }
 
+  // Set the light level (for palette modification)
   if ((valPal = TrackValueGet(&SeaAnemonePalPulse, frameFromStart)))
     lightLevel = valPal;
 
@@ -465,11 +454,12 @@ static void Render(void) {
   // Scroll the screen vertically
   if (ArmVariant == 4) {
     vShift = (frameCount % HEIGHT * 4) - 1;
+    lineOffset = vShift * screen_bytesPerRow;
 
-    CopInsSet32(bplptr[0], screen->planes[0]+vShift*screen->bytesPerRow);
-    CopInsSet32(bplptr[1], screen->planes[1]+vShift*screen->bytesPerRow);
-    CopInsSet32(bplptr[2], screen->planes[2]+vShift*screen->bytesPerRow);
-    CopInsSet32(bplptr[3], screen->planes[3]+vShift*screen->bytesPerRow);
+    CopInsSet32(bplptr[0], screen->planes[0] + lineOffset);
+    CopInsSet32(bplptr[1], screen->planes[1] + lineOffset);
+    CopInsSet32(bplptr[2], screen->planes[2] + lineOffset);
+    CopInsSet32(bplptr[3], screen->planes[3] + lineOffset);
   }
 
   SeaAnemone(&AnemoneArms, vShift);
