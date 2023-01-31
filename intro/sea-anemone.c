@@ -80,9 +80,11 @@ static SeaAnemonePalT *sea_anemone_pal[4] = {
 static SeaAnemonePalT *active_pal = &anemone1_pal;
 
 static const short blip_sequence[] = {
-  0,2,1,1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2,2,2,3,3,3,3,3,3,3,3,3,3
+  0,
+  2, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+  3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 };
-
 
 static inline int fastrand(void) {
   static int m[2] = { 0x3E50B28C, 0xD461A7F9 };
@@ -165,19 +167,18 @@ static short ArmAngleOffset = 0;
 
 static void MakeArm(ArmQueueT *arms, ArmT *arm) {
   if (ArmVariant == 1) {
+    arm->pos_x = fx4i((random() & 255) + 64);
     if (arms->head % 2 == 0) {
-      arm->pos_x = fx4i((random() & 255) + 64);
       arm->pos_y = fx4i(DIAMETER);
     } else {
-      arm->pos_x = fx4i((random() & 255) + 64);
       arm->pos_y = fx4i(HEIGHT - DIAMETER);
     }
   } else if (ArmVariant == 2) {
-    arm->pos_x = fx4i(WIDTH / 2) + (short)( (SIN(arms->head * 280) * 120) >> 8);
-    arm->pos_y = fx4i(HEIGHT - 60) + (short)( (COS(arms->head * 280) * 50) >> 8);
+    arm->pos_x = fx4i(WIDTH / 2) + (short)((SIN(arms->head * 280) * 120) >> 8);
+    arm->pos_y = fx4i(HEIGHT - 60) + (short)((COS(arms->head * 280) * 50) >> 8);
   } else if (ArmVariant == 3 || ArmVariant == 4 ) {
-    arm->pos_x = fx4i(WIDTH / 2)  + (short)( (SIN(arms->head * 240) * 60) >> 8);
-    arm->pos_y = fx4i(HEIGHT / 2) + (short)( (COS(arms->head * 240) * 60) >> 8);
+    arm->pos_x = fx4i(WIDTH / 2) + (short)((SIN(arms->head * 240) * 60) >> 8);
+    arm->pos_y = fx4i(HEIGHT / 2) + (short)((COS(arms->head * 240) * 60) >> 8);
   }
 
   arm->vel_x = 0;
@@ -225,9 +226,8 @@ static void ArmMove(ArmT *arm, short angle) {
     // `magSq` does get truncated if converted to 16-bit,
     // so it's not eligible for 16-bit division.
     short scale = diameter / (magSq >> 12);
-    short modifier = 1;
-    vx = normfx(vx * scale * modifier);
-    vy = normfx(vy * scale * modifier);
+    vx = normfx(vx * scale);
+    vy = normfx(vy * scale);
   }
 
   arm->vel_x = vx;
@@ -378,31 +378,29 @@ static void SeaAnemone(ArmQueueT *arms, int vShift) {
     ArmT *last = ArmLast(arms);
 
     while (true) {
-      short qx = (curr->pos_x >> 4);
-      short qy = (curr->pos_y >> 4);
-      short angle = (random() & ArmAngleMask) + ArmAngleOffset;
+      short qx = curr->pos_x >> 4;
+      short qy = curr->pos_y >> 4;
+      short angle;
 
-    if (ArmVariant == 1) {
-	  if (curr->pos_y >> 4 > HEIGHT/2) {
-	    angle = (random() & 0x7ff) + 0x800;
-	  } else {
-	  angle = (random() & 0x7ff);
-	  }
-    }
-
-    if (ArmVariant == 3) {
-      angle = (random() & 0x7FF) + 0x700; 
-      if (qx > WIDTH / 2 && qy > HEIGHT / 2) {
-       angle = ((0x1000 - random()) & 0x7FF) + 0xE00; 
-      } else if (qx < WIDTH / 2 && qy > HEIGHT / 2) {
-        angle = ((0x1000 - random()) & 0x7FF) + 0x200;
-      } else if (qx > WIDTH / 2 && qy < HEIGHT / 2) {
-         angle = (random() & 0x7FF) + 0xA00;
+      if (ArmVariant == 1) {
+        angle = random() & 0x7ff;
+        if (qy > HEIGHT / 2)
+          angle += 0x800;
+      } else if (ArmVariant == 3) {
+        angle = (random() & 0x7FF) + 0x700; 
+        if (qx > WIDTH / 2 && qy > HEIGHT / 2) {
+          angle = ((0x1000 - random()) & 0x7FF) + 0xE00; 
+        } else if (qx < WIDTH / 2 && qy > HEIGHT / 2) {
+          angle = ((0x1000 - random()) & 0x7FF) + 0x200;
+        } else if (qx > WIDTH / 2 && qy < HEIGHT / 2) {
+          angle = (random() & 0x7FF) + 0xA00;
+        }
+      } else {
+        angle = (random() & ArmAngleMask) + ArmAngleOffset;
       }
-    }
-
 
       ArmMove(curr, angle);
+
       if (curr->diameter > 1) {
         short d = curr->diameter;
         short r = d / 2;
@@ -428,14 +426,15 @@ PROFILE(SeaAnemone);
 
 static void Render(void) {
   short vShift = 0;
-  short lineOffset = 0;
+  int lineOffset = 0;
   short val, valPal;
 
   if ((val = TrackValueGet(&SeaAnemoneVariant, frameFromStart))) { 
     BitmapClear(screen);
     ArmsReset(&AnemoneArms);
     ArmVariant = val;
-    // Default angle mask and offset
+
+    /* Default angle mask and offset */
     ArmAngleMask = 0x7ff;
     ArmAngleOffset = 0x800;
   }
