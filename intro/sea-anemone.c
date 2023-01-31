@@ -378,25 +378,30 @@ static void SeaAnemone(ArmQueueT *arms, int vShift) {
     ArmT *last = ArmLast(arms);
 
     while (true) {
-      short qx = curr->pos_x >> 4;
-      short qy = curr->pos_y >> 4;
       short angle;
 
-      if (ArmVariant == 1) {
-        angle = random() & 0x7ff;
-        if (qy > HEIGHT / 2)
-          angle += 0x800;
-      } else if (ArmVariant == 3) {
-        angle = (random() & 0x7FF) + 0x700; 
-        if (qx > WIDTH / 2 && qy > HEIGHT / 2) {
-          angle = ((0x1000 - random()) & 0x7FF) + 0xE00; 
-        } else if (qx < WIDTH / 2 && qy > HEIGHT / 2) {
-          angle = ((0x1000 - random()) & 0x7FF) + 0x200;
-        } else if (qx > WIDTH / 2 && qy < HEIGHT / 2) {
-          angle = (random() & 0x7FF) + 0xA00;
+      {
+        short qx = curr->pos_x >> 4;
+        short qy = curr->pos_y >> 4;
+        short arand = random();
+
+        if (ArmVariant == 1) {
+          angle = arand & 0x7ff;
+          if (qy > HEIGHT / 2)
+            angle += 0x800;
+        } else if (ArmVariant == 3) {
+          if (qx > WIDTH / 2 && qy > HEIGHT / 2) {
+            angle = ((0x1000 - arand) & 0x7FF) + 0xE00; 
+          } else if (qx < WIDTH / 2 && qy > HEIGHT / 2) {
+            angle = ((0x1000 - arand) & 0x7FF) + 0x200;
+          } else if (qx > WIDTH / 2 && qy < HEIGHT / 2) {
+            angle = (arand & 0x7FF) + 0xA00;
+          } else {
+            angle = (arand & 0x7FF) + 0x700; 
+          }
+        } else {
+          angle = (arand & ArmAngleMask) + ArmAngleOffset;
         }
-      } else {
-        angle = (random() & ArmAngleMask) + ArmAngleOffset;
       }
 
       ArmMove(curr, angle);
