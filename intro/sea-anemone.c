@@ -282,7 +282,7 @@ static void Init(void) {
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
   LoadPalette(&anemone_pal_1, 0);
 
-  cp = NewCopList(50 + HEIGHT * 4);
+  cp = NewCopList(50);
   CopInit(cp);
   CopSetupBitplanes(cp, bplptr, screen, DEPTH);
   CopEnd(cp);
@@ -452,7 +452,7 @@ static void Render(void) {
 
   // Scroll the screen vertically
   if (ArmVariant == 4) {
-    vShift = (frameCount % HEIGHT * 4) - 1;
+    vShift = frameCount % (HEIGHT * 3);
     lineOffset = vShift * screen_bytesPerRow;
 
     CopInsSet32(bplptr[0], screen->planes[0] + lineOffset);
