@@ -3,7 +3,6 @@
 #include <copper.h>
 #include <fx.h>
 #include <gfx.h>
-#include <circle.h>
 #include <line.h>
 #include <stdlib.h>
 #include <sync.h>
@@ -20,7 +19,6 @@
 static CopListT *cp;
 static CopInsT *bplptr[DEPTH];
 static BitmapT *screen;
-static BitmapT *circles[DIAMETER / 2];
 
 #include "data/anemone-pal-1.c"
 #include "data/anemone-pal-1-dark.c"
@@ -33,6 +31,27 @@ static BitmapT *circles[DIAMETER / 2];
 #include "data/anemone-pal-3.c"
 #include "data/anemone-pal-3-dark.c"
 #include "data/anemone-pal-3-light.c"
+
+#include "data/circles.c"
+
+static const BitmapT *circles[DIAMETER / 2] = {
+  &circle1,
+  &circle2,
+  &circle3,
+  &circle4,
+  &circle5,
+  &circle6,
+  &circle7,
+  &circle8,
+  &circle9,
+  &circle10,
+  &circle11,
+  &circle12,
+  &circle13,
+  &circle14,
+  &circle15,
+  &circle16
+};
 
 static short lightLevel = 0;
 
@@ -239,33 +258,6 @@ static void ArmMove(ArmT *arm, short angle) {
   arm->diameter--;
 }
 
-static void Load(void) {
-  BitmapT **circlep = circles;
-  short r;
-
-  EnableDMA(DMAF_BLITTER);
-
-  for (r = 1; r <= DIAMETER / 2; r++) {
-    short diameter = r * 2;
-    short width = (diameter + 15) & - 15;
-    BitmapT *circle = NewBitmap(width, diameter + 1, 1);
-    *circlep++ = circle;
-    CircleEdge(circle, 0, r, r, r);
-    BlitterFill(circle, 0);
-  }
-
-  WaitBlitter();
-  DisableDMA(DMAF_BLITTER);
-}
-
-static void UnLoad(void) {
-  short i;
-
-  for (i = 0; i < DIAMETER / 2; i++) {
-    DeleteBitmap(circles[i]);
-  }
-}
-
 static int PaletteBlip(void) {
   if (lightLevel) {
     LoadPalette((*active_pal)[blip_sequence[lightLevel]], 0);
@@ -315,7 +307,9 @@ static void Kill(void) {
 
 #define screen_bytesPerRow (WIDTH / 8)
 
-static void DrawCircle(BitmapT *circle, short x, short y, short c, int vShift) {
+static void DrawCircle(const BitmapT *circle, short x, short y, short c,
+                       int vShift)
+{
   u_short dstmod = screen_bytesPerRow - circle->bytesPerRow;
   u_short bltshift = rorw(x & 15, 4);
   u_short bltsize = (circle->height << 6) | (circle->bytesPerRow >> 1);
@@ -473,4 +467,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(SeaAnemone, Load, UnLoad, Init, Kill, Render);
+EFFECT(SeaAnemone, NULL, NULL, Init, Kill, Render);
