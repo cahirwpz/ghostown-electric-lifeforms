@@ -174,11 +174,12 @@ static void BlitSimple(void *sourceA, void *sourceB, void *sourceC,
   custom->bltsize = bltsize;
 }
 
-static void BlitGhostown(void) {
+static void BlitGhostown(short x, short y) {
   short i;
   short j = active;
-  BlitterCopySetup(screen, MARGIN + (S_WIDTH - logo_blit->width) / 2 + 6,
-                   MARGIN + (S_HEIGHT - logo_blit->height) / 2, logo_blit);
+  //short x = MARGIN + (S_WIDTH - logo_blit->width) / 2 + 6;
+  //short y = MARGIN + (S_HEIGHT - logo_blit->height) / 2;
+  BlitterCopySetup(screen, MARGIN + x, MARGIN+y, logo_blit);
   // monkeypatch minterms to perform screen = screen | logo_blit
   custom->bltcon0 = (SRCB | SRCC | DEST) | (ABC | ANBC | ABNC);
 
@@ -357,10 +358,10 @@ static void Render(void) {
 #endif
 
   if (TrackValueGet(&TileMoverBlit, frameCount))
-    BlitGhostown();
+    BlitGhostown(50, 50);
 
   ProfilerStart(TileMover);
-  if ((random() & 15) == 0)
+  if (false)
     DrawSeed(screen->planes[active]);
   {
     short xshift = random() & (TILESIZE - 1);
