@@ -14,8 +14,8 @@
 
 #include "data/lat2-08.c"
 
-extern u_char binary_data_virgill_colombia_mod_start[];
-#define module ((void *)binary_data_virgill_colombia_mod_start)
+extern u_char Module[];
+extern u_char Samples[];
 
 static BitmapT *screen;
 static CopListT *cp;
@@ -105,7 +105,7 @@ static void Init(void) {
   ConsolePutStr(&console, "Initializing Protracker replayer...!\n");
 
   pt_install_cia();
-  pt_init(module, 0);
+  pt_init(Module, Samples);
   mt_Enable = 1;
 
   ConsoleSetCursor(&console, 0, 0);
