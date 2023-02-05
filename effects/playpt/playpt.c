@@ -76,7 +76,16 @@ static void pt_end(void) {
                 : "cc", "memory");
 }
 
+void AK_Generate(void *Samples asm("a0"), void *TmpBuf asm("a1"),
+                 void *ExtSamples asm("a2"), void *Progress asm("a3"));
+
 static void Load(void) {
+  static u_int progress = 0;
+  void *TmpBuf = MemAlloc(32768, MEMF_PUBLIC);
+
+  AK_Generate(Samples, TmpBuf, NULL, &progress);
+
+  MemFree(TmpBuf);
 }
 
 static void UnLoad(void) {
