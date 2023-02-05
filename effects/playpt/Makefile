@@ -1,6 +1,6 @@
 TOPDIR := $(realpath ../..)
 
-OBJECTS := data/virgill-colombia-trk.o data/virgill-colombia.o
+OBJECTS := data/virgill-amigahub-trk.o data/virgill-amigahub.o
 CLEAN-FILES := data/lat2-08.c data/*.smp data/*.trk
 
 LIBS := libpt

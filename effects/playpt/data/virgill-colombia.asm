@@ -9,9 +9,15 @@ _Samples:
 
 _AK_Generate:
         movem.l d2-d7/a2-a6,-(sp)
+        lea     _Samples,a0
+        sub.l   a2,a2
+        lea     _AK_Progress,a3
         bsr     AK_Generate
         movem.l (sp)+,d2-d7/a2-a6
         rts
+
+_AK_Progress:
+        ds.l    1
 
 ;----------------------------------------------------------------------------
 ;
