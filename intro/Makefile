@@ -1,7 +1,7 @@
 TOPDIR := $(realpath ..)
 
-DELTA := 0
-VQ := 1
+DELTA := 1
+VQ := 0
 
 MODULE := JazzCat-ElectricLifeforms
 SMP_TOTALSIZE := 181610
@@ -107,10 +107,7 @@ data/%.trk data/%.smp: data/%.mod
 	mv data/$*.mod.trk data/$*.trk
 	mv data/$*.mod.smp data/$*.smp
 
-# You MUST pad the section to size that is determined by the converter script.
-# Look for `total instrument memory` in the output.
-OBJCOPY-CHIP := --rename-section .data=.datachip,alloc,load,data,contents \
-	        --pad-to $(SMP_TOTALSIZE)
+OBJCOPY-CHIP := --rename-section .data=.datachip,alloc,load,data,contents
 
 data/%.trk.o: data/%.trk
 	@echo "[OBJCOPY] $(DIR)$< -> $(DIR)$@"

@@ -126,10 +126,14 @@ static void UnLoadEffects(EffectT **effects) {
 #define SYNCPOS(pos) (((((pos) & 0xff00) >> 2) | ((pos) & 0x3f)) * 6)
 
 static void RunEffects(void) {
-  /* Reset frame counter and wait for all time actions to finish. */
-  frameCount = SYNCPOS(0);
+  /* Set the beginning of intro. Useful for effect synchronization! */
+  short pos = 0x820;
+
+  frameCount = SYNCPOS(pos);
   SetFrameCounter(frameCount);
-  PtEnable = 1;
+  PtData.mt_SongPos = pos >> 8;
+  PtData.mt_PatternPos = (pos & 0x3f) << 4;
+  PtEnable = -1;
 
   for (;;) {
     static short prev = -1;
@@ -176,7 +180,7 @@ int main(void) {
 #endif
 
   PtInstallCIA();
-  PtInit(Module, Samples, 1);
+  PtInit(Module, Samples, 0);
 
   TrackInit(&EffectNumber);
   LoadEffects(AllEffects);
