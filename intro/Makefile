@@ -31,8 +31,8 @@ CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
 	data/ghostown-logo-crop.c data/p46basedprng.c data/cell-gradient.c \
 	data/logo-electrons.c data/electric-lifeforms.c \
 	data/electric-lifeforms-wireworld.c data/ghostown-logo-0[1-3].c \
-	data/turmite-credits-[1-3].c data/sea-anemone-pal[1-5].c \
-	data/turmite-pal-[1-3]-*.c
+	data/turmite-credits-[1-3].c data/anemone-pal-[1-3]-*.c \
+	data/turmite-pal-[1-3]-*.c 
 
 SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   tilemover.c sea-anemone.c game-of-life.c vitruvian.c
@@ -50,11 +50,6 @@ PNG2C.electric-lifeforms-01 := --bitmap electric_lifeforms,320x256x3 --palette e
 PNG2C.electric-lifeforms-02 := --palette electric_lifeforms_2_pal,8
 PNG2C.fruit := --bitmap fruit,16x16x1
 PNG2C.tilemover-pal := --palette tilemover_pal,16
-PNG2C.sea-anemone-pal1 := --palette sea_anemone_pal1,16
-PNG2C.sea-anemone-pal2 := --palette sea_anemone_pal2,16
-PNG2C.sea-anemone-pal3 := --palette sea_anemone_pal3,16
-PNG2C.sea-anemone-pal4 := --palette sea_anemone_pal4,16
-PNG2C.sea-anemone-pal5 := --palette sea_anemone_pal5,16
 PNG2C.p46basedprng := --bitmap p46basedprng,156x75x1
 PNG2C.electric-lifeforms-wireworld := --bitmap wireworld_logo,160x128x1
 PNG2C.cell-gradient := --pixmap gradient,4x64x12
@@ -62,6 +57,23 @@ PNG2C.ghostown-logo-crop := --bitmap ghostown_logo,196x127x3,+shared
 PNG2C.ghostown-logo-01 := --palette ghostown_logo_1_pal,8
 PNG2C.ghostown-logo-02 := --palette ghostown_logo_2_pal,8
 PNG2C.ghostown-logo-03 := --palette ghostown_logo_3_pal,8
+PNG2C.circles := \
+	--bitmap circle1,3x3x1,extract_at=0x0 \
+	--bitmap circle2,5x5x1,extract_at=0x4 \
+	--bitmap circle3,7x7x1,extract_at=0x10 \
+	--bitmap circle4,9x9x1,extract_at=0x18 \
+	--bitmap circle5,11x11x1,extract_at=0x28 \
+	--bitmap circle6,13x13x1,extract_at=0x40 \
+	--bitmap circle7,15x15x1,extract_at=0x54 \
+	--bitmap circle8,17x17x1,extract_at=0x70 \
+	--bitmap circle9,19x19x1,extract_at=0x88 \
+	--bitmap circle10,21x21x1,extract_at=0x108 \
+	--bitmap circle11,23x23x1,extract_at=0x130 \
+	--bitmap circle12,25x25x1,extract_at=0x154 \
+	--bitmap circle13,27x27x1,extract_at=0x180 \
+	--bitmap circle14,29x29x1,extract_at=0x208 \
+	--bitmap circle15,31x31x1,extract_at=0x238 \
+	--bitmap circle16,33x33x1,extract_at=0x270
 
 PNG2C.turmite-pal-1 := --palette turmite_pal_1,16
 PNG2C.turmite-pal-1-dark := --palette turmite_pal_1_dark,16
@@ -72,6 +84,16 @@ PNG2C.turmite-pal-2-light := --palette turmite_pal_2_light,16
 PNG2C.turmite-pal-3 := --palette turmite_pal_3,16
 PNG2C.turmite-pal-3-dark := --palette turmite_pal_3_dark,16
 PNG2C.turmite-pal-3-light := --palette turmite_pal_3_light,16
+
+PNG2C.anemone-pal-1 := --palette anemone_pal_1,16
+PNG2C.anemone-pal-1-dark := --palette anemone_pal_1_dark,16
+PNG2C.anemone-pal-1-light := --palette anemone_pal_1_light,16
+PNG2C.anemone-pal-2 := --palette anemone_pal_2,16
+PNG2C.anemone-pal-2-dark := --palette anemone_pal_2_dark,16
+PNG2C.anemone-pal-2-light := --palette anemone_pal_2_light,16
+PNG2C.anemone-pal-3 := --palette anemone_pal_3,16
+PNG2C.anemone-pal-3-dark := --palette anemone_pal_3_dark,16
+PNG2C.anemone-pal-3-light := --palette anemone_pal_3_light,16
 
 CPPFLAGS += -DINTRO -DVQ=$(VQ) -DDELTA=$(DELTA) -I.
 

@@ -6,38 +6,68 @@ from math import ceil, log
 import argparse
 
 
-def dim(s):
-    w, h, d = s.split('x')
-    return int(w), int(h), int(d)
+def coerce(name, typ, value):
+    try:
+        return typ(value)
+    except ValueError:
+        raise SystemExit(f'{name}: could not convert {value} to {typ}!')
 
 
-def parse(spec, *desc, **kwargs):
-    param = dict(kwargs)
-
-    sl = []
-    for s in spec.split(','):
-        if s[0] in '+-':
-            flag = s[1:]
-            if flag not in kwargs:
-                raise SystemExit('Unknown flag {}!'.format(flag))
-            param[flag] = bool(s[0] == '+')
+def convert(name, cast, value, result):
+    if type(cast) == tuple:
+        names = name.split(',')
+        values = value.split('x')
+        if len(names) > 1:
+            assert len(names) == len(values)
+            for n, c, v in zip(names, cast, values):
+                result[n] = coerce(n, c, v)
         else:
-            sl.append(s)
+            result[name] = tuple(coerce(n, c, v)
+                                 for n, c, v in zip(name, cast, values))
+    else:
+        result[name] = coerce(name, cast, value)
 
-    if len(sl) != len(desc):
-        raise SystemExit('Got {}, but expected {}!'.format(s, desc))
 
-    for value, (name, cast) in zip(sl, desc):
+def parse(desc, *params):
+    mandatory = []
+    optional = {}
+    result = {}
+
+    for param in params:
+        if len(param) == 2:
+            mandatory.append(param)
+        elif len(param) == 3:
+            name, cast, defval = param
+            optional[name] = cast
+            result[name] = defval
+        else:
+            raise RuntimeError
+
+    desc = desc.split(',')
+
+    for name, cast in mandatory:
         try:
-            if type(name) == tuple:
-                for n, v in zip(name, cast(value)):
-                    param[n] = v
-            else:
-                param[name] = cast(value)
+            value = desc.pop(0)
         except ValueError:
-            raise SystemExit('Got {}, but expected {}!'.format(v, cast))
+            raise SystemExit(f'Missing {name} argument!')
 
-    return param
+        convert(name, cast, value, result)
+
+    for s in desc:
+        if s[0] in '+-':
+            name, value = s[1:], bool(s[0] == '+')
+        else:
+            try:
+                name, value = s.split('=', 1)
+            except ValueError:
+                raise SystemExit(f'Malformed optional argument {s}!')
+
+        if name not in optional:
+            raise SystemExit(f'Unknown optional argument {name}!')
+
+        convert(name, optional[name], value, result)
+
+    return result
 
 
 def planar(pix, width, height, depth):
@@ -93,16 +123,25 @@ def do_bitmap(im, desc):
     if im.mode not in ['1', 'L', 'P']:
         raise SystemExit('Only 8-bit images supported.')
 
-    param = parse(desc, ('name', str), (('width', 'height', 'depth'), dim),
-                  interleaved=False, shared=False, limit_depth=False)
+    param = parse(desc,
+                  ('name', str),
+                  ('width,height,depth', (int, int, int)),
+                  ('extract_at', (int, int), (0, 0)),
+                  ('interleaved', bool, False),
+                  ('shared', bool, False),
+                  ('limit_depth', bool, False))
 
     name = param['name']
     has_width = param['width']
     has_height = param['height']
     has_depth = param['depth']
+    x, y = param['extract_at']
     interleaved = param['interleaved']
     shared = param['shared']
     limit_depth = param['limit_depth']
+
+    w, h = im.size
+    im = im.copy().crop((x, y, min(x + has_width, w), min(y + has_height, h)))
 
     pix = array('B', im.getdata())
 
@@ -168,8 +207,13 @@ def do_sprite(im, desc):
     if im.mode not in ['1', 'L', 'P']:
         raise SystemExit('Only 8-bit images supported.')
 
-    param = parse(desc, ('name', str), ('height', int), ('count', int),
-                  attached=False, array=False, onlydata=False)
+    param = parse(desc,
+                  ('name', str),
+                  ('height', int),
+                  ('count', int),
+                  ('attached', bool, False),
+                  ('array', bool, False),
+                  ('onlydata', bool, False))
 
     name = param['name']
     has_height = param['height']
@@ -240,7 +284,9 @@ def do_sprite(im, desc):
 
 
 def do_pixmap(im, desc):
-    param = parse(desc, ('name', str), (('width', 'height', 'bpp'), dim))
+    param = parse(desc,
+                  ('name', str),
+                  ('width,height,bpp', (int, int, int)))
 
     name = param['name']
     has_width = param['width']
@@ -316,7 +362,10 @@ def do_palette(im, desc):
     if im.mode != 'P':
         raise SystemExit('Only 8-bit images with palette supported.')
 
-    param = parse(desc, ('name', str), ('colors', int), store_unused=False)
+    param = parse(desc,
+                  ('name', str),
+                  ('colors', int),
+                  ('store_unused', bool, False))
 
     name = param['name']
     has_colors = param['colors']
@@ -348,7 +397,7 @@ def do_palette(im, desc):
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(
         description='Converts an image to bitmap.')
-    parser.add_argument('--bitmap', type=str,
+    parser.add_argument('--bitmap', type=str, action='append',
                         help='Output Amiga bitmap [name,dimensions,flags]')
     parser.add_argument('--pixmap', type=str,
                         help='Output pixel map '
@@ -368,7 +417,8 @@ if __name__ == '__main__':
         print('')
 
     if args.bitmap:
-        do_bitmap(im, args.bitmap)
+        for bm in args.bitmap:
+            do_bitmap(im, bm)
         print('')
 
     if args.pixmap:
