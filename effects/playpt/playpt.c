@@ -21,60 +21,8 @@ static BitmapT *screen;
 static CopListT *cp;
 static ConsoleT console;
 
-extern struct mt_data mt_data;
-
 /* Extra variables to enhance replayer functionality */
 static bool stopped = true;
-
-/* Code copied from `main-executable.c` from AmigaKlang. */
-static void pt_install_cia(void) {
-  register int _d0 asm("d0") = 1;
-  register const void* _a0 asm("a0") = (void *)0;
-  register const void* _a6 asm("a6") = (void *)0xdff000;
-
-  asm volatile ("movem.l %%d0-%%d7/%%a0-%%a6,-(%%sp)\n"
-                "jsr _mt_install_cia\n"
-                "movem.l (%%sp)+,%%d0-%%d7/%%a0-%%a6"
-                :
-                : "r" (_d0), "r" (_a0), "r" (_a6)
-                : "cc", "memory");
-}
-
-static void pt_init(void *ModAdr, void *SmpAdr) {
-  register int _d0 __asm("d0") = 0;
-  register const void* _a0 asm("a0") = ModAdr;
-  register const void* _a1 asm("a1") = (void *)SmpAdr;
-  register const void* _a6 asm("a6") = (void *)0xdff000;
-
-  asm volatile ("movem.l %%d0-%%d7/%%a0-%%a6,-(%%sp)\n"
-                "jsr _mt_init\n"
-                "movem.l (%%sp)+,%%d0-%%d7/%%a0-%%a6"
-                :
-                : "r" (_d0), "r" (_a0), "r" (_a1), "r" (_a6)
-                : "cc", "memory");
-}
-
-static void pt_remove_cia(void) {
-  register const void* _a6 asm("a6") = (void *)0xdff000;
-
-  asm volatile ("movem.l %%d0-%%d7/%%a0-%%a6,-(%%sp)\n"
-                "jsr _mt_remove_cia\n"
-                "movem.l (%%sp)+,%%d0-%%d7/%%a0-%%a6"
-                :
-                : "r" (_a6)
-                : "cc", "memory");
-}
-
-static void pt_end(void) {
-  register const void *_a6 asm("a6") = (void *)0xdff000;
-
-  asm volatile ("movem.l %%d0-%%d7/%%a0-%%a6,-(%%sp)\n"
-                "jsr _mt_end\n"
-                "movem.l (%%sp)+,%%d0-%%d7/%%a0-%%a6"
-                :
-                : "r" (_a6)
-                : "cc", "memory");
-}
 
 extern u_int AK_Progress;
 void AK_Generate(void *TmpBuf asm("a1"));
@@ -110,9 +58,9 @@ static void Init(void) {
   ConsoleSetCursor(&console, 0, 0);
   ConsolePutStr(&console, "Initializing Protracker replayer...!\n");
 
-  pt_install_cia();
-  pt_init(Module, Samples);
-  mt_Enable = 1;
+  PtInstallCIA();
+  PtInit(Module, Samples, 1);
+  PtEnable = 1;
 
   ConsoleSetCursor(&console, 0, 0);
   ConsolePutStr(&console, 
@@ -123,8 +71,8 @@ static void Init(void) {
 }
 
 static void Kill(void) {
-  pt_end();
-  pt_remove_cia();
+  PtEnd();
+  PtRemoveCIA();
 
   DisableDMA(DMAF_COPPER | DMAF_RASTER | DMAF_AUDIO);
 
@@ -155,10 +103,10 @@ static void NoteToHex(char *str, u_short note, u_short cmd) {
 }
 
 static void Render(void) {
-  struct pt_mod *mod = mt_data.mt_mod;
-  short songPos = mt_data.mt_SongPos;
+  PtModule *mod = PtData.mt_mod;
+  short songPos = PtData.mt_SongPos;
   short pattNum = mod->order[songPos];
-  short pattPos = mt_data.mt_PatternPos >> 4;
+  short pattPos = PtData.mt_PatternPos >> 4;
   u_int *pattern = (void *)mod->pattern[pattNum];
   short i;
 
@@ -192,7 +140,7 @@ static void Render(void) {
   ConsolePutChar(&console, '\n');
 
   for (i = 0; i < 4; i++) {
-    struct mt_chan *chan = &mt_data.mt_chan[i];
+    PtChannel *chan = &PtData.mt_chan[i];
     ConsolePrint(&console, "CH%d: %08x %04x %08x %04x\n",
                  i, (u_int)chan->n_start, chan->n_length,
                  (u_int)chan->n_loopstart, chan->n_replen);
@@ -219,8 +167,8 @@ static bool HandleEvent(void) {
     return false;
 
   if (ev.key.code == KEY_SPACE) {
-    mt_Enable ^= 1;
-    if (!mt_Enable)
+    PtEnable ^= 1;
+    if (!PtEnable)
       DisableDMA(DMAF_AUDIO);
   }
 

@@ -1,7 +1,7 @@
 TOPDIR := $(realpath ../..)
 
-SOURCES := ptplayer.asm
+SOURCES := pt.asm
 
 include $(TOPDIR)/build/lib.mk
 
-ptplayer.o: ptplayer.asm $(TOPDIR)/include/ptplayer.h
+pt.o: pt.asm ptplayer.asm $(TOPDIR)/include/ptplayer.h
