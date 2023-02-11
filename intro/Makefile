@@ -31,8 +31,8 @@ CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
 	data/ghostown-logo-crop.c data/p46basedprng.c data/cell-gradient.c \
 	data/logo-electrons.c data/electric-lifeforms.c \
 	data/electric-lifeforms-wireworld.c data/ghostown-logo-0[1-3].c \
-	data/turmite-credits-[1-3].c data/anemone-pal-[1-3]-*.c \
-	data/turmite-pal-[1-3]-*.c 
+	data/turmite-credits-[1-3].c data/anemone-pal-[1-3].c \
+	data/turmite-pal-[1-3].c data/circles.c
 
 SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   tilemover.c sea-anemone.c game-of-life.c vitruvian.c
