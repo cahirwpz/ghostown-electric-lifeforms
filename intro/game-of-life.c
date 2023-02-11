@@ -9,6 +9,7 @@
 #include <sync.h>
 #include <system/interrupt.h>
 #include <system/memory.h>
+#include <stdlib.h>
 
 // This effect calculates Conway's game of life (with the classic rules: live
 // cells with <2 or >3 neighbours die, live cells with 2-3 neighbouring cells
@@ -35,9 +36,13 @@
 
 #define DISP_WIDTH 320
 #define DISP_HEIGHT 256
+
+// these are max values for all game of life-based effects
+// for dynamically changing the amount kept previous states
+// see variables: game_depth and prev_states_depth
 #define DISP_DEPTH 4
 #define PREV_STATES_DEPTH (DISP_DEPTH + 1)
-#define COLORS 16
+#define COLORS 8
 
 #define EXT_WIDTH_LEFT 16
 #define EXT_WIDTH_RIGHT 16
@@ -77,7 +82,10 @@
 // -----------------------------------------------------------------------------
 //
 
-//#define DEBUG_KBD
+#define RAND_SPAWN_MASK 0xf
+#define RAND_SPAWN_MIN_DELAY 8
+
+#define DEBUG_KBD
 
 #ifdef DEBUG_KBD
 #include <system/event.h>
@@ -85,9 +93,11 @@
 #endif
 
 #include "data/p46basedprng.c"
-#include "data/electric-lifeforms-wireworld.c"
+//#include "data/electric-lifeforms-wireworld.c"
+#include "data/wireworld-fullscreen.c"
 #include "data/cell-gradient.c"
-#include "data/logo-electrons.c"
+//#include "data/logo-electrons.c"
+#include "data/wireworld-fullscreen-electrons.c"
 
 extern TrackT GOLPaletteH;
 extern TrackT GOLPaletteS;
@@ -128,6 +138,12 @@ static u_short wireworld_step = 0;
 // are we running wireworld?
 static bool wireworld = false;
 
+static short game_depth = DISP_DEPTH;
+static short prev_states_depth = PREV_STATES_DEPTH;
+
+// frame at which to spawn specific electron next - counting from stepCount
+short next_spawn[128];
+
 static const GameDefinitionT *current_game;
 
 static const GameDefinitionT *games[] = {
@@ -140,21 +156,21 @@ static PaletteT palette = {
   .colors =
     {
       0x000, // 0000
-      0x006, // 0001
-      0x026, // 0010
-      0x026, // 0011
-      0x05B, // 0100
-      0x05B, // 0101
-      0x05B, // 0110
-      0x05B, // 0111
-      0x09F, // 1000
-      0x09F, // 1001
-      0x09F, // 1010
-      0x09F, // 1011
-      0x09F, // 1100
-      0x09F, // 1101
-      0x09F, // 1110
-      0x09F, // 1111
+      0x000, // 0001
+      0x000, // 0010
+      0x000, // 0011
+      0x000, // 0100
+      0x000, // 0101
+      0x000, // 0110
+      0x000, // 0111
+      0x006, // 1000
+      0x009, // 1001
+      0x01c, // 1010
+      0x01c, // 1011
+      0x03f, // 1100
+      0x03f, // 1101
+      0x03f, // 1110
+      0x03f, // 1111
     },
 };
 
@@ -252,17 +268,33 @@ static void BlitFunc(const BitmapT *sourceA, const BitmapT *sourceB,
   custom->bltsize = BLTSIZE;
 }
 
-static void SpawnElectrons(const ElectronsT *electrons, short board) {
-  u_char *bpl = boards[board]->planes[0];
+static void InitSpawnFrames(const ElectronArrayT *electrons) {
+  short i;
+  for (i = 0; i < electrons->num_electrons; i++)
+    next_spawn[i] = stepCount + (random() & RAND_SPAWN_MASK);
+}
+
+static void SpawnElectrons(const ElectronArrayT *electrons, short board_heads,
+                           short board_tails) {
+  u_char *bpl_heads = boards[board_heads]->planes[0];
+  u_char *bpl_tails = boards[board_tails]->planes[0];
   short *pts = (short *)electrons->points;
-  short n = electrons->count - 1;
+  short n = electrons->num_electrons - 1;
   if (n < 0)
     return;
   do {
-    short x = (*pts++) + EXT_WIDTH_LEFT;
-    short y = (*pts++) + EXT_HEIGHT_TOP;
-    int pos = EXT_BOARD_WIDTH * y + x;
-    bset(bpl + (pos >> 3), ~pos);
+    if (next_spawn[n] <= stepCount) {
+      short hx = (*pts++) + EXT_WIDTH_LEFT;
+      short hy = (*pts++) + EXT_HEIGHT_TOP;
+      short tx = (*pts++) + EXT_WIDTH_LEFT;
+      short ty = (*pts++) + EXT_HEIGHT_TOP;
+      int posh = EXT_BOARD_WIDTH * hy + hx;
+      int post = EXT_BOARD_WIDTH * ty + tx;
+      bset(bpl_heads + (posh >> 3), ~posh);
+      bset(bpl_tails + (post >> 3), ~post);
+      next_spawn[n] += (random() & RAND_SPAWN_MASK) + RAND_SPAWN_MIN_DELAY;
+    } else
+      pts += 4;
   } while (--n != -1);
 }
 
@@ -281,11 +313,8 @@ static void WireworldSwitch(__unused const BitmapT *sourceA,
   current_game = wireworlds[wireworld_step];
   wireworld_step ^= 1;
 
-  if ((stepCount & 0x7) == 0) {
-    // set pixels on correct board
-    SpawnElectrons(&heads, wireworld_step ^ 1);
-    SpawnElectrons(&tails, wireworld_step);
-  }
+  // set pixels on correct board
+  SpawnElectrons(&pcb_electrons, wireworld_step ^ 1, wireworld_step);
 }
 
 static void BlitterInit(void) {
@@ -377,15 +406,15 @@ static void UpdateBitplanePointers(void) {
   BitmapT *cur;
   u_short i;
   u_short last = states_head + 1;
-  for (i = 0; i < PREV_STATES_DEPTH - 1; i++) {
-    // update bitplane order: (states_head + 2) % PREV_STATES_DEPTH iterates
+  for (i = 0; i < prev_states_depth - 1; i++) {
+    // update bitplane order: (states_head + 2) % prev_states_depth iterates
     // from the oldest+1 (to facilitate double buffering; truly oldest state is
     // the one we won't display as it's gonna be a buffer for the next game
     // state) to newest game state, so 0th bitplane displays the oldest+1 state
-    // and (PREV_STATES_DEPTH-1)'th bitplane displays the newest state
+    // and (prev_states_depth-1)'th bitplane displays the newest state
     last++;
-    if (last >= PREV_STATES_DEPTH)
-      last -= PREV_STATES_DEPTH;
+    if (last >= prev_states_depth)
+      last -= prev_states_depth;
     cur = prev_states[last];
     CopInsSet32(bplptr[i], cur->planes[0]);
   }
@@ -555,6 +584,7 @@ static void SharedPreInit(void) {
   for (i = 0; i < PREV_STATES_DEPTH; i++) {
     BitmapClear(prev_states[i]);
   }
+  stepCount = 0;
 }
 
 static void SharedPostInit(void) {
@@ -570,13 +600,25 @@ static void SharedPostInit(void) {
 }
 
 static void InitWireworld(void) {
-  SharedPreInit();
-
+  static BitmapT* tmp;
   current_game = &wireworld1;
   wireworld = true;
+  game_depth = 3;
+  prev_states_depth = game_depth + 1;
+
+  SharedPreInit();
+
+  InitSpawnFrames(&pcb_electrons);
+
+  tmp = NewBitmap(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH);
+  BitmapCopy(tmp, 0, 0, &wireworld_pcb);
+  PixelDouble(tmp->planes[0], prev_states[4]->planes[0], double_pixels);
+  DeleteBitmap(tmp);
+  
+  CopInsSet32(bplptr[3], prev_states[4]->planes[0]);
 
   // board 11 is special in case of wireworld - it contains the electron paths
-  BitmapCopy(boards[11], EXT_WIDTH_LEFT, EXT_HEIGHT_TOP, &wireworld_logo);
+  BitmapCopy(boards[11], EXT_WIDTH_LEFT, EXT_HEIGHT_TOP, &wireworld_pcb);
 
   // electron heads/tails in case of wireworld
   BitmapClear(boards[0]);
@@ -586,14 +628,17 @@ static void InitWireworld(void) {
 }
 
 static void InitGameOfLife(void) {
+  current_game = games[0];
+  wireworld = false;
+  game_depth = 4;
+  prev_states_depth = game_depth + 1;
+
   SharedPreInit();
 
   TrackInit(&GOLGame);
-  wireworld = false;
-  current_game = games[0];
 
   BitmapClear(boards[0]);
-  BitmapCopy(boards[0], EXT_WIDTH_LEFT, EXT_HEIGHT_TOP, &wireworld_logo);
+  BitmapCopy(boards[0], EXT_WIDTH_LEFT, EXT_HEIGHT_TOP, &wireworld_pcb);
 
   SharedPostInit();
 }
@@ -624,8 +669,8 @@ static void GolStep(void) {
   PixelDouble(src, dst, double_pixels);
   UpdateBitplanePointers();
   states_head++;
-  if (states_head >= PREV_STATES_DEPTH)
-    states_head -= PREV_STATES_DEPTH;
+  if (states_head >= prev_states_depth)
+    states_head -= prev_states_depth;
   phase = 0;
   GameOfLife(boards);
   CyclePalette(&pal);
@@ -663,7 +708,6 @@ static void Render(void) {
   if (run_continous)
 #endif
     GolStep();
-
 #ifdef DEBUG_KBD
   exitLoop = !HandleEvent();
 #endif

@@ -32,7 +32,9 @@ CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
 	data/logo-electrons.c data/electric-lifeforms.c \
 	data/electric-lifeforms-wireworld.c data/ghostown-logo-0[1-3].c \
 	data/turmite-credits-[1-3].c data/sea-anemone-pal[1-5].c \
-	data/turmite-pal-[1-3]-*.c
+	data/turmite-pal-[1-3]-*.c \
+	data/wireworld-fullscreen.c \
+	data/wireworld-fullscreen-electrons.c
 
 SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   tilemover.c sea-anemone.c game-of-life.c vitruvian.c
@@ -57,11 +59,13 @@ PNG2C.sea-anemone-pal4 := --palette sea_anemone_pal4,16
 PNG2C.sea-anemone-pal5 := --palette sea_anemone_pal5,16
 PNG2C.p46basedprng := --bitmap p46basedprng,156x75x1
 PNG2C.electric-lifeforms-wireworld := --bitmap wireworld_logo,160x128x1
+PNG2C.wireworld-fullscreen := --bitmap wireworld_pcb,160x128x1,+limit_depth
 PNG2C.cell-gradient := --pixmap gradient,4x64x12
 PNG2C.ghostown-logo-crop := --bitmap ghostown_logo,196x127x3,+shared
 PNG2C.ghostown-logo-01 := --palette ghostown_logo_1_pal,8
 PNG2C.ghostown-logo-02 := --palette ghostown_logo_2_pal,8
 PNG2C.ghostown-logo-03 := --palette ghostown_logo_3_pal,8
+ELECTRONS2C.wireworld-fullscreen := --name pcb_electrons
 
 PNG2C.turmite-pal-1 := --palette turmite_pal_1,16
 PNG2C.turmite-pal-1-dark := --palette turmite_pal_1_dark,16
@@ -75,9 +79,9 @@ PNG2C.turmite-pal-3-light := --palette turmite_pal_3_light,16
 
 CPPFLAGS += -DINTRO -DVQ=$(VQ) -DDELTA=$(DELTA) -I.
 
-data/%-electrons.c: data/%-electrons.png
+data/wireworld-%-electrons.c: data/wireworld-%.png
 	@echo "[PNG] $(DIR)$< -> $(DIR)$@"
-	$(PYTHON3) $(ELECTRONS2C) $< $@ || (rm -f $@ && exit 1)
+	$(PYTHON3) $(ELECTRONS2C) $(ELECTRONS2C.wireworld-$*) $< $@ || (rm -f $@ && exit 1)
 
 include $(TOPDIR)/build/effect.mk
 
