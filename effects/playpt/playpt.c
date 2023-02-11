@@ -59,7 +59,7 @@ static void Init(void) {
   ConsolePutStr(&console, "Initializing Protracker replayer...!\n");
 
   PtInstallCIA();
-  PtInit(Module, Samples, 1);
+  PtInit(Module, Samples, 0);
   PtEnable = 1;
 
   ConsoleSetCursor(&console, 0, 0);

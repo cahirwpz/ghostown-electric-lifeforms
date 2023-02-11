@@ -1,38 +1,37 @@
 TOPDIR := $(realpath ..)
 
-DELTA := 0
-VQ := 1
+DELTA := 1
+VQ := 0
 
-CTR_VER := Fast
+MODULE := JazzCat-ElectricLifeforms
 SMP_TOTALSIZE := 181610
 
 RLE2PNG = rle2png.py
 ELECTRONS2C = electrons2c.py
 
-OBJECTS := data/JazzCat-ElectricLifeforms-$(CTR_VER).ctr.o \
-	   data/text-scroll.o
+OBJECTS := data/$(MODULE).trk.o data/text-scroll.o
 
 ifeq ($(DELTA), 1)
-OBJECTS += data/JazzCat-ElectricLifeforms-$(CTR_VER)-Delta.smp.o
+OBJECTS += data/$(MODULE)-Delta.smp.o
 else ifeq ($(VQ), 1)
-OBJECTS += data/JazzCat-ElectricLifeforms-$(CTR_VER)-VQ.smp.o
+OBJECTS += data/$(MODULE)-VQ.smp.o
 else
-OBJECTS += data/JazzCat-ElectricLifeforms-$(CTR_VER).smp.o
+OBJECTS += data/$(MODULE).smp.o
 endif
 
-LIBS := libctr
+LIBS := libpt
 
 BUILD-FILES := audiovq
 
 CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
-	data/JazzCat-ElectricLifeforms*.{smp,o} data/text-scroll-font.c \
+	data/$(MODULE)-*.o data/$(MODULE).{smp,trk} data/text-scroll-font.c \
 	data/intro.c data/electric-lifeforms-0[1-2].c \
 	data/fruit.c data/tilemover-pal.c data/anemone-pal.c \
 	data/ghostown-logo-crop.c data/p46basedprng.c data/cell-gradient.c \
 	data/logo-electrons.c data/electric-lifeforms.c \
 	data/electric-lifeforms-wireworld.c data/ghostown-logo-0[1-3].c \
-	data/turmite-credits-[1-3].c data/anemone-pal-[1-3]-*.c \
-	data/turmite-pal-[1-3]-*.c 
+	data/turmite-credits-[1-3].c data/anemone-pal-[1-3].c \
+	data/turmite-pal-[1-3].c data/circles.c
 
 SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   tilemover.c sea-anemone.c game-of-life.c vitruvian.c
@@ -103,20 +102,19 @@ data/%-electrons.c: data/%-electrons.png
 
 include $(TOPDIR)/build/effect.mk
 
-data/%.ctr data/%.smp: data/%.mod
-	$(PYTHON3) data/CinterConvert.py $^ $@ $(@:.ctr=.smp)
+data/%.trk data/%.smp: data/%.mod
+	$(PYTHON3) data/ptsplit.py $^
+	mv data/$*.mod.trk data/$*.trk
+	mv data/$*.mod.smp data/$*.smp
 
-# You MUST pad the section to size that is determined by the converter script.
-# Look for `total instrument memory` in the output.
-OBJCOPY-CHIP := --rename-section .data=.datachip,alloc,load,data,contents \
-	        --pad-to $(SMP_TOTALSIZE)
+OBJCOPY-CHIP := --rename-section .data=.datachip,alloc,load,data,contents
 
-data/%.ctr.o: data/%.ctr
+data/%.trk.o: data/%.trk
 	@echo "[OBJCOPY] $(DIR)$< -> $(DIR)$@"
 	$(OBJCOPY) -I binary -O amiga \
-	  --redefine-sym _binary_data_$(subst -,_,$*)_ctr_start=_CinterModule \
-	  --redefine-sym _binary_data_$(subst -,_,$*)_ctr_end=_CinterModuleEnd \
-	  --redefine-sym _binary_data_$(subst -,_,$*)_ctr_size=_CinterModuleSize \
+	  --redefine-sym _binary_data_$(subst -,_,$*)_trk_start=_Module \
+	  --redefine-sym _binary_data_$(subst -,_,$*)_trk_end=_ModuleEnd \
+	  --redefine-sym _binary_data_$(subst -,_,$*)_trk_size=_ModuleSize \
 	  $^ $@
 
 data/%-Delta.smp: data/%.smp
@@ -130,9 +128,9 @@ data/%-VQ.smp: data/%.smp audiovq
 data/%.smp.o: data/%.smp
 	@echo "[OBJCOPY] $(DIR)$< -> $(DIR)$@"
 	$(OBJCOPY) $(OBJCOPY-CHIP) -I binary -O amiga \
-	  --redefine-sym _binary_data_$(subst -,_,$*)_smp_start=_CinterSamples \
-	  --redefine-sym _binary_data_$(subst -,_,$*)_smp_end=_CinterSamplesEnd \
-	  --redefine-sym _binary_data_$(subst -,_,$*)_smp_size=_CinterSamplesSize \
+	  --redefine-sym _binary_data_$(subst -,_,$*)_smp_start=_Samples \
+	  --redefine-sym _binary_data_$(subst -,_,$*)_smp_end=_SamplesEnd \
+	  --redefine-sym _binary_data_$(subst -,_,$*)_smp_size=_SamplesSize \
 	  $^ $@
 
 data/%.o: data/%.txt
