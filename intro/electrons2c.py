@@ -28,10 +28,12 @@ typedef struct ElectronArrayT {\n\
 
 Electron = namedtuple('Electron', ['head', 'tail'])
 
+
 def pixels_around(x, y):
     for i in range(-1, 2):
         for j in range(-1, 2):
             yield x+i, y+j
+
 
 def get_positions(infile):
     with Image.open(infile) as im:
