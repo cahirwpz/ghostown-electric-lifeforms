@@ -135,7 +135,8 @@ typedef struct Arm {
     char byte;
   } _vel_y;
   short pos_x, pos_y; // Q12.4
-  short pad[3];
+  short angle;
+  short pad[2];
 } ArmT;
 
 #define vel_x _vel_x.word
@@ -181,28 +182,30 @@ static inline bool ArmsFull(ArmQueueT *arms) {
 }
 
 static short ArmVariant = 0;
-static short ArmAngleMask = 0;
-static short ArmAngleOffset = 0;
 
 static void MakeArm(ArmQueueT *arms, ArmT *arm) {
+  u_int arand = random();
+
   if (ArmVariant == 1) {
-    arm->pos_x = fx4i((random() & 255) + 64);
+    arm->pos_x = fx4i((arand & 255) + 64);
     if (arms->head % 2 == 0) {
       arm->pos_y = fx4i(DIAMETER);
     } else {
       arm->pos_y = fx4i(HEIGHT - DIAMETER);
     }
   } else if (ArmVariant == 2) {
-    arm->pos_x = fx4i(WIDTH / 2) + (short)((SIN(arms->head * 280) * 120) >> 8);
-    arm->pos_y = fx4i(HEIGHT - 60) + (short)((COS(arms->head * 280) * 50) >> 8);
-  } else if (ArmVariant == 3 || ArmVariant == 4 ) {
-    arm->pos_x = fx4i(WIDTH / 2) + (short)((SIN(arms->head * 240) * 60) >> 8);
-    arm->pos_y = fx4i(HEIGHT / 2) + (short)((COS(arms->head * 240) * 60) >> 8);
+    arm->angle = arand;
+    arm->pos_x = fx4i(WIDTH / 2) + (short)((COS(arm->angle) * 120) >> 8);
+    arm->pos_y = fx4i(HEIGHT - 60) + (short)((SIN(arm->angle) * 50) >> 8);
+  } else if (ArmVariant == 3 || ArmVariant == 4) {
+    arm->angle = arand;
+    arm->pos_x = fx4i(WIDTH / 2) + (short)((COS(arm->angle) * 60) >> 8);
+    arm->pos_y = fx4i(HEIGHT / 2) + (short)((SIN(arm->angle) * 60) >> 8);
   }
 
   arm->vel_x = 0;
   arm->vel_y = 0;
-  arm->diameter = mod16(random() & 0x7fff, DIAMETER / 4) + DIAMETER * 3 / 4;
+  arm->diameter = mod16(random() & 0x7fff, DIAMETER / 3) + DIAMETER * 2 / 3;
 }
 
 static void ArmsAdd(ArmQueueT *arms, ArmT *arm) {
@@ -375,7 +378,6 @@ static void SeaAnemone(ArmQueueT *arms, int vShift) {
       short angle;
 
       {
-        short qx = curr->pos_x >> 4;
         short qy = curr->pos_y >> 4;
         short arand = random();
 
@@ -384,17 +386,11 @@ static void SeaAnemone(ArmQueueT *arms, int vShift) {
           if (qy > HEIGHT / 2)
             angle += 0x800;
         } else if (ArmVariant == 3) {
-          if (qx > WIDTH / 2 && qy > HEIGHT / 2) {
-            angle = ((0x1000 - arand) & 0x7FF) + 0xE00; 
-          } else if (qx < WIDTH / 2 && qy > HEIGHT / 2) {
-            angle = ((0x1000 - arand) & 0x7FF) + 0x200;
-          } else if (qx > WIDTH / 2 && qy < HEIGHT / 2) {
-            angle = (arand & 0x7FF) + 0xA00;
-          } else {
-            angle = (arand & 0x7FF) + 0x700; 
-          }
+          angle = ((arand & 0x7ff) - 0x400) + curr->angle;
+        } else if (ArmVariant == 4) {
+          angle = (arand & 0x7ff) + curr->angle;
         } else {
-          angle = (arand & ArmAngleMask) + ArmAngleOffset;
+          angle = (arand & 0x7ff) + 0x800;
         }
       }
 
@@ -432,10 +428,6 @@ static void Render(void) {
     BitmapClear(screen);
     ArmsReset(&AnemoneArms);
     ArmVariant = val;
-
-    /* Default angle mask and offset */
-    ArmAngleMask = 0x7ff;
-    ArmAngleOffset = 0x800;
   }
 
   if ((val = TrackValueGet(&SeaAnemonePal, frameFromStart))) {
