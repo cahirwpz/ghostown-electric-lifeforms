@@ -31,6 +31,7 @@ SUBDIRS := \
 	playahx \
 	playctr \
 	playp61 \
+	playpt \
 	plotter \
 	prisms \
 	rotator \
