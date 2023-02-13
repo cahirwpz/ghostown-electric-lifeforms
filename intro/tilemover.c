@@ -50,9 +50,9 @@ static BitmapT *logo_blit;
 static short tiles[NFLOWFIELDS][NTILES];
 
 #include "data/tilemover-pal.c"
-#include "data/mover2.c"
-#include "data/mover3.c"
-#include "data/mover4.c"
+#include "data/tilemover-windmills.c"
+#include "data/tilemover-wave.c"
+#include "data/tilemover-drops.c"
 
 extern const BitmapT ghostown_logo;
 extern TrackT TileMoverNumber;
@@ -112,6 +112,7 @@ static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
           vx = SIN(mag_sin) >> 8;
           vy = (COS(mag_sin) >> 8) - (py_real >> 9);
           break;
+        // sound wave
         case 1:
           /* -SIN_PI/2, SIN_PI/2, 0, SIN_PI/2 */
           vx = min(py_real, normfx(px_real * py_real)) >> 9;
@@ -126,6 +127,7 @@ static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
           vx = (SIN(py * 6) / 2) >> 9;
           vy = (SIN(px * 6) / 2) >> 9;
           break;
+        // horizontal tearing
         case 3:
           /* -2 * SIN_PI, 2 * SIN_PI, -SIN_PI, SIN_PI */
           vx = (SIN(py) / 2) >> 9;
@@ -182,13 +184,11 @@ static void BlitSimple(void *sourceA, void *sourceB, void *sourceC,
   custom->bltsize = bltsize;
 }
 
-static void BlitGhostown(short x, short y, BitmapT blit) {
+static void BlitBitmap(short x, short y, BitmapT blit) {
   short i;
   short j = active;
-  //short x = MARGIN + (S_WIDTH - logo_blit->width) / 2 + 6;
-  //short y = MARGIN + (S_HEIGHT - logo_blit->height) / 2;
   BlitterCopySetup(screen, MARGIN + x, MARGIN+y, &blit);
-  // monkeypatch minterms to perform screen = screen | logo_blit
+  // monkeypatch minterms to perform screen = screen | blit
   custom->bltcon0 = (SRCB | SRCC | DEST) | (ABC | ANBC | ABNC);
 
   for (i = DEPTH - 1; i >= 0; i--) {
@@ -368,19 +368,25 @@ static void Render(void) {
 
   if ((val = TrackValueGet(&TileMoverBlit, frameCount))) {
     switch (val) {
+        // Windmills
         case 2:
-            BlitGhostown(165 + (random() & 10), random() & 170, mover4);
-            BlitGhostown(165 + (random() & 10), random() & 170, mover4);
-            BlitGhostown(165 + (random() & 10), random() & 170, mover4);
-            BlitGhostown(115 + (random() & 9), random() & 100, mover4);
-            BlitGhostown(115 + (random() & 9), random() & 100, mover4);
-            BlitGhostown(115 + (random() & 9), random() & 100, mover4);
+            //BlitSimple(ghostown_logo.planes[0], ghostown_logo.planes[1], 
+            //   ghostown_logo.planes[2], logo_blit,
+            //  ABC | ANBC | ABNC | ANBNC | NABC | NANBC | NABNC);
+            BlitBitmap(random() & 230, random() & 170, tilemover_windmills);
             break;
-        case 1:
-            BlitGhostown(random() & 230, random() & 170, mover2);
+        // Tube with stardrops
+        case 3:
+            BlitBitmap(165 + (random() & 10), random() & 170, tilemover_drops);
+            BlitBitmap(165 + (random() & 10), random() & 170, tilemover_drops);
+            BlitBitmap(165 + (random() & 10), random() & 170, tilemover_drops);
+            BlitBitmap(115 + (random() & 9), random() & 100, tilemover_drops);
+            BlitBitmap(115 + (random() & 9), random() & 100, tilemover_drops);
+            BlitBitmap(115 + (random() & 9), random() & 100, tilemover_drops);
             break;
-        case 6: 
-            BlitGhostown(20, 170, mover3);
+        // Pseudo sound wave
+        case 1: 
+            BlitBitmap(20, 170, tilemover_wave);
             break;
     };
   };

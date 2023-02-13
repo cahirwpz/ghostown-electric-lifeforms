@@ -33,7 +33,7 @@ CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
 	data/electric-lifeforms-wireworld.c data/ghostown-logo-0[1-3].c \
 	data/turmite-credits-[1-3].c data/sea-anemone-pal[1-5].c \
 	data/turmite-pal-[1-3]-*.c \
-	data/mover[1-10].c
+	data/tilemover-*.c
 
 SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   tilemover.c sea-anemone.c game-of-life.c vitruvian.c
@@ -74,9 +74,9 @@ PNG2C.turmite-pal-3 := --palette turmite_pal_3,16
 PNG2C.turmite-pal-3-dark := --palette turmite_pal_3_dark,16
 PNG2C.turmite-pal-3-light := --palette turmite_pal_3_light,16
 
-PNG2C.mover2 := --bitmap mover2,32x32x1
-PNG2C.mover3 := --bitmap mover3,196x64x1
-PNG2C.mover4 := --bitmap mover4,16x16x1
+PNG2C.tilemover-windmills := --bitmap tilemover_windmills,32x32x1
+PNG2C.tilemover-wave := --bitmap tilemover_wave,196x64x1
+PNG2C.tilemover-drops := --bitmap tilemover_drops,16x16x1
 
 CPPFLAGS += -DINTRO -DVQ=$(VQ) -DDELTA=$(DELTA) -I.
 
