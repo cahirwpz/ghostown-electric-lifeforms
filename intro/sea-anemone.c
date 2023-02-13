@@ -3,41 +3,107 @@
 #include <copper.h>
 #include <fx.h>
 #include <gfx.h>
-#include <circle.h>
 #include <line.h>
 #include <stdlib.h>
 #include <sync.h>
 #include <system/memory.h>
+#include <system/interrupt.h>
 
 #define WIDTH 320
 #define HEIGHT 256
 #define DEPTH 4
 
-#define DIAMETER 48
-#define NARMS 31 /* must be power of two minus one */
+#define DIAMETER 32
+#define NARMS 15 /* must be power of two minus one */
 
 static CopListT *cp;
 static CopInsT *bplptr[DEPTH];
 static BitmapT *screen;
-static BitmapT *circles[DIAMETER / 2];
 
-#include "data/sea-anemone-pal1.c"
-#include "data/sea-anemone-pal2.c"
-#include "data/sea-anemone-pal3.c"
-#include "data/sea-anemone-pal4.c"
-#include "data/sea-anemone-pal5.c"
+#include "data/anemone-pal-1.c"
+#include "data/anemone-pal-1-dark.c"
+#include "data/anemone-pal-1-light.c"
 
-static const PaletteT *sea_anemone_pal[] = {
-  NULL,
-  &sea_anemone_pal1,
-  &sea_anemone_pal2,
-  &sea_anemone_pal3,
-  &sea_anemone_pal4,
-  &sea_anemone_pal5,
+#include "data/anemone-pal-2.c"
+#include "data/anemone-pal-2-dark.c"
+#include "data/anemone-pal-2-light.c"
+
+#include "data/anemone-pal-3.c"
+#include "data/anemone-pal-3-dark.c"
+#include "data/anemone-pal-3-light.c"
+
+#include "data/circles.c"
+
+static const BitmapT *circles[DIAMETER / 2] = {
+  &circle1,
+  &circle2,
+  &circle3,
+  &circle4,
+  &circle5,
+  &circle6,
+  &circle7,
+  &circle8,
+  &circle9,
+  &circle10,
+  &circle11,
+  &circle12,
+  &circle13,
+  &circle14,
+  &circle15,
+  &circle16
 };
+
+static short lightLevel = 0;
 
 extern TrackT SeaAnemoneVariant;
 extern TrackT SeaAnemonePal;
+extern TrackT SeaAnemonePalPulse;
+
+typedef const PaletteT *SeaAnemonePalT[4];
+
+static SeaAnemonePalT sea_anemone_palettes = {
+  NULL, 
+  &anemone_pal_1,
+  &anemone_pal_2,
+  &anemone_pal_3,
+};
+
+static SeaAnemonePalT anemone1_pal = {
+  NULL,
+  &anemone_pal_1_light,
+  &anemone_pal_1,
+  &anemone_pal_1_dark,
+};
+
+static SeaAnemonePalT anemone2_pal = {
+  NULL,
+  &anemone_pal_2_light,
+  &anemone_pal_2,
+  &anemone_pal_2_dark,
+};
+
+static SeaAnemonePalT anemone3_pal = {
+  NULL,
+  &anemone_pal_3_light,
+  &anemone_pal_3,
+  &anemone_pal_3_dark,
+};
+
+static SeaAnemonePalT *sea_anemone_pal[4] = {
+  NULL,
+  &anemone1_pal,
+  &anemone2_pal,
+  &anemone3_pal,
+};
+
+static SeaAnemonePalT *active_pal = &anemone1_pal;
+
+static const short blip_sequence[] = {
+  0,
+  2, 1, 1, 1, 1, 1, 1, 1, 1, 1,
+  2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
+  3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+};
 
 static inline int fastrand(void) {
   static int m[2] = { 0x3E50B28C, 0xD461A7F9 };
@@ -69,7 +135,8 @@ typedef struct Arm {
     char byte;
   } _vel_y;
   short pos_x, pos_y; // Q12.4
-  short pad[3];
+  short angle;
+  short pad[2];
 } ArmT;
 
 #define vel_x _vel_x.word
@@ -115,23 +182,30 @@ static inline bool ArmsFull(ArmQueueT *arms) {
 }
 
 static short ArmVariant = 0;
-static short ArmAngleMask = 0;
-static short ArmAngleOffset = 0;
 
-static void MakeArm(ArmT *arm) {
+static void MakeArm(ArmQueueT *arms, ArmT *arm) {
+  u_int arand = random();
+
   if (ArmVariant == 1) {
-    arm->pos_x = fx4i(WIDTH / 2);
-    arm->pos_y = fx4i(HEIGHT / 2);
+    arm->pos_x = fx4i((arand & 255) + 64);
+    if (arms->head % 2 == 0) {
+      arm->pos_y = fx4i(DIAMETER);
+    } else {
+      arm->pos_y = fx4i(HEIGHT - DIAMETER);
+    }
   } else if (ArmVariant == 2) {
-    arm->pos_x = fx4i((random() & 255) + 64);
-    arm->pos_y = fx4i(DIAMETER);
-  } else if (ArmVariant == 3) {
-    arm->pos_x = fx4i((random() & 255) + 64);
-    arm->pos_y = fx4i(HEIGHT - DIAMETER);
+    arm->angle = arand;
+    arm->pos_x = fx4i(WIDTH / 2) + (short)((COS(arm->angle) * 120) >> 8);
+    arm->pos_y = fx4i(HEIGHT - 60) + (short)((SIN(arm->angle) * 50) >> 8);
+  } else if (ArmVariant == 3 || ArmVariant == 4) {
+    arm->angle = arand;
+    arm->pos_x = fx4i(WIDTH / 2) + (short)((COS(arm->angle) * 60) >> 8);
+    arm->pos_y = fx4i(HEIGHT / 2) + (short)((SIN(arm->angle) * 60) >> 8);
   }
+
   arm->vel_x = 0;
   arm->vel_y = 0;
-  arm->diameter = mod16(random() & 0x7fff, DIAMETER / 4) + DIAMETER * 3 / 4;
+  arm->diameter = mod16(random() & 0x7fff, DIAMETER / 3) + DIAMETER * 2 / 3;
 }
 
 static void ArmsAdd(ArmQueueT *arms, ArmT *arm) {
@@ -187,38 +261,21 @@ static void ArmMove(ArmT *arm, short angle) {
   arm->diameter--;
 }
 
-static void Load(void) {
-  BitmapT **circlep = circles;
-  short r;
-
-  EnableDMA(DMAF_BLITTER);
-
-  for (r = 1; r <= DIAMETER / 2; r++) {
-    short diameter = r * 2;
-    short width = (diameter + 15) & -15;
-    BitmapT *circle = NewBitmap(width, diameter + 1, 1);
-    *circlep++ = circle;
-    CircleEdge(circle, 0, r, r, r);
-    BlitterFill(circle, 0);
+static int PaletteBlip(void) {
+  if (lightLevel) {
+    LoadPalette((*active_pal)[blip_sequence[lightLevel]], 0);
+    lightLevel--;
   }
-
-  WaitBlitter();
-  DisableDMA(DMAF_BLITTER);
+  return 0;
 }
 
-static void UnLoad(void) {
-  short i;
-
-  for (i = 0; i < DIAMETER / 2; i++) {
-    DeleteBitmap(circles[i]);
-  }
-}
+INTSERVER(PulsatePaletteInterrupt, 0, (IntFuncT)PaletteBlip, NULL);
 
 static void Init(void) {
-  screen = NewBitmap(WIDTH, HEIGHT, DEPTH);
+  screen = NewBitmap(WIDTH, HEIGHT * 4, DEPTH);
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
-  LoadPalette(&sea_anemone_pal1, 0);
+  LoadPalette(&anemone_pal_1, 0);
 
   cp = NewCopList(50);
   CopInit(cp);
@@ -230,6 +287,7 @@ static void Init(void) {
 
   TrackInit(&SeaAnemoneVariant);
   TrackInit(&SeaAnemonePal);
+  TrackInit(&SeaAnemonePalPulse);
   ArmsReset(&AnemoneArms);
 
   /* Moved from DrawCircle, since we use only one type of blit. */
@@ -238,9 +296,12 @@ static void Init(void) {
     custom->bltcon1 = 0;
     custom->bltafwm = -1;
   }
+
+  AddIntServer(INTB_VERTB, PulsatePaletteInterrupt);
 }
 
 static void Kill(void) {
+  RemIntServer(INTB_VERTB, PulsatePaletteInterrupt);
   DisableDMA(DMAF_COPPER | DMAF_BLITTER | DMAF_RASTER | DMAF_BLITHOG);
 
   DeleteBitmap(screen);
@@ -249,7 +310,9 @@ static void Kill(void) {
 
 #define screen_bytesPerRow (WIDTH / 8)
 
-static void DrawCircle(BitmapT *circle, short x, short y, short c) {
+static void DrawCircle(const BitmapT *circle, short x, short y, short c,
+                       int vShift)
+{
   u_short dstmod = screen_bytesPerRow - circle->bytesPerRow;
   u_short bltshift = rorw(x & 15, 4);
   u_short bltsize = (circle->height << 6) | (circle->bytesPerRow >> 1);
@@ -257,7 +320,7 @@ static void DrawCircle(BitmapT *circle, short x, short y, short c) {
   void **dstbpts = screen->planes;
   int start;
 
-  start = y * screen_bytesPerRow;
+  start = (y + vShift) * screen_bytesPerRow;
   start += (x & ~15) >> 3;
 
   WaitBlitter();
@@ -301,10 +364,10 @@ static void DrawCircle(BitmapT *circle, short x, short y, short c) {
   }
 }
 
-static void SeaAnemone(ArmQueueT *arms) {
+static void SeaAnemone(ArmQueueT *arms, int vShift) {
   static ArmT arm;
 
-  MakeArm(&arm);
+  MakeArm(arms, &arm);
   ArmsAdd(arms, &arm);
 
   if (ArmsNonEmpty(arms)) {
@@ -312,8 +375,27 @@ static void SeaAnemone(ArmQueueT *arms) {
     ArmT *last = ArmLast(arms);
 
     while (true) {
-      short angle = (random() & ArmAngleMask) + ArmAngleOffset;
+      short angle;
+
+      {
+        short qy = curr->pos_y >> 4;
+        short arand = random();
+
+        if (ArmVariant == 1) {
+          angle = arand & 0x7ff;
+          if (qy > HEIGHT / 2)
+            angle += 0x800;
+        } else if (ArmVariant == 3) {
+          angle = ((arand & 0x7ff) - 0x400) + curr->angle;
+        } else if (ArmVariant == 4) {
+          angle = (arand & 0x7ff) + curr->angle;
+        } else {
+          angle = (arand & 0x7ff) + 0x800;
+        }
+      }
+
       ArmMove(curr, angle);
+
       if (curr->diameter > 1) {
         short d = curr->diameter;
         short r = d / 2;
@@ -322,14 +404,12 @@ static void SeaAnemone(ArmQueueT *arms) {
         if ((x < 0) || (y < 0) || (x >= WIDTH - d) || (y >= HEIGHT - d))
           continue;
         if (r < 16)
-          DrawCircle(circles[r - 1], x, y, 16 - r);
+          DrawCircle(circles[r - 1], x, y, 16 - r, vShift);
       }
       if (curr == last)
         break;
       curr = ArmPrev(arms, curr);
     }
-
-    // Log("head: %d, tail: %d\n", arms.head, arms.tail);
 
     while (ArmsNonEmpty(arms) && ArmLast(arms)->diameter < 1) {
       ArmsPop(arms);
@@ -340,35 +420,43 @@ static void SeaAnemone(ArmQueueT *arms) {
 PROFILE(SeaAnemone);
 
 static void Render(void) {
-  short val;
+  short vShift = 0;
+  int lineOffset = 0;
+  short val, valPal;
 
   if ((val = TrackValueGet(&SeaAnemoneVariant, frameFromStart))) { 
     BitmapClear(screen);
     ArmsReset(&AnemoneArms);
-    if (val == 1) {
-      ArmAngleMask = 0xfff;
-      ArmAngleOffset = 0;
-      ArmVariant = 1;
-    } else if (val == 2) {
-      ArmAngleMask = 0x7ff;
-      ArmAngleOffset = 0;
-      ArmVariant = 2;
-    } else if (val == 3) {
-      ArmAngleMask = 0x7ff;
-      ArmAngleOffset = 0x800;
-      ArmVariant = 3;
-    }
+    ArmVariant = val;
   }
 
   if ((val = TrackValueGet(&SeaAnemonePal, frameFromStart))) {
-    LoadPalette(sea_anemone_pal[val], 0);
+    LoadPalette(sea_anemone_palettes[val], 0);
+    active_pal = sea_anemone_pal[val];
   }
 
+  // Set the light level (for palette modification)
+  if ((valPal = TrackValueGet(&SeaAnemonePalPulse, frameFromStart)))
+    lightLevel = valPal;
+
   ProfilerStart(SeaAnemone);
-  SeaAnemone(&AnemoneArms);
+
+  // Scroll the screen vertically
+  if (ArmVariant == 4) {
+    vShift = frameCount % (HEIGHT * 3);
+    lineOffset = vShift * screen_bytesPerRow;
+
+    CopInsSet32(bplptr[0], screen->planes[0] + lineOffset);
+    CopInsSet32(bplptr[1], screen->planes[1] + lineOffset);
+    CopInsSet32(bplptr[2], screen->planes[2] + lineOffset);
+    CopInsSet32(bplptr[3], screen->planes[3] + lineOffset);
+  }
+
+  SeaAnemone(&AnemoneArms, vShift);
+
   ProfilerStop(SeaAnemone);
 
   TaskWaitVBlank();
 }
 
-EFFECT(SeaAnemone, Load, UnLoad, Init, Kill, Render);
+EFFECT(SeaAnemone, NULL, NULL, Init, Kill, Render);
