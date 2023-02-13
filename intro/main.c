@@ -133,10 +133,11 @@ static void UnLoadEffects(EffectT **effects) {
   }
 }
 
+#define SYNCPOS(pos) (((((pos) & 0xff00) >> 2) | ((pos) & 0x3f)) * 6)
 static void RunEffects(void) {
   /* Reset frame counter and wait for all time actions to finish. */
-  SetFrameCounter(0);
-  frameCount = 0;
+  frameCount = SYNCPOS(0x100);
+  SetFrameCounter(frameCount);
 
   for (;;) {
     static short prev = -1;

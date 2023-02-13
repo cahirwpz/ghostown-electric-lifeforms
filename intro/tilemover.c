@@ -21,7 +21,7 @@
 #define S_HEIGHT 224
 #define DEPTH 4
 #define COLORS 16
-#define NFLOWFIELDS 5
+#define NFLOWFIELDS 6
 
 #define MARGIN (2 * TILESIZE)
 #define WIDTH (S_WIDTH + MARGIN * 2)
@@ -44,11 +44,15 @@ static CopInsT *palptr[COLORS];
 /* 1 bit version of logo for blitting */
 static BitmapT *logo_blit;
 
+
 /* for each tile following array stores source and destination offsets relative
  * to the beginning of a bitplane */
 static short tiles[NFLOWFIELDS][NTILES];
 
 #include "data/tilemover-pal.c"
+#include "data/mover2.c"
+#include "data/mover3.c"
+#include "data/mover4.c"
 
 extern const BitmapT ghostown_logo;
 extern TrackT TileMoverNumber;
@@ -132,6 +136,9 @@ static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
           vx = (COS(px) / 2 + 127) >> 8;
           vy = (px_real + 127) >> 8;
           break;
+        case 5:
+          vx = (SIN(px)) >> 10;
+          vy = COS(px) >> 15;
         default:
       }
 
@@ -150,7 +157,8 @@ static short ranges[NFLOWFIELDS][4] = {
   {-SIN_PI/2, SIN_PI/2, 0,         SIN_PI/2},
   {-SIN_PI/3, SIN_PI/3, -SIN_PI/3, SIN_PI/3},
   {-2*SIN_PI, 2*SIN_PI, -SIN_PI,   SIN_PI},
-  {-SIN_PI/4, SIN_PI/4, -SIN_PI,   SIN_PI},
+  {-PI/4, PI/4, -PI, PI},
+  {-PI / 4, PI / 4, -PI, PI},
 };
 
 static void BlitSimple(void *sourceA, void *sourceB, void *sourceC,
@@ -174,12 +182,12 @@ static void BlitSimple(void *sourceA, void *sourceB, void *sourceC,
   custom->bltsize = bltsize;
 }
 
-static void BlitGhostown(short x, short y) {
+static void BlitGhostown(short x, short y, BitmapT blit) {
   short i;
   short j = active;
   //short x = MARGIN + (S_WIDTH - logo_blit->width) / 2 + 6;
   //short y = MARGIN + (S_HEIGHT - logo_blit->height) / 2;
-  BlitterCopySetup(screen, MARGIN + x, MARGIN+y, logo_blit);
+  BlitterCopySetup(screen, MARGIN + x, MARGIN+y, &blit);
   // monkeypatch minterms to perform screen = screen | logo_blit
   custom->bltcon0 = (SRCB | SRCC | DEST) | (ABC | ANBC | ABNC);
 
@@ -346,6 +354,7 @@ PROFILE(TileMover);
 
 static void Render(void) {
   short current_ff = TrackValueGet(&TileMoverNumber, frameCount);
+  short val;
 
 #if 0
   {
@@ -357,8 +366,24 @@ static void Render(void) {
   }
 #endif
 
-  if (TrackValueGet(&TileMoverBlit, frameCount))
-    BlitGhostown(50, 50);
+  if ((val = TrackValueGet(&TileMoverBlit, frameCount))) {
+    switch (val) {
+        case 2:
+            BlitGhostown(165 + (random() & 10), random() & 170, mover4);
+            BlitGhostown(165 + (random() & 10), random() & 170, mover4);
+            BlitGhostown(165 + (random() & 10), random() & 170, mover4);
+            BlitGhostown(115 + (random() & 9), random() & 100, mover4);
+            BlitGhostown(115 + (random() & 9), random() & 100, mover4);
+            BlitGhostown(115 + (random() & 9), random() & 100, mover4);
+            break;
+        case 1:
+            BlitGhostown(random() & 230, random() & 170, mover2);
+            break;
+        case 6: 
+            BlitGhostown(20, 170, mover3);
+            break;
+    };
+  };
 
   ProfilerStart(TileMover);
   if (false)
