@@ -374,15 +374,16 @@ static void Render(void) {
             //   ghostown_logo.planes[2], logo_blit,
             //  ABC | ANBC | ABNC | ANBNC | NABC | NANBC | NABNC);
             BlitBitmap(random() & 230, random() & 170, tilemover_windmills);
+            BlitBitmap(random() & 230, random() & 170, tilemover_windmills);
             break;
         // Tube with stardrops
-        case 3:
+        case 5:
             BlitBitmap(165 + (random() & 10), random() & 170, tilemover_drops);
             BlitBitmap(165 + (random() & 10), random() & 170, tilemover_drops);
             BlitBitmap(165 + (random() & 10), random() & 170, tilemover_drops);
-            BlitBitmap(115 + (random() & 9), random() & 100, tilemover_drops);
-            BlitBitmap(115 + (random() & 9), random() & 100, tilemover_drops);
-            BlitBitmap(115 + (random() & 9), random() & 100, tilemover_drops);
+            BlitBitmap(105 + (random() & 9), random() & 100, tilemover_drops);
+            BlitBitmap(105 + (random() & 9), random() & 100, tilemover_drops);
+            BlitBitmap(105 + (random() & 9), random() & 100, tilemover_drops);
             break;
         // Pseudo sound wave
         case 1: 
