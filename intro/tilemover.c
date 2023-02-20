@@ -39,7 +39,7 @@ static BitmapT *screen;
 static int active = 0;
 static CopListT *cp;
 static CopInsT *bplptr[DEPTH + 1];
-static CopInsT *palptr[COLORS];
+//static CopInsT *palptr[COLORS];
 
 /* 1 bit version of logo for blitting */
 static BitmapT *logo_blit;
@@ -53,6 +53,19 @@ static short tiles[NFLOWFIELDS][NTILES];
 #include "data/tilemover-windmills.c"
 #include "data/tilemover-wave.c"
 #include "data/tilemover-drops.c"
+
+#include "data/sea-anemone-pal1.c"
+#include "data/sea-anemone-pal2.c"
+#include "data/sea-anemone-pal3.c"
+
+typedef const PaletteT *TilemoverPalT[4];
+
+static TilemoverPalT tilemover_palettes = {
+  NULL,
+  &tilemover_pal,
+  &sea_anemone_pal2,
+  &sea_anemone_pal3,
+};
 
 extern const BitmapT ghostown_logo;
 extern TrackT TileMoverNumber;
@@ -226,8 +239,8 @@ static void UnLoad(void) {
 }
 
 static void Init(void) {
-  u_short i;
-  u_short *color = tilemover_pal.colors;
+  //u_short i;
+  //u_short *color = tilemover_pal.colors;
 
   TrackInit(&TileMoverNumber);
   TrackInit(&TileMoverBlit);
@@ -243,8 +256,8 @@ static void Init(void) {
   CopSetupBitplanes(cp, bplptr, screen, DEPTH);
   CopMove16(cp, bpl1mod, (WIDTH - S_WIDTH) / 8);
   CopMove16(cp, bpl2mod, (WIDTH - S_WIDTH) / 8);
-  for (i = 0; i < COLORS; i++)
-    palptr[i] = CopSetColor(cp, i, *color++);
+  //for (i = 0; i < COLORS; i++)
+    //palptr[i] = CopSetColor(cp, i, *color++);
   CopEnd(cp);
 
   CopListActivate(cp);
@@ -355,7 +368,20 @@ PROFILE(TileMover);
 static void Render(void) {
   short current_ff = TrackValueGet(&TileMoverNumber, frameCount);
   short val;
-
+  
+  if (current_ff) {
+    switch (current_ff) {
+        case 1:
+            LoadPalette(tilemover_palettes[1], 0);
+            break;
+        case 2:
+            LoadPalette(tilemover_palettes[2], 0);
+            break;
+        case 5:
+            LoadPalette(tilemover_palettes[3], 0);
+            break;
+    }
+  };
 #if 0
   {
     short i;
