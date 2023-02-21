@@ -177,7 +177,7 @@ static void BlitSimple(void *sourceA, void *sourceB, void *sourceC,
 static void BlitGhostown(void) {
   short i;
   short j = active;
-  BlitterCopySetup(screen, MARGIN + (S_WIDTH - logo_blit->width) / 2 + 6,
+  BlitterCopySetup(screen, MARGIN + (S_WIDTH - logo_blit->width) / 2,
                    MARGIN + (S_HEIGHT - logo_blit->height) / 2, logo_blit);
   // monkeypatch minterms to perform screen = screen | logo_blit
   custom->bltcon0 = (SRCB | SRCC | DEST) | (ABC | ANBC | ABNC);
@@ -202,7 +202,7 @@ static void Load(void) {
     EnableDMA(DMAF_BLITTER);
 
     // bitmap width aligned to word
-    logo_blit = NewBitmap(w + (16 - (w % 16)), h, 1);
+    logo_blit = NewBitmap(w, h, 1);
     BlitSimple(ghostown_logo.planes[0], ghostown_logo.planes[1],
                ghostown_logo.planes[2], logo_blit,
                ABC | ANBC | ABNC | ANBNC | NABC | NANBC | NABNC);
