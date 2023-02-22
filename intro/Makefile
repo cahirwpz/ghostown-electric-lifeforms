@@ -47,6 +47,7 @@ PNG2C.turmite-pal := --palette turmite_pal,16
 PNG2C.electric-lifeforms-01 := --bitmap electric_lifeforms,320x256x3 --palette electric_lifeforms_1_pal,8
 PNG2C.electric-lifeforms-02 := --palette electric_lifeforms_2_pal,8
 PNG2C.fruit := --bitmap fruit,16x16x1
+PNG2C.grass := --sprite grass,32,4,+array --palette grass_pal,4
 PNG2C.tilemover-pal := --palette tilemover_pal,16
 PNG2C.p46basedprng := --bitmap p46basedprng,156x75x1
 PNG2C.electric-lifeforms-wireworld := --bitmap wireworld_logo,160x128x1

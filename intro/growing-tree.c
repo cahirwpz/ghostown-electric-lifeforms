@@ -4,18 +4,21 @@
 #include <fx.h>
 #include <gfx.h>
 #include <line.h>
+#include <sprite.h>
 #include <stdlib.h>
 #include <system/memory.h>
 
 #define WIDTH 320
 #define HEIGHT 256
 #define DEPTH 2
+#define NSPRITES 4
 
 static CopListT *cp;
 static CopInsT *bplptr[DEPTH];
 static BitmapT *screen;
 
 #include "data/fruit.c"
+#include "data/grass.c"
 
 typedef struct Branch {
   short pos_x, pos_y; // Q12.4
@@ -84,23 +87,37 @@ static void setTreePalette(void) {
 }
 
 static void Init(void) {
+  short i;
+
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH);
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
 
   setTreePalette();
 
+  for (i = 0; i < NSPRITES; i++)
+    SpriteUpdatePos(grass[i], X(i * 16 + (WIDTH - 16 * NSPRITES) / 2),
+                    Y(HEIGHT - grass_height));
+
+  for (i = 16; i < 32; i += 4)
+    LoadPalette(&grass_pal, i);
+
+  /* Move sprites into background. */
+  custom->bplcon2 = BPLCON2_PF1P2;
+
   cp = NewCopList(50);
   CopInit(cp);
   CopSetupBitplanes(cp, bplptr, screen, DEPTH);
+  for (i = 0; i < NSPRITES; i++)
+    CopMove32(cp, sprpt[i], grass[i]->sprdat);
   CopEnd(cp);
   CopListActivate(cp);
 
-  EnableDMA(DMAF_RASTER | DMAF_BLITTER);
+  EnableDMA(DMAF_RASTER | DMAF_SPRITE | DMAF_BLITTER);
 }
 
 static void Kill(void) {
-  DisableDMA(DMAF_COPPER | DMAF_BLITTER | DMAF_RASTER);
+  DisableDMA(DMAF_COPPER | DMAF_BLITTER | DMAF_RASTER | DMAF_SPRITE);
 
   DeleteBitmap(screen);
   DeleteCopList(cp);
