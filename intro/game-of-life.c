@@ -39,7 +39,7 @@
 
 // these are max values for all game of life-based effects
 // for dynamically changing the amount kept previous states
-// see variables: game_depth and prev_states_depth
+// see variable prev_states_depth
 #define DISP_DEPTH 4
 #define PREV_STATES_DEPTH (DISP_DEPTH + 1)
 #define COLORS 8
@@ -92,17 +92,18 @@
 #include <system/keyboard.h>
 #endif
 
-#include "data/p46basedprng.c"
-//#include "data/electric-lifeforms-wireworld.c"
-#include "data/wireworld-fullscreen.c"
 #include "data/cell-gradient.c"
-//#include "data/logo-electrons.c"
+#include "data/wireworld-vitruvian.c"
+#include "data/wireworld-vitruvian-electrons.c"
+#include "data/wireworld-fullscreen.c"
 #include "data/wireworld-fullscreen-electrons.c"
 
 extern TrackT GOLPaletteH;
 extern TrackT GOLPaletteS;
 extern TrackT GOLPaletteV;
 extern TrackT GOLGame;
+extern TrackT WireworldDisplayBg;
+extern TrackT WireworldBg;
 
 static CopListT *cp;
 static BitmapT *current_board;
@@ -138,7 +139,6 @@ static u_short wireworld_step = 0;
 // are we running wireworld?
 static bool wireworld = false;
 
-static short game_depth = DISP_DEPTH;
 static short prev_states_depth = PREV_STATES_DEPTH;
 
 // frame at which to spawn specific electron next - counting from stepCount
@@ -309,12 +309,14 @@ static void WireworldSwitch(__unused const BitmapT *sourceA,
                             __unused const BitmapT *sourceC,
                             __unused const BitmapT *target,
                             __unused u_short minterms) {
+  const ElectronArrayT *electrons = TrackValueGet(&WireworldBg, frameCount) ? 
+    &pcb_electrons : &vitruvian_electrons;
   current_board = boards[wireworld_step];
   current_game = wireworlds[wireworld_step];
   wireworld_step ^= 1;
 
   // set pixels on correct board
-  SpawnElectrons(&pcb_electrons, wireworld_step ^ 1, wireworld_step);
+  SpawnElectrons(electrons, wireworld_step ^ 1, wireworld_step);
 }
 
 static void BlitterInit(void) {
@@ -532,6 +534,9 @@ static void Load(void) {
     PixelDouble = MemAlloc(PixelDoubleSize, MEMF_PUBLIC);
     MakePixelDoublingCode(boards[0]);
 
+    TrackInit(&GOLGame);
+    TrackInit(&WireworldDisplayBg);
+    TrackInit(&WireworldBg);
     TrackInit(&GOLPaletteH);
     TrackInit(&GOLPaletteS);
     TrackInit(&GOLPaletteV);
@@ -600,25 +605,31 @@ static void SharedPostInit(void) {
 }
 
 static void InitWireworld(void) {
-  static BitmapT* tmp;
+  BitmapT *tmp;
+  const BitmapT *desired_bg;
+  const ElectronArrayT *desired_electrons;
+  short display_bg = TrackValueGet(&WireworldDisplayBg, frameCount);
+  short bg_idx = TrackValueGet(&WireworldBg, frameCount);
   current_game = &wireworld1;
   wireworld = true;
-  game_depth = 3;
-  prev_states_depth = game_depth + 1;
+  prev_states_depth = display_bg ? 4 : 5;
+  desired_bg = bg_idx ? &wireworld_pcb : &wireworld_vitruvian;
+  desired_electrons = bg_idx ? &pcb_electrons : &vitruvian_electrons;
 
   SharedPreInit();
 
-  InitSpawnFrames(&pcb_electrons);
+  InitSpawnFrames(desired_electrons);
 
-  tmp = NewBitmap(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH);
-  BitmapCopy(tmp, 0, 0, &wireworld_pcb);
-  PixelDouble(tmp->planes[0], prev_states[4]->planes[0], double_pixels);
-  DeleteBitmap(tmp);
-  
-  CopInsSet32(bplptr[3], prev_states[4]->planes[0]);
+  if (display_bg) {
+    tmp = NewBitmap(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH);
+    BitmapCopy(tmp, 0, 0, desired_bg);
+    PixelDouble(tmp->planes[0], prev_states[4]->planes[0], double_pixels);
+    DeleteBitmap(tmp);
+    CopInsSet32(bplptr[3], prev_states[4]->planes[0]);
+  }
 
   // board 11 is special in case of wireworld - it contains the electron paths
-  BitmapCopy(boards[11], EXT_WIDTH_LEFT, EXT_HEIGHT_TOP, &wireworld_pcb);
+  BitmapCopy(boards[11], EXT_WIDTH_LEFT, EXT_HEIGHT_TOP, desired_bg);
 
   // electron heads/tails in case of wireworld
   BitmapClear(boards[0]);
@@ -630,12 +641,9 @@ static void InitWireworld(void) {
 static void InitGameOfLife(void) {
   current_game = games[0];
   wireworld = false;
-  game_depth = 4;
-  prev_states_depth = game_depth + 1;
+  prev_states_depth = 5;
 
   SharedPreInit();
-
-  TrackInit(&GOLGame);
 
   BitmapClear(boards[0]);
   BitmapCopy(boards[0], EXT_WIDTH_LEFT, EXT_HEIGHT_TOP, &wireworld_pcb);
