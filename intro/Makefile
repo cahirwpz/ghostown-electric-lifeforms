@@ -96,6 +96,9 @@ PNG2C.anemone-pal-3-light := --palette anemone_pal_3_light,16
 PNG2C.tilemover-windmills := --bitmap tilemover_windmills,32x32x1
 PNG2C.tilemover-wave := --bitmap tilemover_wave,196x64x1
 PNG2C.tilemover-drops := --bitmap tilemover_drops,16x16x1
+PNG2C.tilemover-line := --bitmap tilemover_line,75x22x1
+PNG2C.tilemover-logo := --bitmap tilemover_logo,75x68x1
+PNG2C.tilemover-block := --bitmap tilemover_block,144x94x1
 
 CPPFLAGS += -DINTRO -DVQ=$(VQ) -DDELTA=$(DELTA) -I.
 

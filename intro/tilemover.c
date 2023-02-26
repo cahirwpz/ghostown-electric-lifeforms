@@ -21,7 +21,7 @@
 #define S_HEIGHT 224
 #define DEPTH 4
 #define COLORS 16
-#define NFLOWFIELDS 6
+#define NFLOWFIELDS 8
 
 #define MARGIN (2 * TILESIZE)
 #define WIDTH (S_WIDTH + MARGIN * 2)
@@ -52,7 +52,8 @@ static short tiles[NFLOWFIELDS][NTILES];
 #include "data/tilemover-pal.c"
 #include "data/tilemover-windmills.c"
 #include "data/tilemover-wave.c"
-#include "data/tilemover-drops.c"
+#include "data/tilemover-logo.c"
+#include "data/tilemover-block.c"
 
 #include "data/sea-anemone-pal1.c"
 #include "data/sea-anemone-pal2.c"
@@ -125,13 +126,25 @@ static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
           vx = SIN(mag_sin) >> 8;
           vy = (COS(mag_sin) >> 8) - (py_real >> 9);
           break;
-        // sound wave
+	// LOGO TEARING
         case 1:
+          //vx = px;
+          //vy = py;
+          vx = (px_real - 15) >> 10;
+          vy = (py_real - 15) >> 10;
+          break;
+            //vx = py >> 12; 
+          //vy = COS((px - (px^px))) >> 8;
+
+        // SOUND WAVE
+        case 2:
           /* -SIN_PI/2, SIN_PI/2, 0, SIN_PI/2 */
           vx = min(py_real, normfx(px_real * py_real)) >> 9;
           vy = mag >> 9;
           break;
-        case 2:
+
+	// WINDMILLS
+        case 3:
           /*
            * -SIN_PI/3, SIN_PI/3, -SIN_PI/3, SIN_PI/3
            * this is also good with range:
@@ -140,20 +153,36 @@ static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
           vx = (SIN(py * 6) / 2) >> 9;
           vy = (SIN(px * 6) / 2) >> 9;
           break;
-        // horizontal tearing
-        case 3:
+	
+	// ROLLING TUBE
+        case 4:
+          vx = (SIN(px)) >> 10;
+          vy = COS(px) >> 15;
+          break;
+
+        // horizontal tearing - unused
+        case 5:
           /* -2 * SIN_PI, 2 * SIN_PI, -SIN_PI, SIN_PI */
           vx = (SIN(py) / 2) >> 9;
           vy = 0;
           break;
-        case 4:
+	
+        // Kitchen sink
+        case 6:
+          vx = (py + 15) >> 8;
+          vy = px >> 8;
           /* -SIN_PI / 4, SIN_PI / 4, -SIN_PI, SIN_PI */
-          vx = (COS(px) / 2 + 127) >> 8;
-          vy = (px_real + 127) >> 8;
           break;
-        case 5:
-          vx = (SIN(px)) >> 10;
-          vy = COS(px) >> 15;
+        // Funky sound wave with peak
+        case 7:
+          
+          //{-PI/2, PI/2, -PI, PI} - zjadansko
+          //{0, -PI/2, 0, -PI - top left inflacja
+          vx = px >> 9;
+          vy = COS((px - (px^px)) + 127) >> 9;
+          break;
+
+
         default:
       }
 
@@ -168,12 +197,14 @@ static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
 }
 
 static short ranges[NFLOWFIELDS][4] = {
-  {SIN_PI/3,  SIN_PI,   -SIN_PI/3, SIN_PI/12},
-  {-SIN_PI/2, SIN_PI/2, 0,         SIN_PI/2},
-  {-SIN_PI/3, SIN_PI/3, -SIN_PI/3, SIN_PI/3},
+  {-SIN_PI/4, SIN_PI/4, -SIN_PI, SIN_PI},
+  {0, -PI/2, 0, -PI},
+  {-SIN_PI/2, SIN_PI/2, 0,         SIN_PI/2},  // sound wave
+  {-SIN_PI/3, SIN_PI/3, -SIN_PI/3, SIN_PI/3},  // windmills
+  {-PI / 4, PI / 4, -PI, PI},                  // rolling tube
   {-2*SIN_PI, 2*SIN_PI, -SIN_PI,   SIN_PI},
   {-PI/4, PI/4, -PI, PI},
-  {-PI / 4, PI / 4, -PI, PI},
+  {-2*SIN_PI, 2*SIN_PI, -SIN_PI,   SIN_PI},
 };
 
 static void BlitSimple(void *sourceA, void *sourceB, void *sourceC,
@@ -375,9 +406,12 @@ static void Render(void) {
             LoadPalette(tilemover_palettes[1], 0);
             break;
         case 2:
+            LoadPalette(tilemover_palettes[1], 0);
+            break;
+        case 3:
             LoadPalette(tilemover_palettes[2], 0);
             break;
-        case 5:
+        case 4:
             LoadPalette(tilemover_palettes[3], 0);
             break;
     }
@@ -394,27 +428,34 @@ static void Render(void) {
 
   if ((val = TrackValueGet(&TileMoverBlit, frameCount))) {
     switch (val) {
-        // Windmills
+	// Logo tearing
+        case 1: 
+            BlitBitmap(1, 1, tilemover_logo);
+            break;
+        // Pseudo sound wave
         case 2:
-            //BlitSimple(ghostown_logo.planes[0], ghostown_logo.planes[1], 
-            //   ghostown_logo.planes[2], logo_blit,
-            //  ABC | ANBC | ABNC | ANBNC | NABC | NANBC | NABNC);
+            BlitBitmap(10, 170, tilemover_wave);
+            break;
+
+        case 3:
+            BlitBitmap(random() & 10, random() & 100, tilemover_block);
+            break;
+        // Windmills
+        case 4:
+            BlitBitmap(random() & 230, random() & 170, tilemover_windmills);
+            BlitBitmap(random() & 230, random() & 170, tilemover_windmills);
             BlitBitmap(random() & 230, random() & 170, tilemover_windmills);
             BlitBitmap(random() & 230, random() & 170, tilemover_windmills);
             break;
         // Tube with stardrops
-        case 5:
-            BlitBitmap(165 + (random() & 10), random() & 170, tilemover_drops);
-            BlitBitmap(165 + (random() & 10), random() & 170, tilemover_drops);
-            BlitBitmap(165 + (random() & 10), random() & 170, tilemover_drops);
-            BlitBitmap(105 + (random() & 9), random() & 100, tilemover_drops);
-            BlitBitmap(105 + (random() & 9), random() & 100, tilemover_drops);
-            BlitBitmap(105 + (random() & 9), random() & 100, tilemover_drops);
-            break;
-        // Pseudo sound wave
-        case 1: 
-            BlitBitmap(20, 170, tilemover_wave);
-            break;
+        //case 5:
+        //    BlitBitmap(165 + (random() & 10), random() & 170, tilemover_drops);
+        //    BlitBitmap(165 + (random() & 10), random() & 170, tilemover_drops);
+        //    BlitBitmap(165 + (random() & 10), random() & 170, tilemover_drops);
+        //    BlitBitmap(105 + (random() & 9), random() & 100, tilemover_drops);
+        //    BlitBitmap(105 + (random() & 9), random() & 100, tilemover_drops);
+        //    BlitBitmap(105 + (random() & 9), random() & 100, tilemover_drops);
+        //    break;
     };
   };
 
