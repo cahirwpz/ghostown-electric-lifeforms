@@ -26,7 +26,7 @@ BUILD-FILES := audiovq
 CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
 	data/$(MODULE)-*.o data/$(MODULE).{smp,trk}* data/text-scroll-font.c \
 	data/intro.c data/electric-lifeforms-0[1-2].c \
-	data/fruit.c data/tilemover-pal.c data/anemone-pal.c \
+	data/fruit-*.c data/tilemover-pal.c data/anemone-pal.c \
 	data/ghostown-logo-crop.c data/p46basedprng.c data/cell-gradient.c \
 	data/logo-electrons.c data/electric-lifeforms.c \
 	data/electric-lifeforms-wireworld.c data/ghostown-logo-0[1-3].c \
@@ -46,9 +46,8 @@ PNG2C.turmite-credits-3 := --bitmap turmite_credits_3,256x256x1,+onlydata,-displ
 PNG2C.turmite-pal := --palette turmite_pal,16
 PNG2C.electric-lifeforms-01 := --bitmap electric_lifeforms,320x256x3,-displayable --palette electric_lifeforms_1_pal,8
 PNG2C.electric-lifeforms-02 := --palette electric_lifeforms_2_pal,8
-PNG2C.fruit := --bitmap fruit,16x16x1
-PNG2C.fruit-1 := --bitmap fruit_1,16x16x2
-PNG2C.fruit-2 := --bitmap fruit_2,16x16x2
+PNG2C.fruit-1 := --bitmap fruit_1,16x16x2,+onlydata --palette fruit_1_pal,4
+PNG2C.fruit-2 := --bitmap fruit_2,16x16x2,+onlydata --palette fruit_2_pal,4
 PNG2C.grass := --sprite grass,32,4,+array --palette grass_pal,4
 PNG2C.tilemover-pal := --palette tilemover_pal,16
 PNG2C.p46basedprng := --bitmap p46basedprng,156x75x1
