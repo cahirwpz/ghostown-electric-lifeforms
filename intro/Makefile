@@ -38,11 +38,11 @@ SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 MAIN := #
 
 PNG2C.bar := --bitmap bar,480x67x4,+limit_depth --palette bar_pal,32
-PNG2C.stripes := --bitmap stripes,128x64x2,+limit_depth,+interleaved --palette stripes_pal,16
+PNG2C.stripes := --bitmap stripes,128x64x2,+limit_depth,+interleaved,-displayable --palette stripes_pal,16
 PNG2C.text-scroll-font := --bitmap font,768x8x1,-displayable --palette font_pal,2
-PNG2C.turmite-credits-1 := --bitmap turmite_credits_1,256x256x1
-PNG2C.turmite-credits-2 := --bitmap turmite_credits_2,256x256x1
-PNG2C.turmite-credits-3 := --bitmap turmite_credits_3,256x256x1
+PNG2C.turmite-credits-1 := --bitmap turmite_credits_1,256x256x1,+onlydata,-displayable
+PNG2C.turmite-credits-2 := --bitmap turmite_credits_2,256x256x1,+onlydata,-displayable
+PNG2C.turmite-credits-3 := --bitmap turmite_credits_3,256x256x1,+onlydata,-displayable
 PNG2C.turmite-pal := --palette turmite_pal,16
 PNG2C.electric-lifeforms-01 := --bitmap electric_lifeforms,320x256x3,-displayable --palette electric_lifeforms_1_pal,8
 PNG2C.electric-lifeforms-02 := --palette electric_lifeforms_2_pal,8

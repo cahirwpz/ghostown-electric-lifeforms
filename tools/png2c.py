@@ -130,7 +130,8 @@ def do_bitmap(im, desc):
                   ('interleaved', bool, False),
                   ('displayable', bool, True),
                   ('shared', bool, False),
-                  ('limit_depth', bool, False))
+                  ('limit_depth', bool, False),
+                  ('onlydata', bool, False))
 
     name = param['name']
     has_width = param['width']
@@ -141,6 +142,7 @@ def do_bitmap(im, desc):
     displayable = param['displayable']
     shared = param['shared']
     limit_depth = param['limit_depth']
+    onlydata = param['onlydata']
 
     w, h = im.size
     im = im.copy().crop((x, y, min(x + has_width, w), min(y + has_height, h)))
@@ -187,6 +189,9 @@ def do_bitmap(im, desc):
     print(f'#define {name}_bplSize {bplSize}')
     print(f'#define {name}_size {bplSize*depth}')
     print('')
+
+    if onlydata:
+        return
 
     print('%sconst BitmapT %s = {' % ('' if shared else 'static ', name))
     print(f'  .width = {width},')
