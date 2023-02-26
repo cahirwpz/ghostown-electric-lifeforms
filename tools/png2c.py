@@ -128,6 +128,7 @@ def do_bitmap(im, desc):
                   ('width,height,depth', (int, int, int)),
                   ('extract_at', (int, int), (0, 0)),
                   ('interleaved', bool, False),
+                  ('displayable', bool, True),
                   ('shared', bool, False),
                   ('limit_depth', bool, False))
 
@@ -137,6 +138,7 @@ def do_bitmap(im, desc):
     has_depth = param['depth']
     x, y = param['extract_at']
     interleaved = param['interleaved']
+    displayable = param['displayable']
     shared = param['shared']
     limit_depth = param['limit_depth']
 
@@ -162,7 +164,9 @@ def do_bitmap(im, desc):
     bplSize = bytesPerRow * height
     bpl = planar(pix, width, height, depth)
 
-    print('static __data_chip u_short _%s_bpl[] = {' % name)
+    data_chip = '__data_chip' if displayable else ''
+
+    print(f'static {data_chip} u_short _{name}_bpl[] = {{')
     if interleaved:
         for i in range(0, depth * wordsPerRow * height, wordsPerRow):
             words = ['0x%04x' % bpl[i + x] for x in range(wordsPerRow)]
@@ -176,19 +180,23 @@ def do_bitmap(im, desc):
     print('};')
     print('')
 
-    print('#define %s_width %d' % (name, width))
-    print('#define %s_height %d' % (name, height))
-    print('#define %s_bytesPerRow %d' % (name, bytesPerRow))
-    print('#define %s_bplSize %d' % (name, bplSize))
+    print(f'#define {name}_width {width}')
+    print(f'#define {name}_height {height}')
+    print(f'#define {name}_depth {depth}')
+    print(f'#define {name}_bytesPerRow {bytesPerRow}')
+    print(f'#define {name}_bplSize {bplSize}')
+    print(f'#define {name}_size {bplSize*depth}')
     print('')
 
     print('%sconst BitmapT %s = {' % ('' if shared else 'static ', name))
-    print('  .width = %d,' % width)
-    print('  .height = %d,' % height)
-    print('  .depth = %s,' % depth)
-    print('  .bytesPerRow = %d,' % bytesPerRow)
-    print('  .bplSize = %d,' % bplSize)
-    flags = ['BM_DISPLAYABLE', 'BM_STATIC']
+    print(f'  .width = {width},')
+    print(f'  .height = {height},')
+    print(f'  .depth = {depth},')
+    print(f'  .bytesPerRow = {bytesPerRow},')
+    print(f'  .bplSize = {bplSize},')
+    flags = ['BM_STATIC']
+    if displayable:
+        flags.append('BM_DISPLAYABLE')
     if interleaved:
         flags.append('BM_INTERLEAVED')
     print('  .flags = %s,' % '|'.join(flags))
@@ -198,7 +206,7 @@ def do_bitmap(im, desc):
             offset = i * bytesPerRow
         else:
             offset = i * bplSize
-        print('    (void *)_%s_bpl + %d,' % (name, offset))
+        print(f'    (void *)_{name}_bpl + {offset},')
     print('  }')
     print('};')
 

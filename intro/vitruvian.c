@@ -26,6 +26,9 @@ extern TrackT ElectricLifeformsLogoPal;
 static void Init(void) {
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH);
 
+  memcpy(screen->planes[0], electric_lifeforms.planes[0],
+         electric_lifeforms_size);
+
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
 
   {
@@ -34,12 +37,6 @@ static void Init(void) {
     for (i = 0; i < (1 << DEPTH); i++)
       SetColor(i, electric_lifeforms_1_pal.colors[0]);
   }
-
-  EnableDMA(DMAF_BLITTER);
-  BitmapCopy(screen, (WIDTH - electric_lifeforms_width) / 2,
-             (HEIGHT - electric_lifeforms_height) / 2, &electric_lifeforms);
-  WaitBlitter();
-  DisableDMA(DMAF_BLITTER);
 
   TrackInit(&ElectricLifeformsLogoPal);
 
