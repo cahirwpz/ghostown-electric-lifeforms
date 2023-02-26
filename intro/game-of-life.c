@@ -84,7 +84,7 @@
 
 #define RAND_SPAWN_MASK 0xf
 #define RAND_SPAWN_MIN_DELAY 8
-#define NUM_SCENES 3
+#define NUM_SCENES 4
 
 #define DEBUG_KBD
 
@@ -143,7 +143,9 @@ static bool wireworld = false;
 static short prev_states_depth = PREV_STATES_DEPTH;
 
 // frame at which to spawn specific electron next - counting from stepCount
-short next_spawn[128];
+static short next_spawn[128];
+
+static const ElectronArrayT *cur_electrons;
 
 static const GameDefinitionT *current_game;
 
@@ -152,7 +154,30 @@ static const GameDefinitionT *games[] = {
   &stains,      &day_and_night, &three_four,
 };
 
-static PaletteT palette = {
+static PaletteT palette_vitruvian = {
+  .count = 16,
+  .colors =
+    {
+      0x000, // 0000
+      0x006, // 0001
+      0x026, // 0010
+      0x026, // 0011
+      0x05B, // 0100
+      0x05B, // 0101
+      0x05B, // 0110
+      0x05B, // 0111
+      0x09F, // 1000
+      0x09F, // 1001
+      0x09F, // 1010
+      0x09F, // 1011
+      0x09F, // 1100
+      0x09F, // 1101
+      0x09F, // 1110
+      0x09F, // 1111
+    },
+};
+
+static PaletteT palette_pcb = {
   .count = 16,
   .colors =
     {
@@ -310,14 +335,12 @@ static void WireworldSwitch(__unused const BitmapT *sourceA,
                             __unused const BitmapT *sourceC,
                             __unused const BitmapT *target,
                             __unused u_short minterms) {
-  const ElectronArrayT *electrons = TrackValueGet(&WireworldBg, frameCount) ? 
-    &pcb_electrons : &vitruvian_electrons;
   current_board = boards[wireworld_step];
   current_game = wireworlds[wireworld_step];
   wireworld_step ^= 1;
 
   // set pixels on correct board
-  SpawnElectrons(electrons, wireworld_step ^ 1, wireworld_step);
+  SpawnElectrons(cur_electrons, wireworld_step ^ 1, wireworld_step);
 }
 
 static void BlitterInit(void) {
@@ -381,7 +404,6 @@ static void ChangePalette(const u_short *pal) {
 
 static void MakeCopperList(CopListT *cp) {
   u_short i;
-  u_short *color = palette.colors;
 
   CopInit(cp);
   // initially previous states are empty
@@ -389,9 +411,6 @@ static void MakeCopperList(CopListT *cp) {
   // order when new state gets generated
   for (i = 0; i < DISP_DEPTH; i++)
     bplptr[i] = CopMove32(cp, bplpt[i], prev_states[i]->planes[0]);
-
-  for (i = 0; i < COLORS; i++)
-    palptr[i] = CopSetColor(cp, i, *color++);
 
   for (i = 1; i <= DISP_HEIGHT; i += 2) {
     // vertical pixel doubling
@@ -567,7 +586,6 @@ static void SharedPreInit(void) {
   }
 
   SetupPlayfield(MODE_LORES, DISP_DEPTH, X(0), Y(0), DISP_WIDTH, DISP_HEIGHT);
-  LoadPalette(&palette, 0);
 
   cp = NewCopList(800);
   MakeCopperList(cp);
@@ -601,22 +619,24 @@ static void SharedPostInit(void) {
 static void InitWireworld(void) {
   BitmapT *tmp;
   const BitmapT *desired_bg;
-  const ElectronArrayT *desired_electrons;
+  const PaletteT *pal;
   short display_bg = TrackValueGet(&WireworldDisplayBg, frameCount);
   short bg_idx = TrackValueGet(&WireworldBg, frameCount);
   current_game = &wireworld1;
   wireworld = true;
   prev_states_depth = display_bg ? 4 : 5;
   desired_bg = bg_idx ? &wireworld_pcb : &wireworld_vitruvian;
-  desired_electrons = bg_idx ? &pcb_electrons : &vitruvian_electrons;
+  cur_electrons = bg_idx ? &pcb_electrons : &vitruvian_electrons;
+  pal = bg_idx ? &palette_pcb : &palette_vitruvian;
 
   SharedPreInit();
-
-  InitSpawnFrames(desired_electrons);
+  LoadPalette(pal, 0);
+  InitSpawnFrames(cur_electrons);
 
   if (display_bg) {
     tmp = NewBitmap(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH);
     BitmapCopy(tmp, 0, 0, desired_bg);
+    WaitBlitter();
     PixelDouble(tmp->planes[0], prev_states[4]->planes[0], double_pixels);
     DeleteBitmap(tmp);
     CopInsSet32(bplptr[3], prev_states[4]->planes[0]);
@@ -688,7 +708,7 @@ static void GolStep(void) {
     states_head -= prev_states_depth;
   phase = 0;
   GameOfLife(boards);
-  CyclePalette(&pal);
+  (void)CyclePalette;
   stepCount++;
 
   ProfilerStop(GOLStep);
