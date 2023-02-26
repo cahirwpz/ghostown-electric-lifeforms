@@ -84,6 +84,7 @@
 
 #define RAND_SPAWN_MASK 0xf
 #define RAND_SPAWN_MIN_DELAY 8
+#define NUM_SCENES 3
 
 #define DEBUG_KBD
 
@@ -513,15 +514,32 @@ static void GameOfLife(void *boards) {
 }
 
 static bool loaded = false;
-static bool unloaded = false;
+static bool allocated = false;
+static short scene_count = 0;
 
 static void Load(void) {
   if (!loaded) {
-    u_short i;
     loaded = true;
 
-    MakeDoublePixels();
+    TrackInit(&GOLGame);
+    TrackInit(&WireworldDisplayBg);
+    TrackInit(&WireworldBg);
+    TrackInit(&GOLPaletteH);
+    TrackInit(&GOLPaletteS);
+    TrackInit(&GOLPaletteV);
+  }
+}
 
+static void UnLoad(void) {
+
+}
+
+static void SharedPreInit(void) {
+  u_short i;
+
+  scene_count++;
+  if (!allocated) {
+    allocated = true;
     for (i = 0; i < BOARD_COUNT; i++)
       boards[i] = NewBitmap(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH);
 
@@ -531,15 +549,9 @@ static void Load(void) {
       prev_states[i] = NewBitmap(DISP_WIDTH, DISP_HEIGHT / 2, BOARD_DEPTH);
     }
 
+    MakeDoublePixels();
     PixelDouble = MemAlloc(PixelDoubleSize, MEMF_PUBLIC);
     MakePixelDoublingCode(boards[0]);
-
-    TrackInit(&GOLGame);
-    TrackInit(&WireworldDisplayBg);
-    TrackInit(&WireworldBg);
-    TrackInit(&GOLPaletteH);
-    TrackInit(&GOLPaletteS);
-    TrackInit(&GOLPaletteV);
 
     pal.dynamic = MemAlloc(4 * 256 * sizeof(u_short), MEMF_PUBLIC);
     for (i = 0; i < 256; i++) {
@@ -553,25 +565,7 @@ static void Load(void) {
     }
     pal.cur = pal.dynamic;
   }
-}
 
-static void UnLoad(void) {
-  if (!unloaded) {
-    u_short i;
-    unloaded = true;
-
-    for (i = 0; i < BOARD_COUNT; i++)
-      DeleteBitmap(boards[i]);
-
-    for (i = 0; i < PREV_STATES_DEPTH; i++)
-      DeleteBitmap(prev_states[i]);
-
-    MemFree(PixelDouble);
-  }
-}
-
-static void SharedPreInit(void) {
-  u_short i;
   SetupPlayfield(MODE_LORES, DISP_DEPTH, X(0), Y(0), DISP_WIDTH, DISP_HEIGHT);
   LoadPalette(&palette, 0);
 
@@ -652,6 +646,7 @@ static void InitGameOfLife(void) {
 }
 
 static void Kill(void) {
+  short i;
   DisableDMA(DMAF_RASTER | DMAF_BLITTER);
   DisableINT(INTF_BLIT);
   ResetIntVector(INTB_BLIT);
@@ -659,6 +654,18 @@ static void Kill(void) {
 #ifdef DEBUG_KBD
   KeyboardKill();
 #endif
+
+  // last time we show the effect - deallocate
+  if (scene_count == NUM_SCENES) {
+    for (i = 0; i < BOARD_COUNT; i++)
+      DeleteBitmap(boards[i]);
+
+    for (i = 0; i < PREV_STATES_DEPTH; i++)
+      DeleteBitmap(prev_states[i]);
+
+    MemFree(PixelDouble);
+    MemFree(pal.dynamic);
+  }
 
   DeleteCopList(cp);
 }
