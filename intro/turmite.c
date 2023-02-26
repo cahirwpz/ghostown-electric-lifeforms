@@ -49,11 +49,11 @@ extern TrackT TurmitePal;
 static short activeBoard = 1;
 static short lightLevel = 0;
 
-static const BitmapT *turmite_credits[] = {
+static u_short *turmite_credits_bpl[] = {
   NULL,
-  &turmite_credits_1,
-  &turmite_credits_2,
-  &turmite_credits_3,
+  _turmite_credits_1_bpl,
+  _turmite_credits_2_bpl,
+  _turmite_credits_3_bpl,
 };
 
 typedef const PaletteT *TurmitePalT[4];
@@ -99,9 +99,9 @@ static const short blip_sequence[] = {
   0, 2, 1, 1, 1, 2, 2, 2, 3, 3, 3
 };
 
-static void BitmapToBoard(const BitmapT *bm, u_char *board) {
+static void BitmapToBoard(u_short *bpl, u_char *board) {
   short n = WIDTH * HEIGHT / 8 - 1;
-  u_char *src = bm->planes[0];
+  u_char *src = (u_char *)bpl;
   u_int *dst = (u_int *)board;
   u_int *tab;
   
@@ -577,9 +577,9 @@ static void ChooseTurmiteBoard(short i) {
   activeBoard = i;
   BitmapClear(screen);
   LoadPalette(turmite_palettes[i], 0);
-  BlitterCopyFastSetup(screen, 0, 0, turmite_credits[i]);
-  BlitterCopyFastStart(DEPTH - 1, 0);
-  BitmapToBoard(turmite_credits[i], board);
+  memcpy(screen->planes[DEPTH - 1], turmite_credits_bpl[i],
+         turmite_credits_1_size);
+  BitmapToBoard(turmite_credits_bpl[i], board);
   TheTurmite[0] = turmite_types[i][0];
   TheTurmite[1] = turmite_types[i][1];
   ResetTurmite(TheTurmite[0], POS(60, 60));
