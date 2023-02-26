@@ -195,21 +195,16 @@ static void Load(void) {
   for (i = 0; i < NFLOWFIELDS; i++)
     CalculateTiles(tiles[i], ranges[i], i);
 
-  {
-    u_short w = ghostown_logo.width;
-    u_short h = ghostown_logo.height;
+  EnableDMA(DMAF_BLITTER);
 
-    EnableDMA(DMAF_BLITTER);
+  // bitmap width aligned to word
+  logo_blit = NewBitmap(ghostown_logo.width, ghostown_logo.height, 1);
+  BlitSimple(ghostown_logo.planes[0], ghostown_logo.planes[1],
+             ghostown_logo.planes[2], logo_blit,
+             ABC | ANBC | ABNC | ANBNC | NABC | NANBC | NABNC);
 
-    // bitmap width aligned to word
-    logo_blit = NewBitmap(w, h, 1);
-    BlitSimple(ghostown_logo.planes[0], ghostown_logo.planes[1],
-               ghostown_logo.planes[2], logo_blit,
-               ABC | ANBC | ABNC | ANBNC | NABC | NANBC | NABNC);
-
-    WaitBlitter();
-    DisableDMA(DMAF_BLITTER);
-  }
+  WaitBlitter();
+  DisableDMA(DMAF_BLITTER);
 }
 
 static void UnLoad(void) {
