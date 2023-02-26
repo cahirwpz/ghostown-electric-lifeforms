@@ -18,6 +18,8 @@ static CopInsT *bplptr[DEPTH];
 static BitmapT *screen;
 
 #include "data/fruit.c"
+#include "data/fruit-1.c"
+#include "data/fruit-2.c"
 #include "data/grass.c"
 
 typedef struct Branch {
