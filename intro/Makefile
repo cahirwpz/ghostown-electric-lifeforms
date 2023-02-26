@@ -24,7 +24,7 @@ LIBS := libpt
 BUILD-FILES := audiovq
 
 CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
-	data/$(MODULE)-*.o data/$(MODULE).{smp,trk} data/text-scroll-font.c \
+	data/$(MODULE)-*.o data/$(MODULE).{smp,trk}* data/text-scroll-font.c \
 	data/intro.c data/electric-lifeforms-0[1-2].c \
 	data/fruit.c data/tilemover-pal.c data/anemone-pal.c \
 	data/ghostown-logo-crop.c data/p46basedprng.c data/cell-gradient.c \
