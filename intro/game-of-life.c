@@ -300,7 +300,7 @@ static void BlitterInit(void) {
 static void (*PixelDouble)(u_char *source asm("a0"), u_short *target asm("a1"),
                            u_short *lut asm("a2"));
 
-#define PixelDoubleSize (BOARD_WIDTH * BOARD_HEIGHT * 10 + BOARD_HEIGHT * 2 + 6)
+#define PixelDoubleSize ((BOARD_WIDTH / 8) * BOARD_HEIGHT * 10 + BOARD_HEIGHT * 2 + 6)
 
 // doubles pixels horizontally
 static void MakePixelDoublingCode(const BitmapT *bitmap) {
