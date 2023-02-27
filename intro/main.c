@@ -112,7 +112,8 @@ static void LoadEffects(EffectT **effects) {
   EffectT *effect;
   for (effect = *effects; effect; effect = *effects++) { 
     EffectLoad(effect);
-    ShowMemStats();
+    if (effect->Load)
+      ShowMemStats();
   }
 }
 

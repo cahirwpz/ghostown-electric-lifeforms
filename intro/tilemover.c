@@ -39,7 +39,6 @@ static BitmapT *screen;
 static int active = 0;
 static CopListT *cp;
 static CopInsT *bplptr[DEPTH + 1];
-//static CopInsT *palptr[COLORS];
 
 /* 1 bit version of logo for blitting */
 static BitmapT *logo_blit;
