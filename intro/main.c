@@ -128,7 +128,7 @@ static void UnLoadEffects(EffectT **effects) {
 
 static void RunEffects(void) {
   /* Set the beginning of intro. Useful for effect synchronization! */
-  short pos = 0x100;
+  short pos = 0;
 
   frameCount = SYNCPOS(pos);
   SetFrameCounter(frameCount);

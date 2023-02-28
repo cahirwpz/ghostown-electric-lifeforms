@@ -21,7 +21,7 @@
 #define S_HEIGHT 224
 #define DEPTH 4
 #define COLORS 16
-#define NFLOWFIELDS 8
+#define NFLOWFIELDS 7
 
 #define MARGIN (2 * TILESIZE)
 #define WIDTH (S_WIDTH + MARGIN * 2)
@@ -52,6 +52,7 @@ static short tiles[NFLOWFIELDS][NTILES];
 #include "data/tilemover-windmills.c"
 #include "data/tilemover-wave.c"
 #include "data/tilemover-logo.c"
+#include "data/tilemover-drops.c"
 #include "data/tilemover-block.c"
 
 #include "data/sea-anemone-pal1.c"
@@ -61,10 +62,9 @@ static short tiles[NFLOWFIELDS][NTILES];
 typedef const PaletteT *TilemoverPalT[4];
 
 static TilemoverPalT tilemover_palettes = {
-  NULL,
-  &tilemover_pal,
-  &sea_anemone_pal2,
-  &sea_anemone_pal3,
+  &tilemover_pal,    // blue
+  &sea_anemone_pal2, // green
+  &sea_anemone_pal3, // red
 };
 
 extern const BitmapT ghostown_logo;
@@ -117,33 +117,31 @@ static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
       short vy = 0;
       int mag =
         isqrt((int)px_real * (int)px_real + (int)py_real * (int)py_real);
-      int mag_sin = div16((int)(mag << 16), TWO_PI) >> 4;
+      //int mag_sin = div16((int)(mag << 16), TWO_PI) >> 4;
 
       switch (field_idx) {
-        case 0:
-          /* SIN_PI/3, SIN_PI, -SIN_PI/3, SIN_PI/12 */
-          vx = SIN(mag_sin) >> 8;
-          vy = (COS(mag_sin) >> 8) - (py_real >> 9);
+        // STATIC
+	case 1:
+          vx = 0;
+          vy = 0;
           break;
-	// LOGO TEARING
-        case 1:
-          //vx = px;
-          //vy = py;
-          vx = (px_real - 15) >> 10;
-          vy = (py_real - 15) >> 10;
+
+	// KITCHEN SINK
+        case 2:
+	  /* {-PI/4, PI/4, -PI, PI} */
+          vx = (py + 15) >> 8;
+          vy = px >> 8;
           break;
-            //vx = py >> 12; 
-          //vy = COS((px - (px^px))) >> 8;
 
         // SOUND WAVE
-        case 2:
+        case 3:
           /* -SIN_PI/2, SIN_PI/2, 0, SIN_PI/2 */
           vx = min(py_real, normfx(px_real * py_real)) >> 9;
           vy = mag >> 9;
           break;
 
 	// WINDMILLS
-        case 3:
+        case 4:
           /*
            * -SIN_PI/3, SIN_PI/3, -SIN_PI/3, SIN_PI/3
            * this is also good with range:
@@ -154,33 +152,18 @@ static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
           break;
 	
 	// ROLLING TUBE
-        case 4:
+        case 5:
+	  /* {-PI / 4, PI / 4, -PI, PI} */
           vx = (SIN(px)) >> 10;
           vy = COS(px) >> 15;
           break;
 
-        // horizontal tearing - unused
-        case 5:
-          /* -2 * SIN_PI, 2 * SIN_PI, -SIN_PI, SIN_PI */
-          vx = (SIN(py) / 2) >> 9;
-          vy = 0;
-          break;
-	
-        // Kitchen sink
+        // FUNKY SOUND WAVE
         case 6:
-          vx = (py + 15) >> 8;
-          vy = px >> 8;
-          /* -SIN_PI / 4, SIN_PI / 4, -SIN_PI, SIN_PI */
-          break;
-        // Funky sound wave with peak
-        case 7:
-          
-          //{-PI/2, PI/2, -PI, PI} - zjadansko
-          //{0, -PI/2, 0, -PI - top left inflacja
+	  /* {-2*SIN_PI, 2*SIN_PI, -SIN_PI, SIN_PI} */
           vx = px >> 9;
           vy = COS((px - (px^px)) + 127) >> 9;
           break;
-
 
         default:
       }
@@ -196,14 +179,13 @@ static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
 }
 
 static short ranges[NFLOWFIELDS][4] = {
-  {-SIN_PI/4, SIN_PI/4, -SIN_PI, SIN_PI},
-  {0, -PI/2, 0, -PI},
-  {-SIN_PI/2, SIN_PI/2, 0,         SIN_PI/2},  // sound wave
-  {-SIN_PI/3, SIN_PI/3, -SIN_PI/3, SIN_PI/3},  // windmills
-  {-PI / 4, PI / 4, -PI, PI},                  // rolling tube
-  {-2*SIN_PI, 2*SIN_PI, -SIN_PI,   SIN_PI},
-  {-PI/4, PI/4, -PI, PI},
-  {-2*SIN_PI, 2*SIN_PI, -SIN_PI,   SIN_PI},
+  {0, 0, 0, 0},                               // unused
+  {-PI/4, PI/4, -PI, PI},                     // static
+  {-PI/4, PI/4, -PI, PI},                     // kitchen sink
+  {-SIN_PI/2, SIN_PI/2, 0, SIN_PI/2},         // sound wave
+  {-SIN_PI/3, SIN_PI/3, -SIN_PI/3, SIN_PI/3}, // windmills
+  {-PI/4, PI/4, -PI, PI},                     // rolling tube
+  {-2*SIN_PI, 2*SIN_PI, -SIN_PI, SIN_PI},     // funky soundwave
 };
 
 static void BlitSimple(void *sourceA, void *sourceB, void *sourceC,
@@ -269,9 +251,6 @@ static void UnLoad(void) {
 }
 
 static void Init(void) {
-  //u_short i;
-  //u_short *color = tilemover_pal.colors;
-
   TrackInit(&TileMoverNumber);
   TrackInit(&TileMoverBlit);
 
@@ -286,8 +265,6 @@ static void Init(void) {
   CopSetupBitplanes(cp, bplptr, screen, DEPTH);
   CopMove16(cp, bpl1mod, (WIDTH - S_WIDTH) / 8);
   CopMove16(cp, bpl2mod, (WIDTH - S_WIDTH) / 8);
-  //for (i = 0; i < COLORS; i++)
-    //palptr[i] = CopSetColor(cp, i, *color++);
   CopEnd(cp);
 
   CopListActivate(cp);
@@ -401,20 +378,27 @@ static void Render(void) {
   
   if (current_ff) {
     switch (current_ff) {
-        case 1:
-            LoadPalette(tilemover_palettes[1], 0);
+        case 1: // static
+            LoadPalette(tilemover_palettes[0], 0);
             break;
-        case 2:
-            LoadPalette(tilemover_palettes[1], 0);
+        case 2: // kitchen sink
+            LoadPalette(tilemover_palettes[0], 0);
             break;
-        case 3:
+        case 3: // soundwave
             LoadPalette(tilemover_palettes[2], 0);
             break;
-        case 4:
-            LoadPalette(tilemover_palettes[3], 0);
+        case 4: // windmills
+            LoadPalette(tilemover_palettes[1], 0);
+            break;
+        case 5: // rolling tube
+            LoadPalette(tilemover_palettes[2], 0);
+            break;
+        case 6: // funk soundwave
+            LoadPalette(tilemover_palettes[0], 0);
             break;
     }
   };
+
 #if 0
   {
     short i;
@@ -427,34 +411,37 @@ static void Render(void) {
 
   if ((val = TrackValueGet(&TileMoverBlit, frameCount))) {
     switch (val) {
-	// Logo tearing
+	// Logo
         case 1: 
-            BlitBitmap(1, 1, tilemover_logo);
+            BlitBitmap(S_WIDTH/2 - 96, S_HEIGHT/2 - 66, tilemover_logo);
+	    break;
+	// Noise for kitchen sink        
+	case 2:
+            BlitBitmap(170, 1, tilemover_block);
             break;
-        // Pseudo sound wave
-        case 2:
-            BlitBitmap(10, 170, tilemover_wave);
-            break;
-
+        // Pseudo soundwave
         case 3:
-            BlitBitmap(random() & 10, random() & 100, tilemover_block);
+            BlitBitmap(10, 170, tilemover_wave);
             break;
         // Windmills
         case 4:
-            BlitBitmap(random() & 230, random() & 170, tilemover_windmills);
-            BlitBitmap(random() & 230, random() & 170, tilemover_windmills);
-            BlitBitmap(random() & 230, random() & 170, tilemover_windmills);
-            BlitBitmap(random() & 230, random() & 170, tilemover_windmills);
+            BlitBitmap(1 + (random() & 230), 1 + (random() & 170), tilemover_windmills);
+            BlitBitmap(1 + (random() & 230), 1 + (random() & 170), tilemover_windmills);
+            BlitBitmap(1 + (random() & 230), 1 + (random() & 170), tilemover_windmills);
+            BlitBitmap(1 + (random() & 230), 1 + (random() & 170), tilemover_windmills);
+            BlitBitmap(1 + (random() & 230), 1 + (random() & 170), tilemover_windmills);
+            BlitBitmap(1 + (random() & 230), 1 + (random() & 170), tilemover_windmills);
             break;
         // Tube with stardrops
-        //case 5:
-        //    BlitBitmap(165 + (random() & 10), random() & 170, tilemover_drops);
-        //    BlitBitmap(165 + (random() & 10), random() & 170, tilemover_drops);
-        //    BlitBitmap(165 + (random() & 10), random() & 170, tilemover_drops);
-        //    BlitBitmap(105 + (random() & 9), random() & 100, tilemover_drops);
-        //    BlitBitmap(105 + (random() & 9), random() & 100, tilemover_drops);
-        //    BlitBitmap(105 + (random() & 9), random() & 100, tilemover_drops);
-        //    break;
+        case 5:
+            BlitBitmap(165 + (random() & 10), random() & 170, tilemover_drops);
+            BlitBitmap(165 + (random() & 10), random() & 170, tilemover_drops);
+            BlitBitmap(165 + (random() & 10), random() & 170, tilemover_drops);
+            BlitBitmap(105 + (random() & 9), random() & 100, tilemover_drops);
+            BlitBitmap(105 + (random() & 9), random() & 100, tilemover_drops);
+            BlitBitmap(105 + (random() & 9), random() & 100, tilemover_drops);
+            break;
+
     };
   };
 
