@@ -16,11 +16,11 @@ static u_short active = 0;
 static CopListT *cp;
 static CopInsT *bplptr[DEPTH];
 
-#include "data/texture-16-1.c"
+#include "data/texture-16.c"
 #include "data/gradient.c"
 #include "data/uvmap.c"
 
-#define UVMapRenderSize (WIDTH * HEIGHT / 2 * 10 + 2)
+#define UVMapRenderSize ((5 + WIDTH * HEIGHT / 32 * (8 * 8 + 2)) * 2)
 void (*UVMapRender)(u_short *chunkyEnd asm("a0"),
                     u_short *textureHi asm("a1"),
                     u_short *textureLo asm("a2"));
