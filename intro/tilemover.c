@@ -3,6 +3,7 @@
 #include <copper.h>
 #include <stdlib.h>
 #include <system/memory.h>
+#include <system/interrupt.h>
 #include <fx.h>
 #include <sync.h>
 
@@ -21,7 +22,7 @@
 #define S_HEIGHT 224
 #define DEPTH 4
 #define COLORS 16
-#define NFLOWFIELDS 7
+#define NFLOWFIELDS 8
 
 #define MARGIN (2 * TILESIZE)
 #define WIDTH (S_WIDTH + MARGIN * 2)
@@ -37,6 +38,7 @@
 
 static BitmapT *screen;
 static int active = 0;
+static short prev_active = 0;
 static CopListT *cp;
 static CopInsT *bplptr[DEPTH + 1];
 
@@ -49,6 +51,7 @@ static BitmapT *logo_blit;
 static short tiles[NFLOWFIELDS][NTILES];
 
 #include "data/tilemover-pal.c"
+#include "data/tilemover-bg-pal.c"
 #include "data/tilemover-windmills.c"
 #include "data/tilemover-wave.c"
 #include "data/tilemover-logo.c"
@@ -67,9 +70,15 @@ static TilemoverPalT tilemover_palettes = {
   &sea_anemone_pal3, // red
 };
 
+static short lightLevel = 0;
+static const short blip_sequence[] = {
+  0, 0, 1, 2, 3, 4, 5, 5, 5, 4, 3, 2, 1
+};
+
 extern const BitmapT ghostown_logo;
 extern TrackT TileMoverNumber;
 extern TrackT TileMoverBlit;
+extern TrackT TileMoverBgBlip;
 
 /* fx, tx, fy, ty are arguments in pi-space (pi = 0x800, as in fx.h) */
 static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
@@ -165,6 +174,11 @@ static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
           vy = COS((px - (px^px)) + 127) >> 9;
           break;
 
+	// SLOW KITCHEN SINK
+        case 7:
+          vx = (py - 15) >> 9;
+          vy = (px - 15) >> 9;
+          break;
         default:
       }
 
@@ -186,6 +200,7 @@ static short ranges[NFLOWFIELDS][4] = {
   {-SIN_PI/3, SIN_PI/3, -SIN_PI/3, SIN_PI/3}, // windmills
   {-PI/4, PI/4, -PI, PI},                     // rolling tube
   {-2*SIN_PI, 2*SIN_PI, -SIN_PI, SIN_PI},     // funky soundwave
+  {-PI/4, PI/4, -PI, PI},                     // slow kitchen sink
 };
 
 static void BlitSimple(void *sourceA, void *sourceB, void *sourceC,
@@ -250,9 +265,20 @@ static void UnLoad(void) {
   DeleteBitmap(logo_blit);
 }
 
+static int BgBlip(void) {
+  if (lightLevel) {
+    SetColor(0, tilemover_bg_pal.colors[blip_sequence[lightLevel]]);
+    lightLevel--;
+  }
+  return 0;
+}
+
+INTSERVER(BlipBackgroundInterrupt, 0, (IntFuncT)BgBlip, NULL);
+
 static void Init(void) {
   TrackInit(&TileMoverNumber);
   TrackInit(&TileMoverBlit);
+  TrackInit(&TileMoverBgBlip);
 
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1);
 
@@ -268,10 +294,16 @@ static void Init(void) {
   CopEnd(cp);
 
   CopListActivate(cp);
+
   EnableDMA(DMAF_RASTER | DMAF_BLITTER | DMAF_BLITHOG);
+
+  BlitBitmap(10, 10, tilemover_logo);
+
+  AddIntServer(INTB_VERTB, BlipBackgroundInterrupt);
 }
 
 static void Kill(void) {
+  RemIntServer(INTB_VERTB, BlipBackgroundInterrupt);
   DisableDMA(DMAF_COPPER | DMAF_RASTER | DMAF_BLITTER | DMAF_BLITHOG);
   DeleteBitmap(screen);
   DeleteCopList(cp);
@@ -374,9 +406,12 @@ PROFILE(TileMover);
 
 static void Render(void) {
   short current_ff = TrackValueGet(&TileMoverNumber, frameCount);
+  short current_blip = TrackValueGet(&TileMoverBgBlip, frameCount);
   short val;
   
-  if (current_ff) {
+  if (current_ff != prev_active) {
+    prev_active = current_ff;
+
     switch (current_ff) {
         case 1: // static
             LoadPalette(tilemover_palettes[0], 0);
@@ -399,6 +434,10 @@ static void Render(void) {
     }
   };
 
+  if (current_blip)
+    lightLevel = current_blip;
+
+
 #if 0
   {
     short i;
@@ -412,7 +451,7 @@ static void Render(void) {
   if ((val = TrackValueGet(&TileMoverBlit, frameCount))) {
     switch (val) {
 	// Logo
-        case 1: 
+        case 9: 
             BlitBitmap(S_WIDTH/2 - 96, S_HEIGHT/2 - 66, tilemover_logo);
 	    break;
 	// Noise for kitchen sink        

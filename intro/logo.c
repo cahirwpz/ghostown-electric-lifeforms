@@ -61,7 +61,7 @@ static void Kill(void) {
 
   DeleteCopList(cp);
 
-  DeleteBitmap(screen);
+  //DeleteBitmap(screen);
 }
 
 static void Render(void) {

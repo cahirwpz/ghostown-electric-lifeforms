@@ -103,6 +103,7 @@ PNG2C.tilemover-wave := --bitmap tilemover_wave,192x64x1
 PNG2C.tilemover-drops := --bitmap tilemover_drops,16x16x1
 PNG2C.tilemover-logo := --bitmap tilemover_logo,192x132x1
 PNG2C.tilemover-block := --bitmap tilemover_block,96x80x1
+PNG2C.tilemover-bg-pal := --palette tilemover_bg_pal,6
 
 CPPFLAGS += -DINTRO -DVQ=$(VQ) -DDELTA=$(DELTA) -I.
 
