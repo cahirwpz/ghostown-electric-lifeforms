@@ -239,6 +239,18 @@ static void BlitBitmap(short x, short y, BitmapT blit) {
   }
 }
 
+static void UpdateBitplanePointers(void) {
+  int offset = (MARGIN + WIDTH * MARGIN) / 8;
+  short i;
+  short j = active;
+  for (i = DEPTH - 1; i >= 0; i--) {
+    CopInsSet32(bplptr[i], screen->planes[j] + offset);
+    j--;
+    if (j < 0)
+      j += DEPTH + 1;
+  }
+}
+
 static void Load(void) {
   short i;
   for (i = 0; i < NFLOWFIELDS; i++)
@@ -255,7 +267,11 @@ static void Load(void) {
     BlitSimple(ghostown_logo.planes[0], ghostown_logo.planes[1],
                ghostown_logo.planes[2], logo_blit,
                ABC | ANBC | ABNC | ANBNC | NABC | NANBC | NABNC);
-
+  
+    screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1);
+    //UpdateBitplanePointers();
+    BitmapCopy(screen, WIDTH/2 - 96, HEIGHT/2 - 66, &tilemover_logo);
+    
     WaitBlitter();
     DisableDMA(DMAF_BLITTER);
   }
@@ -275,30 +291,16 @@ static int BgBlip(void) {
 
 INTSERVER(BlipBackgroundInterrupt, 0, (IntFuncT)BgBlip, NULL);
 
-static void UpdateBitplanePointers(void) {
-  int offset = (MARGIN + WIDTH * MARGIN) / 8;
-  short i;
-  short j = active;
-  for (i = DEPTH - 1; i >= 0; i--) {
-    CopInsSet32(bplptr[i], screen->planes[j] + offset);
-    j--;
-    if (j < 0)
-      j += DEPTH + 1;
-  }
-}
-
 void KillLogo(void);
 
 static void Init(void) {
-  TrackInit(&TileMoverNumber);
-  TrackInit(&TileMoverBlit);
-  TrackInit(&TileMoverBgBlip);
-
-  screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1);
-
   SetupPlayfield(MODE_LORES, DEPTH, X(MARGIN), Y((256 - S_HEIGHT) / 2),
                  S_WIDTH, S_HEIGHT);
   LoadPalette(&tilemover_pal, 0);
+
+  TrackInit(&TileMoverNumber);
+  TrackInit(&TileMoverBlit);
+  TrackInit(&TileMoverBgBlip);
 
   cp = NewCopList(100);
   CopInit(cp);
@@ -308,16 +310,12 @@ static void Init(void) {
   CopEnd(cp);
 
   CopListActivate(cp);
-
+  KillLogo();
   EnableDMA(DMAF_RASTER | DMAF_BLITTER | DMAF_BLITHOG);
-
-
-  UpdateBitplanePointers();
-  BlitBitmap(S_WIDTH/2 - 96 - 7, S_HEIGHT/2 - 66, tilemover_logo);
-
+  
   AddIntServer(INTB_VERTB, BlipBackgroundInterrupt);
   
-  KillLogo();
+
 }
 
 static void Kill(void) {
