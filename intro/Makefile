@@ -1,10 +1,10 @@
 TOPDIR := $(realpath ..)
 
-DELTA := 1
+DELTA := 0
 VQ := 0
+KLANG := 0
 
-MODULE := JazzCat-ElectricLifeforms
-SMP_TOTALSIZE := 181610
+MODULE := JazzCat-DerKlang
 
 RLE2PNG = rle2png.py
 ELECTRONS2C = electrons2c.py
@@ -15,6 +15,8 @@ ifeq ($(DELTA), 1)
 OBJECTS += data/$(MODULE)-Delta.smp.o
 else ifeq ($(VQ), 1)
 OBJECTS += data/$(MODULE)-VQ.smp.o
+else ifeq ($(KLANG), 1)
+OBJECTS += data/$(MODULE).o 
 else
 OBJECTS += data/$(MODULE).smp.o
 endif
@@ -105,7 +107,7 @@ PNG2C.tilemover-logo := --bitmap tilemover_logo,192x132x1
 PNG2C.tilemover-block := --bitmap tilemover_block,96x80x1
 PNG2C.tilemover-bg-pal := --palette tilemover_bg_pal,6
 
-CPPFLAGS += -DINTRO -DVQ=$(VQ) -DDELTA=$(DELTA) -I.
+CPPFLAGS += -DINTRO -DVQ=$(VQ) -DDELTA=$(DELTA) -DKLANG=$(KLANG) -I.
 
 data/%-electrons.c: data/%-electrons.png
 	@echo "[PNG] $(DIR)$< -> $(DIR)$@"
