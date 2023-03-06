@@ -18,7 +18,8 @@ static CopInsT *bplptr[DEPTH];
 
 #include "data/texture-16.c"
 #include "data/gradient.c"
-#include "data/uvmap.c"
+#include "data/uvmap-u.c"
+#include "data/uvmap-v.c"
 
 #define UVMapRenderSize ((5 + WIDTH * HEIGHT / 32 * (8 * 8 + 2)) * 2)
 void (*UVMapRender)(u_short *chunkyEnd asm("a0"),
@@ -59,7 +60,28 @@ static void PixmapToTexture(const PixmapT *image,
   }
 }
 
-static void MakeUVMapRenderCode(void) {
+static void ScrambleUVMap(u_short *uvmap) {
+  u_char *umap = umap_pixels;
+  u_char *vmap = vmap_pixels;
+  short i;
+
+#define MAKEUV() (((*umap++) << 8) | ((*vmap++) << 1))
+
+  for (i = 0; i < WIDTH * HEIGHT; i += 8) {
+    uvmap[i + 0] = MAKEUV();
+    uvmap[i + 1] = MAKEUV();
+    uvmap[i + 4] = MAKEUV();
+    uvmap[i + 5] = MAKEUV();
+    uvmap[i + 2] = MAKEUV();
+    uvmap[i + 3] = MAKEUV();
+    uvmap[i + 6] = MAKEUV();
+    uvmap[i + 7] = MAKEUV();
+  }
+
+#undef MAKEUV
+}
+
+static void MakeUVMapRenderCode(u_short *uvmap) {
   u_short *code = (void *)UVMapRender;
   u_short *data = uvmap + WIDTH * HEIGHT;
 
@@ -89,6 +111,21 @@ static void MakeUVMapRenderCode(void) {
 
   *code++ = 0x4cdf; *code++ = 0x00fc; /* movem.l (sp)+,d2-d7 */
   *code++ = 0x4e75; /* rts */
+}
+
+static void Load(void) {
+  short *uvmap;
+
+  uvmap = MemAlloc(WIDTH * HEIGHT * sizeof(short), MEMF_PUBLIC);
+  ScrambleUVMap(uvmap);
+
+  UVMapRender = MemAlloc(UVMapRenderSize, MEMF_PUBLIC);
+  MakeUVMapRenderCode(uvmap);
+  MemFree(uvmap);
+
+  textureHi = MemAlloc(texture.width * texture.height * 4, MEMF_PUBLIC);
+  textureLo = MemAlloc(texture.width * texture.height * 4, MEMF_PUBLIC);
+  PixmapToTexture(&texture, textureHi, textureLo);
 }
 
 static struct {
@@ -253,13 +290,6 @@ static void Init(void) {
   screen[0] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH);
   screen[1] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH);
 
-  UVMapRender = MemAlloc(UVMapRenderSize, MEMF_PUBLIC);
-  MakeUVMapRenderCode();
-
-  textureHi = MemAlloc(texture.width * texture.height * 4, MEMF_PUBLIC);
-  textureLo = MemAlloc(texture.width * texture.height * 4, MEMF_PUBLIC);
-  PixmapToTexture(&texture, textureHi, textureLo);
-
   EnableDMA(DMAF_BLITTER);
 
   BitmapClear(screen[0]);
@@ -315,4 +345,4 @@ static void Render(void) {
   active ^= 1;
 }
 
-EFFECT(UVMap, NULL, NULL, Init, Kill, Render);
+EFFECT(UVMap, Load, NULL, Init, Kill, Render);
