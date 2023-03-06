@@ -275,7 +275,22 @@ static int BgBlip(void) {
 
 INTSERVER(BlipBackgroundInterrupt, 0, (IntFuncT)BgBlip, NULL);
 
+static void UpdateBitplanePointers(void) {
+  int offset = (MARGIN + WIDTH * MARGIN) / 8;
+  short i;
+  short j = active;
+  for (i = DEPTH - 1; i >= 0; i--) {
+    CopInsSet32(bplptr[i], screen->planes[j] + offset);
+    j--;
+    if (j < 0)
+      j += DEPTH + 1;
+  }
+}
+
+void KillLogo(void);
+
 static void Init(void) {
+  KillLogo();
   TrackInit(&TileMoverNumber);
   TrackInit(&TileMoverBlit);
   TrackInit(&TileMoverBgBlip);
@@ -297,7 +312,8 @@ static void Init(void) {
 
   EnableDMA(DMAF_RASTER | DMAF_BLITTER | DMAF_BLITHOG);
 
-  BlitBitmap(10, 10, tilemover_logo);
+  UpdateBitplanePointers();
+  BlitBitmap(S_WIDTH/2 - 96 - 7, S_HEIGHT/2 - 66, tilemover_logo);
 
   AddIntServer(INTB_VERTB, BlipBackgroundInterrupt);
 }
@@ -388,18 +404,6 @@ static void MoveTiles(void *src asm("a2"), void *dst asm("a3"),
     src += (WIDTH * (TILESIZE - 1) + 3 * TILESIZE) / 8;
     dst += (WIDTH * (TILESIZE - 1) + 3 * TILESIZE) / 8;
   } while (--m != -1);
-}
-
-static void UpdateBitplanePointers(void) {
-  int offset = (MARGIN + WIDTH * MARGIN) / 8;
-  short i;
-  short j = active;
-  for (i = DEPTH - 1; i >= 0; i--) {
-    CopInsSet32(bplptr[i], screen->planes[j] + offset);
-    j--;
-    if (j < 0)
-      j += DEPTH + 1;
-  }
 }
 
 PROFILE(TileMover);
