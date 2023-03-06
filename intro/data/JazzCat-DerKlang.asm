@@ -52,9 +52,9 @@ _AK_Progress:
 
 AK_USE_PROGRESS			equ 1
 AK_FINE_PROGRESS		equ 1
-AK_FINE_PROGRESS_LEN	equ 414242
-AK_SMP_LEN				equ 326416
-AK_EXT_SMP_LEN			equ 22792
+AK_FINE_PROGRESS_LEN	equ 231070
+AK_SMP_LEN				equ 171540
+AK_EXT_SMP_LEN			equ 9592
 
 AK_Generate:
 
@@ -91,7 +91,7 @@ AK_Generate:
 				dbra	d7,.DeltaLoop
 
 ;----------------------------------------------------------------------------
-; Instrument 1 - PadPolySaw
+; Instrument 1 - leider
 ;----------------------------------------------------------------------------
 
 				moveq	#8,d0
@@ -103,31 +103,36 @@ AK_Generate:
 					endif
 				endif
 .Inst1Loop
-				; v1 = osc_saw(0, 1024, 127)
-				add.w	#1024,AK_OpInstance+0(a5)
-				move.w	AK_OpInstance+0(a5),d0
-				muls	#127,d0
-				asr.l	#7,d0
-
-				; v2 = osc_saw(1, 1018, 127)
-				add.w	#1018,AK_OpInstance+2(a5)
-				move.w	AK_OpInstance+2(a5),d1
-				muls	#127,d1
-				asr.l	#7,d1
-
-				; v3 = osc_saw(2, 1030, 127)
-				add.w	#1030,AK_OpInstance+4(a5)
-				move.w	AK_OpInstance+4(a5),d2
-				muls	#127,d2
+				; v3 = osc_tri(0, 2020, 52)
+				add.w	#2020,AK_OpInstance+0(a5)
+				move.w	AK_OpInstance+0(a5),d2
+				bge.s	.TriNoInvert_1_1
+				not.w	d2
+.TriNoInvert_1_1
+				sub.w	#16384,d2
+				add.w	d2,d2
+				muls	#52,d2
 				asr.l	#7,d2
 
-				; v1 = add(v1, v2)
-				add.w	d1,d0
-				bvc.s	.AddNoClamp_1_4
+				; v1 = osc_saw(1, 2000, 0)
+				add.w	#2000,AK_OpInstance+2(a5)
+				move.w	AK_OpInstance+2(a5),d0
+				muls	#0,d0
+				asr.l	#7,d0
+
+				; v1 = add(v1, v3)
+				add.w	d2,d0
+				bvc.s	.AddNoClamp_1_3
 				spl		d0
 				ext.w	d0
 				eor.w	#$7fff,d0
-.AddNoClamp_1_4
+.AddNoClamp_1_3
+
+				; v3 = osc_saw(3, 2010, 60)
+				add.w	#2010,AK_OpInstance+4(a5)
+				move.w	AK_OpInstance+4(a5),d2
+				muls	#60,d2
+				asr.l	#7,d2
 
 				; v1 = add(v1, v3)
 				add.w	d2,d0
@@ -137,109 +142,59 @@ AK_Generate:
 				eor.w	#$7fff,d0
 .AddNoClamp_1_5
 
-				; v2 = osc_tri(5, 1, 101)
-				add.w	#1,AK_OpInstance+6(a5)
-				move.w	AK_OpInstance+6(a5),d1
-				bge.s	.TriNoInvert_1_6
-				not.w	d1
-.TriNoInvert_1_6
-				sub.w	#16384,d1
-				add.w	d1,d1
-				muls	#101,d1
-				asr.l	#7,d1
+				; v3 = osc_saw(5, 1990, 0)
+				add.w	#1990,AK_OpInstance+6(a5)
+				move.w	AK_OpInstance+6(a5),d2
+				muls	#0,d2
+				asr.l	#7,d2
 
-				; v2 = add(v2, 1424)
-				add.w	#1424,d1
+				; v1 = add(v1, v3)
+				add.w	d2,d0
 				bvc.s	.AddNoClamp_1_7
-				spl		d1
-				ext.w	d1
-				eor.w	#$7fff,d1
+				spl		d0
+				ext.w	d0
+				eor.w	#$7fff,d0
 .AddNoClamp_1_7
 
-				; v2 = ctrl(v2)
-				moveq	#9,d4
-				asr.w	d4,d1
-				add.w	#64,d1
-
-				; v1 = sv_flt_n(8, v1, v2, 110, 2)
+				; v1 = sv_flt_n(7, v1, 107, 77, 0)
 				move.w	AK_OpInstance+AK_BPF+8(a5),d5
 				asr.w	#7,d5
 				move.w	d5,d6
-				muls	d1,d5
+				muls	#107,d5
 				move.w	AK_OpInstance+AK_LPF+8(a5),d4
 				add.w	d5,d4
-				bvc.s	.NoClampLPF_1_9
+				bvc.s	.NoClampLPF_1_8
 				spl		d4
 				ext.w	d4
 				eor.w	#$7fff,d4
-.NoClampLPF_1_9
+.NoClampLPF_1_8
 				move.w	d4,AK_OpInstance+AK_LPF+8(a5)
-				muls	#110,d6
+				muls	#77,d6
 				move.w	d0,d5
 				ext.l	d5
 				ext.l	d4
 				sub.l	d4,d5
 				sub.l	d6,d5
 				cmp.l	#32767,d5
-				ble.s	.NoClampMaxHPF_1_9
+				ble.s	.NoClampMaxHPF_1_8
 				move.w	#32767,d5
-				bra.s	.NoClampMinHPF_1_9
-.NoClampMaxHPF_1_9
+				bra.s	.NoClampMinHPF_1_8
+.NoClampMaxHPF_1_8
 				cmp.l	#-32768,d5
-				bge.s	.NoClampMinHPF_1_9
+				bge.s	.NoClampMinHPF_1_8
 				move.w	#-32768,d5
-.NoClampMinHPF_1_9
+.NoClampMinHPF_1_8
 				move.w	d5,AK_OpInstance+AK_HPF+8(a5)
 				asr.w	#7,d5
-				muls	d1,d5
+				muls	#107,d5
 				add.w	AK_OpInstance+AK_BPF+8(a5),d5
-				bvc.s	.NoClampBPF_1_9
+				bvc.s	.NoClampBPF_1_8
 				spl		d5
 				ext.w	d5
 				eor.w	#$7fff,d5
-.NoClampBPF_1_9
+.NoClampBPF_1_8
 				move.w	d5,AK_OpInstance+AK_BPF+8(a5)
-				move.w	d5,d0
-
-				; v1 = sv_flt_n(9, v1, 24, 127, 2)
-				move.w	AK_OpInstance+AK_BPF+14(a5),d5
-				asr.w	#7,d5
-				move.w	d5,d6
-				muls	#24,d5
-				move.w	AK_OpInstance+AK_LPF+14(a5),d4
-				add.w	d5,d4
-				bvc.s	.NoClampLPF_1_10
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.NoClampLPF_1_10
-				move.w	d4,AK_OpInstance+AK_LPF+14(a5)
-				muls	#127,d6
-				move.w	d0,d5
-				ext.l	d5
-				ext.l	d4
-				sub.l	d4,d5
-				sub.l	d6,d5
-				cmp.l	#32767,d5
-				ble.s	.NoClampMaxHPF_1_10
-				move.w	#32767,d5
-				bra.s	.NoClampMinHPF_1_10
-.NoClampMaxHPF_1_10
-				cmp.l	#-32768,d5
-				bge.s	.NoClampMinHPF_1_10
-				move.w	#-32768,d5
-.NoClampMinHPF_1_10
-				move.w	d5,AK_OpInstance+AK_HPF+14(a5)
-				asr.w	#7,d5
-				muls	#24,d5
-				add.w	AK_OpInstance+AK_BPF+14(a5),d5
-				bvc.s	.NoClampBPF_1_10
-				spl		d5
-				ext.w	d5
-				eor.w	#$7fff,d5
-.NoClampBPF_1_10
-				move.w	d5,AK_OpInstance+AK_BPF+14(a5)
-				move.w	d5,d0
+				move.w	AK_OpInstance+AK_LPF+8(a5),d0
 
 				asr.w	#8,d0
 				move.b	d0,(a0)+
@@ -251,6 +206,55 @@ AK_Generate:
 				addq.l	#1,d7
 				cmp.l	AK_SmpLen+0(a5),d7
 				blt		.Inst1Loop
+
+				movem.l a0-a1,-(sp)	;Stash sample base address & large buffer address for loop generator
+
+;----------------------------------------------------------------------------
+; Instrument 1 - Loop Generator (Offset: 9016 Length: 8578
+;----------------------------------------------------------------------------
+
+				move.l	#8578,d7
+				move.l	AK_SmpAddr+0(a5),a0
+				lea		9016(a0),a0
+				move.l	a0,a1
+				sub.l	d7,a1
+				moveq	#0,d4
+				move.l	#32767<<8,d5
+				move.l	d5,d0
+				divs	d7,d0
+				bvc.s	.LoopGenVC_0
+				moveq	#0,d0
+.LoopGenVC_0
+				moveq	#0,d6
+				move.w	d0,d6
+.LoopGen_0
+				move.l	d4,d2
+				asr.l	#8,d2
+				move.l	d5,d3
+				asr.l	#8,d3
+				move.b	(a0),d0
+				move.b	(a1)+,d1
+				ext.w	d0
+				ext.w	d1
+				muls	d3,d0
+				muls	d2,d1
+				add.l	d1,d0
+				add.l	d0,d0
+				swap	d0
+				move.b	d0,(a0)+
+				add.l	d6,d4
+				sub.l	d6,d5
+
+				ifne	AK_USE_PROGRESS
+					ifne	AK_FINE_PROGRESS
+						addq.l	#1,(a3)
+					endif
+				endif
+
+				subq.l	#1,d7
+				bne.s	.LoopGen_0
+
+				movem.l (sp)+,a0-a1	;Restore sample base address & large buffer address after loop generator
 
 ;----------------------------------------------------------------------------
 ; Instrument 2 - Jazzy_CH
@@ -304,12 +308,12 @@ AK_Generate:
 				movem.l a0-a1,-(sp)	;Stash sample base address & large buffer address for loop generator
 
 ;----------------------------------------------------------------------------
-; Instrument 2 - Loop Generator (Offset: 8192 Length: 5004
+; Instrument 2 - Loop Generator (Offset: 6144 Length: 3532
 ;----------------------------------------------------------------------------
 
-				move.l	#5004,d7
+				move.l	#3532,d7
 				move.l	AK_SmpAddr+4(a5),a0
-				lea		8192(a0),a0
+				lea		6144(a0),a0
 				move.l	a0,a1
 				sub.l	d7,a1
 				moveq	#0,d4
@@ -402,12 +406,12 @@ AK_Generate:
 				movem.l a0-a1,-(sp)	;Stash sample base address & large buffer address for loop generator
 
 ;----------------------------------------------------------------------------
-; Instrument 3 - Loop Generator (Offset: 6784 Length: 5504
+; Instrument 3 - Loop Generator (Offset: 6144 Length: 6144
 ;----------------------------------------------------------------------------
 
-				move.l	#5504,d7
+				move.l	#6144,d7
 				move.l	AK_SmpAddr+8(a5),a0
-				lea		6784(a0),a0
+				lea		6144(a0),a0
 				move.l	a0,a1
 				sub.l	d7,a1
 				moveq	#0,d4
@@ -500,12 +504,12 @@ AK_Generate:
 				movem.l a0-a1,-(sp)	;Stash sample base address & large buffer address for loop generator
 
 ;----------------------------------------------------------------------------
-; Instrument 4 - Loop Generator (Offset: 6784 Length: 5504
+; Instrument 4 - Loop Generator (Offset: 6144 Length: 6144
 ;----------------------------------------------------------------------------
 
-				move.l	#5504,d7
+				move.l	#6144,d7
 				move.l	AK_SmpAddr+12(a5),a0
-				lea		6784(a0),a0
+				lea		6144(a0),a0
 				move.l	a0,a1
 				sub.l	d7,a1
 				moveq	#0,d4
@@ -888,252 +892,17 @@ AK_Generate:
 				blt		.Inst7Loop
 
 ;----------------------------------------------------------------------------
-; Instrument 8 - lead_plomp
+; Empty Instrument
 ;----------------------------------------------------------------------------
 
-				moveq	#8,d0
-				bsr		AK_ResetVars
-				moveq	#0,d7
+				addq.w	#2,a0
 				ifne	AK_USE_PROGRESS
 					ifeq	AK_FINE_PROGRESS
 						addq.b	#1,(a3)
+					else
+						addq.l	#2,(a3)
 					endif
 				endif
-.Inst8Loop
-				; v1 = osc_saw(0, 1000, 98)
-				add.w	#1000,AK_OpInstance+0(a5)
-				move.w	AK_OpInstance+0(a5),d0
-				muls	#98,d0
-				asr.l	#7,d0
-
-				; v2 = envd(1, 8, 4, 127)
-				move.l	AK_EnvDValue+0(a5),d5
-				move.l	d5,d1
-				swap	d1
-				sub.l	#931840,d5
-				cmp.l	#67108864,d5
-				bgt.s   .EnvDNoSustain_8_2
-				move.l	#67108864,d5
-.EnvDNoSustain_8_2
-				move.l	d5,AK_EnvDValue+0(a5)
-				muls	#127,d1
-				asr.l	#7,d1
-
-				; v1 = mul(v1, v2)
-				muls	d1,d0
-				add.l	d0,d0
-				swap	d0
-
-				; v2 = reverb(v1, 120, 40)
-				move.l	d7,-(sp)
-				sub.l	a6,a6
-				move.l	a1,a4
-				move.w	AK_OpInstance+2(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#120,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_8_4_0
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_8_4_0
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#557<<1,d5
-				ble.s	.NoReverbReset_8_4_0
-				moveq	#0,d5
-.NoReverbReset_8_4_0
-				move.w  d5,AK_OpInstance+2(a5)
-				move.w	d4,d7
-				muls	#40,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				lea		4096(a1),a4
-				move.w	AK_OpInstance+4(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#120,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_8_4_1
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_8_4_1
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#593<<1,d5
-				ble.s	.NoReverbReset_8_4_1
-				moveq	#0,d5
-.NoReverbReset_8_4_1
-				move.w  d5,AK_OpInstance+4(a5)
-				move.w	d4,d7
-				muls	#40,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				lea		8192(a1),a4
-				move.w	AK_OpInstance+6(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#120,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_8_4_2
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_8_4_2
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#641<<1,d5
-				ble.s	.NoReverbReset_8_4_2
-				moveq	#0,d5
-.NoReverbReset_8_4_2
-				move.w  d5,AK_OpInstance+6(a5)
-				move.w	d4,d7
-				muls	#40,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				lea		12288(a1),a4
-				move.w	AK_OpInstance+8(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#120,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_8_4_3
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_8_4_3
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#677<<1,d5
-				ble.s	.NoReverbReset_8_4_3
-				moveq	#0,d5
-.NoReverbReset_8_4_3
-				move.w  d5,AK_OpInstance+8(a5)
-				move.w	d4,d7
-				muls	#40,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				lea		16384(a1),a4
-				move.w	AK_OpInstance+10(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#120,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_8_4_4
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_8_4_4
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#709<<1,d5
-				ble.s	.NoReverbReset_8_4_4
-				moveq	#0,d5
-.NoReverbReset_8_4_4
-				move.w  d5,AK_OpInstance+10(a5)
-				move.w	d4,d7
-				muls	#40,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				lea		20480(a1),a4
-				move.w	AK_OpInstance+12(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#120,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_8_4_5
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_8_4_5
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#743<<1,d5
-				ble.s	.NoReverbReset_8_4_5
-				moveq	#0,d5
-.NoReverbReset_8_4_5
-				move.w  d5,AK_OpInstance+12(a5)
-				move.w	d4,d7
-				muls	#40,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				lea		24576(a1),a4
-				move.w	AK_OpInstance+14(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#120,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_8_4_6
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_8_4_6
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#787<<1,d5
-				ble.s	.NoReverbReset_8_4_6
-				moveq	#0,d5
-.NoReverbReset_8_4_6
-				move.w  d5,AK_OpInstance+14(a5)
-				move.w	d4,d7
-				muls	#40,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				lea		28672(a1),a4
-				move.w	AK_OpInstance+16(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#120,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_8_4_7
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_8_4_7
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#809<<1,d5
-				ble.s	.NoReverbReset_8_4_7
-				moveq	#0,d5
-.NoReverbReset_8_4_7
-				move.w  d5,AK_OpInstance+16(a5)
-				move.w	d4,d7
-				muls	#40,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				move.l	a6,d7
-				cmp.l	#32767,d7
-				ble.s	.NoReverbMax_8_4
-				move.w	#32767,d7
-				bra.s	.NoReverbMin_8_4
-.NoReverbMax_8_4
-				cmp.l	#-32768,d7
-				bge.s	.NoReverbMin_8_4
-				move.w	#-32768,d7
-.NoReverbMin_8_4
-				move.w	d7,d1
-				move.l	(sp)+,d7
-
-				; v1 = add(v1, v2)
-				add.w	d1,d0
-				bvc.s	.AddNoClamp_8_5
-				spl		d0
-				ext.w	d0
-				eor.w	#$7fff,d0
-.AddNoClamp_8_5
-
-				asr.w	#8,d0
-				move.b	d0,(a0)+
-				ifne	AK_USE_PROGRESS
-					ifne	AK_FINE_PROGRESS
-						addq.l	#1,(a3)
-					endif
-				endif
-				addq.l	#1,d7
-				cmp.l	AK_SmpLen+28(a5),d7
-				blt		.Inst8Loop
 
 ;----------------------------------------------------------------------------
 ; Instrument 9 - ELF_snare
@@ -1359,55 +1128,6 @@ AK_Generate:
 				addq.l	#1,d7
 				cmp.l	AK_SmpLen+32(a5),d7
 				blt		.Inst9Loop
-
-				movem.l a0-a1,-(sp)	;Stash sample base address & large buffer address for loop generator
-
-;----------------------------------------------------------------------------
-; Instrument 9 - Loop Generator (Offset: 8598 Length: 5482
-;----------------------------------------------------------------------------
-
-				move.l	#5482,d7
-				move.l	AK_SmpAddr+32(a5),a0
-				lea		8598(a0),a0
-				move.l	a0,a1
-				sub.l	d7,a1
-				moveq	#0,d4
-				move.l	#32767<<8,d5
-				move.l	d5,d0
-				divs	d7,d0
-				bvc.s	.LoopGenVC_8
-				moveq	#0,d0
-.LoopGenVC_8
-				moveq	#0,d6
-				move.w	d0,d6
-.LoopGen_8
-				move.l	d4,d2
-				asr.l	#8,d2
-				move.l	d5,d3
-				asr.l	#8,d3
-				move.b	(a0),d0
-				move.b	(a1)+,d1
-				ext.w	d0
-				ext.w	d1
-				muls	d3,d0
-				muls	d2,d1
-				add.l	d1,d0
-				add.l	d0,d0
-				swap	d0
-				move.b	d0,(a0)+
-				add.l	d6,d4
-				sub.l	d6,d5
-
-				ifne	AK_USE_PROGRESS
-					ifne	AK_FINE_PROGRESS
-						addq.l	#1,(a3)
-					endif
-				endif
-
-				subq.l	#1,d7
-				bne.s	.LoopGen_8
-
-				movem.l (sp)+,a0-a1	;Restore sample base address & large buffer address after loop generator
 
 ;----------------------------------------------------------------------------
 ; Instrument 10 - hihatclosed
@@ -1803,12 +1523,12 @@ AK_Generate:
 				movem.l a0-a1,-(sp)	;Stash sample base address & large buffer address for loop generator
 
 ;----------------------------------------------------------------------------
-; Instrument 15 - Loop Generator (Offset: 8192 Length: 8192
+; Instrument 15 - Loop Generator (Offset: 4178 Length: 4180
 ;----------------------------------------------------------------------------
 
-				move.l	#8192,d7
+				move.l	#4180,d7
 				move.l	AK_SmpAddr+56(a5),a0
-				lea		8192(a0),a0
+				lea		4178(a0),a0
 				move.l	a0,a1
 				sub.l	d7,a1
 				moveq	#0,d4
@@ -2436,7 +2156,7 @@ AK_Generate:
 				endif
 
 ;----------------------------------------------------------------------------
-; Instrument 22 - Virgill_Lead
+; Instrument 22 - fairlightbass
 ;----------------------------------------------------------------------------
 
 				moveq	#0,d0
@@ -2448,14 +2168,14 @@ AK_Generate:
 					endif
 				endif
 .Inst22Loop
-				; v1 = osc_saw(0, 1340, 90)
-				add.w	#1340,AK_OpInstance+0(a5)
+				; v1 = osc_saw(0, 670, 90)
+				add.w	#670,AK_OpInstance+0(a5)
 				move.w	AK_OpInstance+0(a5),d0
 				muls	#90,d0
 				asr.l	#7,d0
 
-				; v2 = osc_tri(1, 1342, 127)
-				add.w	#1342,AK_OpInstance+2(a5)
+				; v2 = osc_tri(1, 670, 127)
+				add.w	#670,AK_OpInstance+2(a5)
 				move.w	AK_OpInstance+2(a5),d1
 				bge.s	.TriNoInvert_22_2
 				not.w	d1
@@ -2470,8 +2190,8 @@ AK_Generate:
 				add.l	d0,d0
 				swap	d0
 
-				; v2 = osc_saw(3, 1352, 52)
-				add.w	#1352,AK_OpInstance+4(a5)
+				; v2 = osc_saw(3, 676, 52)
+				add.w	#676,AK_OpInstance+4(a5)
 				move.w	AK_OpInstance+4(a5),d1
 				muls	#52,d1
 				asr.l	#7,d1
@@ -2484,8 +2204,8 @@ AK_Generate:
 				eor.w	#$7fff,d0
 .AddNoClamp_22_5
 
-				; v3 = osc_sine(5, 8, 88)
-				add.w	#8,AK_OpInstance+6(a5)
+				; v3 = osc_sine(5, 4, 88)
+				add.w	#4,AK_OpInstance+6(a5)
 				move.w	AK_OpInstance+6(a5),d2
 				sub.w	#16384,d2
 				move.w	d2,d5
@@ -2513,7 +2233,7 @@ AK_Generate:
 				eor.w	#$7fff,d2
 .AddNoClamp_22_8
 
-				; v1 = sv_flt_n(8, v1, v3, 64, 1)
+				; v1 = sv_flt_n(8, v1, v3, 127, 0)
 				move.w	AK_OpInstance+AK_BPF+8(a5),d5
 				asr.w	#7,d5
 				move.w	d5,d6
@@ -2526,8 +2246,7 @@ AK_Generate:
 				eor.w	#$7fff,d4
 .NoClampLPF_22_9
 				move.w	d4,AK_OpInstance+AK_LPF+8(a5)
-				asl.w	#6,d6
-				ext.l	d6
+				muls	#127,d6
 				move.w	d0,d5
 				ext.l	d5
 				ext.l	d4
@@ -2552,10 +2271,10 @@ AK_Generate:
 				eor.w	#$7fff,d5
 .NoClampBPF_22_9
 				move.w	d5,AK_OpInstance+AK_BPF+8(a5)
-				move.w	AK_OpInstance+AK_HPF+8(a5),d0
+				move.w	AK_OpInstance+AK_LPF+8(a5),d0
 
-				; v2 = osc_tri(9, 1344, 46)
-				add.w	#1344,AK_OpInstance+14(a5)
+				; v2 = osc_tri(9, 672, 46)
+				add.w	#672,AK_OpInstance+14(a5)
 				move.w	AK_OpInstance+14(a5),d1
 				bge.s	.TriNoInvert_22_10
 				not.w	d1
@@ -2587,12 +2306,12 @@ AK_Generate:
 				movem.l a0-a1,-(sp)	;Stash sample base address & large buffer address for loop generator
 
 ;----------------------------------------------------------------------------
-; Instrument 22 - Loop Generator (Offset: 10984 Length: 10986
+; Instrument 22 - Loop Generator (Offset: 6158 Length: 6158
 ;----------------------------------------------------------------------------
 
-				move.l	#10986,d7
+				move.l	#6158,d7
 				move.l	AK_SmpAddr+84(a5),a0
-				lea		10984(a0),a0
+				lea		6158(a0),a0
 				move.l	a0,a1
 				sub.l	d7,a1
 				moveq	#0,d4
@@ -2634,605 +2353,36 @@ AK_Generate:
 				movem.l (sp)+,a0-a1	;Restore sample base address & large buffer address after loop generator
 
 ;----------------------------------------------------------------------------
-; Instrument 23 - Virgill_Chimes
+; Empty Instrument
 ;----------------------------------------------------------------------------
 
-				moveq	#0,d0
-				bsr		AK_ResetVars
-				moveq	#0,d7
+				addq.w	#2,a0
 				ifne	AK_USE_PROGRESS
 					ifeq	AK_FINE_PROGRESS
 						addq.b	#1,(a3)
-					endif
-				endif
-.Inst23Loop
-				; v1 = osc_noise(33)
-				move.l	AK_NoiseSeeds+0(a5),d4
-				move.l	AK_NoiseSeeds+4(a5),d5
-				eor.l	d5,d4
-				move.l	d4,AK_NoiseSeeds+0(a5)
-				add.l	d5,AK_NoiseSeeds+8(a5)
-				add.l	d4,AK_NoiseSeeds+4(a5)
-				move.w	AK_NoiseSeeds+10(a5),d0
-				muls	#33,d0
-				asr.l	#7,d0
-
-				; v1 = sh(1, v1, 24)
-				sub.w	#1,AK_OpInstance+0(a5)
-				bge.s	.SHNoStore_23_2
-				move.w	d0,AK_OpInstance+2(a5)
-				move.w	#144,AK_OpInstance+0(a5)
-.SHNoStore_23_2
-				move.w	AK_OpInstance+2(a5),d0
-
-				; v1 = mul(v1, v1)
-				muls	d0,d0
-				add.l	d0,d0
-				swap	d0
-
-				; v1 = add(v1, v2)
-				add.w	d1,d0
-				bvc.s	.AddNoClamp_23_4
-				spl		d0
-				ext.w	d0
-				eor.w	#$7fff,d0
-.AddNoClamp_23_4
-
-				; v1 = osc_tri(4, v1, 98)
-				add.w	d0,AK_OpInstance+4(a5)
-				move.w	AK_OpInstance+4(a5),d0
-				bge.s	.TriNoInvert_23_5
-				not.w	d0
-.TriNoInvert_23_5
-				sub.w	#16384,d0
-				add.w	d0,d0
-				muls	#98,d0
-				asr.l	#7,d0
-
-				; v2 = envd(5, 20, 25, 39)
-				move.l	AK_EnvDValue+0(a5),d5
-				move.l	d5,d1
-				swap	d1
-				sub.l	#164352,d5
-				cmp.l	#419430400,d5
-				bgt.s   .EnvDNoSustain_23_6
-				move.l	#419430400,d5
-.EnvDNoSustain_23_6
-				move.l	d5,AK_EnvDValue+0(a5)
-				muls	#39,d1
-				asr.l	#7,d1
-
-				; v1 = mul(v1, v2)
-				muls	d1,d0
-				add.l	d0,d0
-				swap	d0
-
-				; v1 = sv_flt_n(7, v1, 20, 127, 1)
-				move.w	AK_OpInstance+AK_BPF+6(a5),d5
-				asr.w	#7,d5
-				move.w	d5,d6
-				muls	#20,d5
-				move.w	AK_OpInstance+AK_LPF+6(a5),d4
-				add.w	d5,d4
-				bvc.s	.NoClampLPF_23_8
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.NoClampLPF_23_8
-				move.w	d4,AK_OpInstance+AK_LPF+6(a5)
-				muls	#127,d6
-				move.w	d0,d5
-				ext.l	d5
-				ext.l	d4
-				sub.l	d4,d5
-				sub.l	d6,d5
-				cmp.l	#32767,d5
-				ble.s	.NoClampMaxHPF_23_8
-				move.w	#32767,d5
-				bra.s	.NoClampMinHPF_23_8
-.NoClampMaxHPF_23_8
-				cmp.l	#-32768,d5
-				bge.s	.NoClampMinHPF_23_8
-				move.w	#-32768,d5
-.NoClampMinHPF_23_8
-				move.w	d5,AK_OpInstance+AK_HPF+6(a5)
-				asr.w	#7,d5
-				muls	#20,d5
-				add.w	AK_OpInstance+AK_BPF+6(a5),d5
-				bvc.s	.NoClampBPF_23_8
-				spl		d5
-				ext.w	d5
-				eor.w	#$7fff,d5
-.NoClampBPF_23_8
-				move.w	d5,AK_OpInstance+AK_BPF+6(a5)
-				move.w	AK_OpInstance+AK_HPF+6(a5),d0
-
-				; v1 = reverb(v1, 122, 22)
-				move.l	d7,-(sp)
-				sub.l	a6,a6
-				move.l	a1,a4
-				move.w	AK_OpInstance+12(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#122,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_23_9_0
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_23_9_0
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#557<<1,d5
-				ble.s	.NoReverbReset_23_9_0
-				moveq	#0,d5
-.NoReverbReset_23_9_0
-				move.w  d5,AK_OpInstance+12(a5)
-				move.w	d4,d7
-				muls	#22,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				lea		4096(a1),a4
-				move.w	AK_OpInstance+14(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#122,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_23_9_1
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_23_9_1
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#593<<1,d5
-				ble.s	.NoReverbReset_23_9_1
-				moveq	#0,d5
-.NoReverbReset_23_9_1
-				move.w  d5,AK_OpInstance+14(a5)
-				move.w	d4,d7
-				muls	#22,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				lea		8192(a1),a4
-				move.w	AK_OpInstance+16(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#122,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_23_9_2
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_23_9_2
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#641<<1,d5
-				ble.s	.NoReverbReset_23_9_2
-				moveq	#0,d5
-.NoReverbReset_23_9_2
-				move.w  d5,AK_OpInstance+16(a5)
-				move.w	d4,d7
-				muls	#22,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				lea		12288(a1),a4
-				move.w	AK_OpInstance+18(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#122,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_23_9_3
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_23_9_3
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#677<<1,d5
-				ble.s	.NoReverbReset_23_9_3
-				moveq	#0,d5
-.NoReverbReset_23_9_3
-				move.w  d5,AK_OpInstance+18(a5)
-				move.w	d4,d7
-				muls	#22,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				lea		16384(a1),a4
-				move.w	AK_OpInstance+20(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#122,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_23_9_4
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_23_9_4
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#709<<1,d5
-				ble.s	.NoReverbReset_23_9_4
-				moveq	#0,d5
-.NoReverbReset_23_9_4
-				move.w  d5,AK_OpInstance+20(a5)
-				move.w	d4,d7
-				muls	#22,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				lea		20480(a1),a4
-				move.w	AK_OpInstance+22(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#122,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_23_9_5
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_23_9_5
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#743<<1,d5
-				ble.s	.NoReverbReset_23_9_5
-				moveq	#0,d5
-.NoReverbReset_23_9_5
-				move.w  d5,AK_OpInstance+22(a5)
-				move.w	d4,d7
-				muls	#22,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				lea		24576(a1),a4
-				move.w	AK_OpInstance+24(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#122,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_23_9_6
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_23_9_6
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#787<<1,d5
-				ble.s	.NoReverbReset_23_9_6
-				moveq	#0,d5
-.NoReverbReset_23_9_6
-				move.w  d5,AK_OpInstance+24(a5)
-				move.w	d4,d7
-				muls	#22,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				lea		28672(a1),a4
-				move.w	AK_OpInstance+26(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#122,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_23_9_7
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_23_9_7
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#809<<1,d5
-				ble.s	.NoReverbReset_23_9_7
-				moveq	#0,d5
-.NoReverbReset_23_9_7
-				move.w  d5,AK_OpInstance+26(a5)
-				move.w	d4,d7
-				muls	#22,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				move.l	a6,d7
-				cmp.l	#32767,d7
-				ble.s	.NoReverbMax_23_9
-				move.w	#32767,d7
-				bra.s	.NoReverbMin_23_9
-.NoReverbMax_23_9
-				cmp.l	#-32768,d7
-				bge.s	.NoReverbMin_23_9
-				move.w	#-32768,d7
-.NoReverbMin_23_9
-				move.w	d7,d0
-				move.l	(sp)+,d7
-
-				asr.w	#8,d0
-				move.b	d0,(a0)+
-				ifne	AK_USE_PROGRESS
-					ifne	AK_FINE_PROGRESS
-						addq.l	#1,(a3)
-					endif
-				endif
-				addq.l	#1,d7
-				cmp.l	AK_SmpLen+88(a5),d7
-				blt		.Inst23Loop
-
-				movem.l a0-a1,-(sp)	;Stash sample base address & large buffer address for loop generator
-
-;----------------------------------------------------------------------------
-; Instrument 23 - Loop Generator (Offset: 14926 Length: 9650
-;----------------------------------------------------------------------------
-
-				move.l	#9650,d7
-				move.l	AK_SmpAddr+88(a5),a0
-				lea		14926(a0),a0
-				move.l	a0,a1
-				sub.l	d7,a1
-				moveq	#0,d4
-				move.l	#32767<<8,d5
-				move.l	d5,d0
-				divs	d7,d0
-				bvc.s	.LoopGenVC_22
-				moveq	#0,d0
-.LoopGenVC_22
-				moveq	#0,d6
-				move.w	d0,d6
-.LoopGen_22
-				move.l	d4,d2
-				asr.l	#8,d2
-				move.l	d5,d3
-				asr.l	#8,d3
-				move.b	(a0),d0
-				move.b	(a1)+,d1
-				ext.w	d0
-				ext.w	d1
-				muls	d3,d0
-				muls	d2,d1
-				add.l	d1,d0
-				add.l	d0,d0
-				swap	d0
-				move.b	d0,(a0)+
-				add.l	d6,d4
-				sub.l	d6,d5
-
-				ifne	AK_USE_PROGRESS
-					ifne	AK_FINE_PROGRESS
-						addq.l	#1,(a3)
+					else
+						addq.l	#2,(a3)
 					endif
 				endif
 
-				subq.l	#1,d7
-				bne.s	.LoopGen_22
-
-				movem.l (sp)+,a0-a1	;Restore sample base address & large buffer address after loop generator
-
 ;----------------------------------------------------------------------------
-; Instrument 24 - Instrument_24
+; Empty Instrument
 ;----------------------------------------------------------------------------
 
-				moveq	#8,d0
-				bsr		AK_ResetVars
-				moveq	#0,d7
+				addq.w	#2,a0
 				ifne	AK_USE_PROGRESS
 					ifeq	AK_FINE_PROGRESS
 						addq.b	#1,(a3)
+					else
+						addq.l	#2,(a3)
 					endif
 				endif
-.Inst24Loop
-				; v1 = imported_sample(smp,1)
-				moveq	#0,d0
-				cmp.l	AK_ExtSmpLen+4(a5),d7
-				bge.s	.NoClone_24_1
-				move.l	AK_ExtSmpAddr+4(a5),a4
-				move.b	(a4,d7.l),d0
-				asl.w	#8,d0
-.NoClone_24_1
-
-				; v1 = vol(v1, 52)
-				muls	#52,d0
-				asr.l	#7,d0
-
-				; v1 = reverb(v1, 74, 33)
-				move.l	d7,-(sp)
-				sub.l	a6,a6
-				move.l	a1,a4
-				move.w	AK_OpInstance+0(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#74,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_24_3_0
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_24_3_0
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#557<<1,d5
-				ble.s	.NoReverbReset_24_3_0
-				moveq	#0,d5
-.NoReverbReset_24_3_0
-				move.w  d5,AK_OpInstance+0(a5)
-				move.w	d4,d7
-				muls	#33,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				lea		4096(a1),a4
-				move.w	AK_OpInstance+2(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#74,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_24_3_1
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_24_3_1
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#593<<1,d5
-				ble.s	.NoReverbReset_24_3_1
-				moveq	#0,d5
-.NoReverbReset_24_3_1
-				move.w  d5,AK_OpInstance+2(a5)
-				move.w	d4,d7
-				muls	#33,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				lea		8192(a1),a4
-				move.w	AK_OpInstance+4(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#74,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_24_3_2
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_24_3_2
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#641<<1,d5
-				ble.s	.NoReverbReset_24_3_2
-				moveq	#0,d5
-.NoReverbReset_24_3_2
-				move.w  d5,AK_OpInstance+4(a5)
-				move.w	d4,d7
-				muls	#33,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				lea		12288(a1),a4
-				move.w	AK_OpInstance+6(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#74,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_24_3_3
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_24_3_3
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#677<<1,d5
-				ble.s	.NoReverbReset_24_3_3
-				moveq	#0,d5
-.NoReverbReset_24_3_3
-				move.w  d5,AK_OpInstance+6(a5)
-				move.w	d4,d7
-				muls	#33,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				lea		16384(a1),a4
-				move.w	AK_OpInstance+8(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#74,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_24_3_4
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_24_3_4
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#709<<1,d5
-				ble.s	.NoReverbReset_24_3_4
-				moveq	#0,d5
-.NoReverbReset_24_3_4
-				move.w  d5,AK_OpInstance+8(a5)
-				move.w	d4,d7
-				muls	#33,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				lea		20480(a1),a4
-				move.w	AK_OpInstance+10(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#74,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_24_3_5
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_24_3_5
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#743<<1,d5
-				ble.s	.NoReverbReset_24_3_5
-				moveq	#0,d5
-.NoReverbReset_24_3_5
-				move.w  d5,AK_OpInstance+10(a5)
-				move.w	d4,d7
-				muls	#33,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				lea		24576(a1),a4
-				move.w	AK_OpInstance+12(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#74,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_24_3_6
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_24_3_6
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#787<<1,d5
-				ble.s	.NoReverbReset_24_3_6
-				moveq	#0,d5
-.NoReverbReset_24_3_6
-				move.w  d5,AK_OpInstance+12(a5)
-				move.w	d4,d7
-				muls	#33,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				lea		28672(a1),a4
-				move.w	AK_OpInstance+14(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#74,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_24_3_7
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_24_3_7
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#809<<1,d5
-				ble.s	.NoReverbReset_24_3_7
-				moveq	#0,d5
-.NoReverbReset_24_3_7
-				move.w  d5,AK_OpInstance+14(a5)
-				move.w	d4,d7
-				muls	#33,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				move.l	a6,d7
-				cmp.l	#32767,d7
-				ble.s	.NoReverbMax_24_3
-				move.w	#32767,d7
-				bra.s	.NoReverbMin_24_3
-.NoReverbMax_24_3
-				cmp.l	#-32768,d7
-				bge.s	.NoReverbMin_24_3
-				move.w	#-32768,d7
-.NoReverbMin_24_3
-				move.w	d7,d0
-				move.l	(sp)+,d7
-
-				asr.w	#8,d0
-				move.b	d0,(a0)+
-				ifne	AK_USE_PROGRESS
-					ifne	AK_FINE_PROGRESS
-						addq.l	#1,(a3)
-					endif
-				endif
-				addq.l	#1,d7
-				cmp.l	AK_SmpLen+92(a5),d7
-				blt		.Inst24Loop
 
 ;----------------------------------------------------------------------------
 ; Instrument 25 - Instrument_25
 ;----------------------------------------------------------------------------
 
-				moveq	#8,d0
+				moveq	#0,d0
 				bsr		AK_ResetVars
 				moveq	#0,d7
 				ifne	AK_USE_PROGRESS
@@ -3502,12 +2652,12 @@ AK_Generate:
 				movem.l a0-a1,-(sp)	;Stash sample base address & large buffer address for loop generator
 
 ;----------------------------------------------------------------------------
-; Instrument 25 - Loop Generator (Offset: 6400 Length: 6400
+; Instrument 25 - Loop Generator (Offset: 4178 Length: 4180
 ;----------------------------------------------------------------------------
 
-				move.l	#6400,d7
+				move.l	#4180,d7
 				move.l	AK_SmpAddr+96(a5),a0
-				lea		6400(a0),a0
+				lea		4178(a0),a0
 				move.l	a0,a1
 				sub.l	d7,a1
 				moveq	#0,d4
@@ -3822,12 +2972,12 @@ AK_Generate:
 				movem.l a0-a1,-(sp)	;Stash sample base address & large buffer address for loop generator
 
 ;----------------------------------------------------------------------------
-; Instrument 26 - Loop Generator (Offset: 6400 Length: 6400
+; Instrument 26 - Loop Generator (Offset: 3808 Length: 2790
 ;----------------------------------------------------------------------------
 
-				move.l	#6400,d7
+				move.l	#2790,d7
 				move.l	AK_SmpAddr+100(a5),a0
-				lea		6400(a0),a0
+				lea		3808(a0),a0
 				move.l	a0,a1
 				sub.l	d7,a1
 				moveq	#0,d4
@@ -4142,12 +3292,12 @@ AK_Generate:
 				movem.l a0-a1,-(sp)	;Stash sample base address & large buffer address for loop generator
 
 ;----------------------------------------------------------------------------
-; Instrument 27 - Loop Generator (Offset: 6400 Length: 6400
+; Instrument 27 - Loop Generator (Offset: 4178 Length: 4180
 ;----------------------------------------------------------------------------
 
-				move.l	#6400,d7
+				move.l	#4180,d7
 				move.l	AK_SmpAddr+104(a5),a0
-				lea		6400(a0),a0
+				lea		4178(a0),a0
 				move.l	a0,a1
 				sub.l	d7,a1
 				moveq	#0,d4
@@ -4462,12 +3612,12 @@ AK_Generate:
 				movem.l a0-a1,-(sp)	;Stash sample base address & large buffer address for loop generator
 
 ;----------------------------------------------------------------------------
-; Instrument 28 - Loop Generator (Offset: 6400 Length: 6400
+; Instrument 28 - Loop Generator (Offset: 4178 Length: 4180
 ;----------------------------------------------------------------------------
 
-				move.l	#6400,d7
+				move.l	#4180,d7
 				move.l	AK_SmpAddr+108(a5),a0
-				lea		6400(a0),a0
+				lea		4178(a0),a0
 				move.l	a0,a1
 				sub.l	d7,a1
 				moveq	#0,d4
@@ -4782,12 +3932,12 @@ AK_Generate:
 				movem.l a0-a1,-(sp)	;Stash sample base address & large buffer address for loop generator
 
 ;----------------------------------------------------------------------------
-; Instrument 29 - Loop Generator (Offset: 6400 Length: 6400
+; Instrument 29 - Loop Generator (Offset: 3958 Length: 3960
 ;----------------------------------------------------------------------------
 
-				move.l	#6400,d7
+				move.l	#3960,d7
 				move.l	AK_SmpAddr+112(a5),a0
-				lea		6400(a0),a0
+				lea		3958(a0),a0
 				move.l	a0,a1
 				sub.l	d7,a1
 				moveq	#0,d4
@@ -4868,7 +4018,6 @@ AK_ResetVars:
 				move.l	d0,(a6)+
 				move.l	d0,(a6)+
 				move.l	d0,(a6)+
-				move.l	d0,(a6)+
 				move.l  #32767<<16,d6
 				move.l	d6,(a6)+
 				move.l	d6,(a6)+
@@ -4890,44 +4039,44 @@ AK_ExtSmpLen	rs.l	8
 AK_NoiseSeeds	rs.l	3
 AK_SmpAddr		rs.l	31
 AK_ExtSmpAddr	rs.l	8
-AK_OpInstance	rs.w    14
+AK_OpInstance	rs.w    12
 AK_EnvDValue	rs.l	2
 AK_VarSize		rs.w	0
 
 AK_Vars:
-				dc.l	$0000844a		; Instrument 1 Length 
-				dc.l	$0000338c		; Instrument 2 Length 
+				dc.l	$000044ba		; Instrument 1 Length 
+				dc.l	$000025cc		; Instrument 2 Length 
 				dc.l	$00003000		; Instrument 3 Length 
 				dc.l	$00003000		; Instrument 4 Length 
 				dc.l	$00003000		; Instrument 5 Length 
 				dc.l	$00000002		; Instrument 6 Length 
-				dc.l	$0000655e		; Instrument 7 Length 
-				dc.l	$0000444e		; Instrument 8 Length 
-				dc.l	$00003700		; Instrument 9 Length 
-				dc.l	$00000688		; Instrument 10 Length 
+				dc.l	$000019c6		; Instrument 7 Length 
+				dc.l	$00000002		; Instrument 8 Length 
+				dc.l	$0000180e		; Instrument 9 Length 
+				dc.l	$00000370		; Instrument 10 Length 
 				dc.l	$00000898		; Instrument 11 Length 
 				dc.l	$0000112a		; Instrument 12 Length 
 				dc.l	$0000112a		; Instrument 13 Length 
 				dc.l	$00001226		; Instrument 14 Length 
-				dc.l	$00004000		; Instrument 15 Length 
+				dc.l	$000020a6		; Instrument 15 Length 
 				dc.l	$00001000		; Instrument 16 Length 
 				dc.l	$00001000		; Instrument 17 Length 
 				dc.l	$000012e2		; Instrument 18 Length 
 				dc.l	$000012e2		; Instrument 19 Length 
 				dc.l	$00000002		; Instrument 20 Length 
 				dc.l	$00000002		; Instrument 21 Length 
-				dc.l	$000055d2		; Instrument 22 Length 
-				dc.l	$00006000		; Instrument 23 Length 
-				dc.l	$00005958		; Instrument 24 Length 
-				dc.l	$00003200		; Instrument 25 Length 
-				dc.l	$00003200		; Instrument 26 Length 
-				dc.l	$00003200		; Instrument 27 Length 
-				dc.l	$00003200		; Instrument 28 Length 
-				dc.l	$00003200		; Instrument 29 Length 
+				dc.l	$0000301c		; Instrument 22 Length 
+				dc.l	$00000002		; Instrument 23 Length 
+				dc.l	$00000002		; Instrument 24 Length 
+				dc.l	$000020a6		; Instrument 25 Length 
+				dc.l	$000019c6		; Instrument 26 Length 
+				dc.l	$000020a6		; Instrument 27 Length 
+				dc.l	$000020a6		; Instrument 28 Length 
+				dc.l	$00001eee		; Instrument 29 Length 
 				dc.l	$00000000		; Instrument 30 Length 
 				dc.l	$00000000		; Instrument 31 Length 
 				dc.l	$00000a50		; External Sample 1 Length 
-				dc.l	$00003390		; External Sample 2 Length 
+				dc.l	$00000000		; External Sample 2 Length 
 				dc.l	$00000000		; External Sample 3 Length 
 				dc.l	$00000000		; External Sample 4 Length 
 				dc.l	$00000a50		; External Sample 5 Length 
