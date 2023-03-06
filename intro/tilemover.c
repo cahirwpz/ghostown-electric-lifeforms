@@ -290,7 +290,6 @@ static void UpdateBitplanePointers(void) {
 void KillLogo(void);
 
 static void Init(void) {
-  KillLogo();
   TrackInit(&TileMoverNumber);
   TrackInit(&TileMoverBlit);
   TrackInit(&TileMoverBgBlip);
@@ -312,10 +311,13 @@ static void Init(void) {
 
   EnableDMA(DMAF_RASTER | DMAF_BLITTER | DMAF_BLITHOG);
 
+
   UpdateBitplanePointers();
   BlitBitmap(S_WIDTH/2 - 96 - 7, S_HEIGHT/2 - 66, tilemover_logo);
 
   AddIntServer(INTB_VERTB, BlipBackgroundInterrupt);
+  
+  KillLogo();
 }
 
 static void Kill(void) {
