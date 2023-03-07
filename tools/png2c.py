@@ -54,6 +54,9 @@ def parse(desc, *params):
         convert(name, cast, value, result)
 
     for s in desc:
+        if not s:
+            continue
+
         if s[0] in '+-':
             name, value = s[1:], bool(s[0] == '+')
         else:
@@ -241,39 +244,49 @@ def do_sprite(im, desc):
 
     if height != has_height:
         raise SystemExit(
-            'Image height is %d, expected %d!' % (height, has_height))
+            f'Image height is {height}, expected {has_height}!')
 
-    if width != has_count * 16:
+    exp_width = has_count * 16
+    if width != exp_width:
         raise SystemExit(
-            'Image width is %d, expected %d!' % (width, has_count * 16))
+            f'Image width is {width}, expected {exp_width}!')
 
     if not attached and depth != 2:
-        raise SystemExit('Image depth is %d, expected 2!' % depth)
+        raise SystemExit(f'Image depth is {depth}, expected 2!')
 
     if attached and depth != 4:
-        raise SystemExit('Image depth is %d, expected 2!' % depth)
+        raise SystemExit(f'Image depth is {depth}, expected 4!')
 
     stride = ((width + 15) & ~15) // 16
     bpl = planar(pix, width, height, depth)
 
-    print('static const short %s_height = %d;' % (name, height))
+    print(f'static const short {name}_height = {height};')
     print('')
 
     n = width // 16
+    if attached:
+        n *= 2
+
+    sprites = []
 
     for i in range(n):
         sprite = name
         if width > 16:
             sprite += str(i)
 
-        attached_str = ['false', 'true'][attached]
+        attached_sprite = attached and i % 2 == 1
 
-        print(f'static __data_chip SprDataT {name}{i}_sprdat = {{')
-        print('  .pos = SPRPOS(0, 0),')
+        offset = stride * 2 if attached_sprite else 0
+        offset += i // 2 if attached else i
+
+        attached_str = str(attached_sprite).lower()
+
+        print(f'static __data_chip SprDataT {sprite}_sprdat = {{')
+        print(f'  .pos = SPRPOS(0, 0),')
         print(f'  .ctl = SPRCTL(0, 0, {attached_str}, {height}),')
         print('  .data = {')
         for j in range(0, stride * depth * height, stride * depth):
-            words = bpl[i + j], bpl[i + j + stride]
+            words = bpl[offset + j], bpl[offset + j + stride]
             print('    { 0x%04x, 0x%04x },' % words)
         print('    /* sprite channel terminator */')
         print('    { 0x0000, 0x0000 },')
@@ -281,23 +294,24 @@ def do_sprite(im, desc):
         print('};')
         print('')
 
+        sprites.append((sprite, attached_str))
+
     if not onlydata:
         if n > 1:
             print(f'static SpriteT {name}[{n}] = {{')
-            for i in range(n):
+            for sprite, attached_str in sprites:
                 print('  {')
-                print(f'    .sprdat = &{name}{i}_sprdat,')
+                print(f'    .sprdat = &{sprite}_sprdat,')
                 print(f'    .height = {height},')
                 print(f'    .attached = {attached_str},')
                 print('  },')
             print('};')
         else:
             print(f'static SpriteT {name} = {{')
-            print(f'  .sprdat = &{name}{i}_sprdat,')
+            print(f'  .sprdat = &{name}_sprdat,')
             print(f'  .height = {height},')
-            print(f'  .attached = {attached_str},')
+            print(f'  .attached = false,')
             print('};')
-
 
 
 def do_pixmap(im, desc):
