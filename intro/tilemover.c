@@ -36,7 +36,7 @@
 #define TWO_PI 25736
 #define PI 12868
 
-static BitmapT *screen;
+static BitmapT *screen1;
 static int active = 0;
 static short prev_active = 0;
 static CopListT *cp;
@@ -138,8 +138,8 @@ static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
 	// KITCHEN SINK
         case 2:
 	  /* {-PI/4, PI/4, -PI, PI} */
-          vx = (py + 15) >> 8;
-          vy = px >> 8;
+          vx = py >> 10;
+          vy = px >> 10;
           break;
 
         // SOUND WAVE
@@ -176,8 +176,8 @@ static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
 
 	// SLOW KITCHEN SINK
         case 7:
-          vx = (py - 15) >> 9;
-          vy = (px - 15) >> 9;
+          vx = py >> 11;
+          vy = px >> 11;
           break;
         default:
       }
@@ -227,8 +227,8 @@ static void BlitSimple(void *sourceA, void *sourceB, void *sourceC,
 static void BlitBitmap(short x, short y, BitmapT blit) {
   short i;
   short j = active;
-  BlitterCopySetup(screen, MARGIN + x, MARGIN+y, &blit);
-  // monkeypatch minterms to perform screen = screen | blit
+  BlitterCopySetup(screen1, MARGIN + x, MARGIN+y, &blit);
+  // monkeypatch minterms to perform screen1 = screen1 | blit
   custom->bltcon0 = (SRCB | SRCC | DEST) | (ABC | ANBC | ABNC);
 
   for (i = DEPTH - 1; i >= 0; i--) {
@@ -244,7 +244,7 @@ static void UpdateBitplanePointers(void) {
   short i;
   short j = active;
   for (i = DEPTH - 1; i >= 0; i--) {
-    CopInsSet32(bplptr[i], screen->planes[j] + offset);
+    CopInsSet32(bplptr[i], screen1->planes[j] + offset);
     j--;
     if (j < 0)
       j += DEPTH + 1;
@@ -266,12 +266,9 @@ static void Load(void) {
     logo_blit = NewBitmap(w + (16 - (w % 16)), h, 1);
     BlitSimple(ghostown_logo.planes[0], ghostown_logo.planes[1],
                ghostown_logo.planes[2], logo_blit,
-               ABC | ANBC | ABNC | ANBNC | NABC | NANBC | NABNC);
-  
-    screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1);
-    //UpdateBitplanePointers();
-    BitmapCopy(screen, WIDTH/2 - 96, HEIGHT/2 - 66, &tilemover_logo);
-    
+               ABC | ANBC | ABNC | ANBNC | NABC | NANBC | NABNC); 
+
+
     WaitBlitter();
     DisableDMA(DMAF_BLITTER);
   }
@@ -291,37 +288,43 @@ static int BgBlip(void) {
 
 INTSERVER(BlipBackgroundInterrupt, 0, (IntFuncT)BgBlip, NULL);
 
-void KillLogo(void);
+extern void KillLogo(void);
 
 static void Init(void) {
+  screen1 = NewBitmap(WIDTH, HEIGHT, DEPTH + 1);  
+  EnableDMA(DMAF_BLITTER);
+  BlitBitmap(S_WIDTH/2 - 96 - 6, S_HEIGHT/2 - 66, tilemover_logo); 
+  WaitBlitter();
+  DisableDMA(DMAF_BLITTER);
   SetupPlayfield(MODE_LORES, DEPTH, X(MARGIN), Y((256 - S_HEIGHT) / 2),
                  S_WIDTH, S_HEIGHT);
-  LoadPalette(&tilemover_pal, 0);
 
+
+  LoadPalette(&tilemover_pal, 0);
+  KillLogo();
   TrackInit(&TileMoverNumber);
   TrackInit(&TileMoverBlit);
   TrackInit(&TileMoverBgBlip);
 
   cp = NewCopList(100);
   CopInit(cp);
-  CopSetupBitplanes(cp, bplptr, screen, DEPTH);
+  CopSetupBitplanes(cp, bplptr, screen1, DEPTH);
   CopMove16(cp, bpl1mod, (WIDTH - S_WIDTH) / 8);
   CopMove16(cp, bpl2mod, (WIDTH - S_WIDTH) / 8);
   CopEnd(cp);
-
+ 
   CopListActivate(cp);
-  KillLogo();
+  
+  UpdateBitplanePointers();
   EnableDMA(DMAF_RASTER | DMAF_BLITTER | DMAF_BLITHOG);
-  
-  AddIntServer(INTB_VERTB, BlipBackgroundInterrupt);
-  
 
+  AddIntServer(INTB_VERTB, BlipBackgroundInterrupt);
 }
 
 static void Kill(void) {
   RemIntServer(INTB_VERTB, BlipBackgroundInterrupt);
   DisableDMA(DMAF_COPPER | DMAF_RASTER | DMAF_BLITTER | DMAF_BLITHOG);
-  DeleteBitmap(screen);
+  DeleteBitmap(screen1);
   DeleteCopList(cp);
 }
 
@@ -490,25 +493,25 @@ static void Render(void) {
 
   ProfilerStart(TileMover);
   if (false)
-    DrawSeed(screen->planes[active]);
+    DrawSeed(screen1->planes[active]);
   {
     short xshift = random() & (TILESIZE - 1);
     short yshift = random() & (TILESIZE - 1);
-    void *src = screen->planes[active];
+    void *src = screen1->planes[active];
     void *dst;
     if (++active == DEPTH + 1)
       active = 0;
-    dst = screen->planes[active];
+    dst = screen1->planes[active];
 
     /* Clear margin around destination display window,
      * to avoid moving garbage while rendering next frame. */
-    BlitterClearArea(screen, active,
+    BlitterClearArea(screen1, active,
                      (&(Area2D){TILESIZE, TILESIZE, TILESIZE, S_HEIGHT}));
-    BlitterClearArea(screen, active,
+    BlitterClearArea(screen1, active,
                      (&(Area2D){WIDTH - MARGIN, TILESIZE, TILESIZE, S_HEIGHT}));
-    BlitterClearArea(screen, active,
+    BlitterClearArea(screen1, active,
                      (&(Area2D){MARGIN, TILESIZE, S_WIDTH, TILESIZE}));
-    BlitterClearArea(screen, active,
+    BlitterClearArea(screen1, active,
                      (&(Area2D){MARGIN, HEIGHT - MARGIN, S_WIDTH, TILESIZE}));
 
     /* Move to target window origin minus offset. */

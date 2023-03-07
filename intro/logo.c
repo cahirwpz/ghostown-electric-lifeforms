@@ -57,7 +57,7 @@ static void Init(void) {
 }
 
 void KillLogo(void) {
-  //DisableDMA(DMAF_COPPER | DMAF_RASTER);
+  DisableDMA(DMAF_RASTER);
   DeleteCopList(cp);
 
   DeleteBitmap(screen);
