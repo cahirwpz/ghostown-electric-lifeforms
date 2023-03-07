@@ -1,10 +1,10 @@
 TOPDIR := $(realpath ..)
 
-DELTA := 1
+DELTA := 0
 VQ := 0
+KLANG := 0
 
-MODULE := JazzCat-ElectricLifeforms
-SMP_TOTALSIZE := 181610
+MODULE := JazzCat-DerKlang
 
 RLE2PNG = rle2png.py
 ELECTRONS2C = electrons2c.py
@@ -15,6 +15,8 @@ ifeq ($(DELTA), 1)
 OBJECTS += data/$(MODULE)-Delta.smp.o
 else ifeq ($(VQ), 1)
 OBJECTS += data/$(MODULE)-VQ.smp.o
+else ifeq ($(KLANG), 1)
+OBJECTS += data/$(MODULE).o 
 else
 OBJECTS += data/$(MODULE).smp.o
 endif
@@ -31,8 +33,8 @@ CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
 	data/logo-electrons.c data/electric-lifeforms.c \
 	data/electric-lifeforms-wireworld.c data/ghostown-logo-0[1-3].c \
 	data/turmite-credits-[1-3].c data/anemone-pal-[1-3].c \
-	data/turmite-pal-[1-3].c data/circles.c \
-	data/tilemover-*.c data/sea-anemone-*.c
+	data/turmite-pal-[1-3].c data/circles.c data/grass.c
+
 SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   tilemover.c sea-anemone.c game-of-life.c vitruvian.c
 MAIN := #
@@ -48,7 +50,7 @@ PNG2C.electric-lifeforms-01 := --bitmap electric_lifeforms,320x256x3,-displayabl
 PNG2C.electric-lifeforms-02 := --palette electric_lifeforms_2_pal,8
 PNG2C.fruit-1 := --bitmap fruit_1,16x16x2,+onlydata --palette fruit_1_pal,4
 PNG2C.fruit-2 := --bitmap fruit_2,16x16x2,+onlydata --palette fruit_2_pal,4
-PNG2C.grass := --sprite grass,32,4,+array --palette grass_pal,4
+PNG2C.grass := --sprite grass,32,4 --palette grass_pal,4
 PNG2C.tilemover-pal := --palette tilemover_pal,16
 PNG2C.p46basedprng := --bitmap p46basedprng,156x75x1
 PNG2C.electric-lifeforms-wireworld := --bitmap wireworld_logo,160x128x1
@@ -105,7 +107,7 @@ PNG2C.tilemover-logo := --bitmap tilemover_logo,192x132x1
 PNG2C.tilemover-block := --bitmap tilemover_block,96x80x1
 PNG2C.tilemover-bg-pal := --palette tilemover_bg_pal,6
 
-CPPFLAGS += -DINTRO -DVQ=$(VQ) -DDELTA=$(DELTA) -I.
+CPPFLAGS += -DINTRO -DVQ=$(VQ) -DDELTA=$(DELTA) -DKLANG=$(KLANG) -I.
 
 data/%-electrons.c: data/%-electrons.png
 	@echo "[PNG] $(DIR)$< -> $(DIR)$@"
