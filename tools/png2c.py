@@ -225,13 +225,11 @@ def do_sprite(im, desc):
                   ('height', int),
                   ('count', int),
                   ('attached', bool, False),
-                  ('array', bool, False),
                   ('onlydata', bool, False))
 
     name = param['name']
     has_height = param['height']
     has_count = param['count']
-    sequence = param['array']
     attached = param['attached']
     onlydata = param['onlydata']
 
@@ -261,16 +259,18 @@ def do_sprite(im, desc):
     print('static const short %s_height = %d;' % (name, height))
     print('')
 
-    for i in range(width // 16):
+    n = width // 16
+
+    for i in range(n):
         sprite = name
         if width > 16:
             sprite += str(i)
 
         attached_str = ['false', 'true'][attached]
 
-        print('static __data_chip SprDataT %s_sprdat = {' % sprite)
+        print(f'static __data_chip SprDataT {name}{i}_sprdat = {{')
         print('  .pos = SPRPOS(0, 0),')
-        print('  .ctl = SPRCTL(0, 0, %s, %d),' % (attached_str, height))
+        print(f'  .ctl = SPRCTL(0, 0, {attached_str}, {height}),')
         print('  .data = {')
         for j in range(0, stride * depth * height, stride * depth):
             words = bpl[i + j], bpl[i + j + stride]
@@ -280,20 +280,24 @@ def do_sprite(im, desc):
         print('  }')
         print('};')
         print('')
-        if not onlydata:
-            print('static SpriteT %s = {' % sprite)
-            print('  .sprdat = &%s_sprdat,' % sprite)
-            print('  .height = %d,' % height)
-            print('  .attached = %s,' % attached_str)
-            print('};')
-            print('')
 
-    if sequence and not onlydata:
-        sprites = ['&%s%d' % (name, i) for i in range(width // 16)]
-        print('static SpriteT *%s[] = {' % name)
-        print('  %s' % ', '.join(sprites))
-        print('};')
-        print('')
+    if not onlydata:
+        if n > 1:
+            print(f'static SpriteT {name}[{n}] = {{')
+            for i in range(n):
+                print('  {')
+                print(f'    .sprdat = &{name}{i}_sprdat,')
+                print(f'    .height = {height},')
+                print(f'    .attached = {attached_str},')
+                print('  },')
+            print('};')
+        else:
+            print(f'static SpriteT {name} = {{')
+            print(f'  .sprdat = &{name}{i}_sprdat,')
+            print(f'  .height = {height},')
+            print(f'  .attached = {attached_str},')
+            print('};')
+
 
 
 def do_pixmap(im, desc):
