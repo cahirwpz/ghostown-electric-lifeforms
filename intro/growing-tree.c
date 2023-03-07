@@ -94,7 +94,7 @@ static void Init(void) {
   setTreePalette();
 
   for (i = 0; i < NSPRITES; i++)
-    SpriteUpdatePos(grass[i], X(i * 16 + (WIDTH - 16 * NSPRITES) / 2),
+    SpriteUpdatePos(&grass[i], X(i * 16 + (WIDTH - 16 * NSPRITES) / 2),
                     Y(HEIGHT - grass_height));
 
   for (i = 16; i < 32; i += 4)
@@ -107,7 +107,7 @@ static void Init(void) {
   CopInit(cp);
   CopSetupBitplanes(cp, bplptr, screen, DEPTH);
   for (i = 0; i < NSPRITES; i++)
-    CopMove32(cp, sprpt[i], grass[i]->sprdat);
+    CopMove32(cp, sprpt[i], grass[i].sprdat);
   CopEnd(cp);
   CopListActivate(cp);
 
