@@ -10,7 +10,9 @@
 
 extern u_char Module[];
 extern u_char Samples[];
+#if VQ == 1 || DELTA == 1 || KLANG == 0
 extern u_char SamplesSize[];
+#endif
 
 extern EffectT LogoEffect;
 extern EffectT WeaveEffect;
@@ -104,6 +106,11 @@ static void DecodeSamples(u_char *smp, int size) {
 }
 #endif
 
+#if KLANG == 1
+extern u_int AK_Progress;
+void AK_Generate(void *TmpBuf asm("a1"));
+#endif
+
 static void ShowMemStats(void) {
   Log("[Memory] CHIP: %d FAST: %d\n", MemAvail(MEMF_CHIP), MemAvail(MEMF_FAST));
 }
@@ -112,7 +119,8 @@ static void LoadEffects(EffectT **effects) {
   EffectT *effect;
   for (effect = *effects; effect; effect = *effects++) { 
     EffectLoad(effect);
-    ShowMemStats();
+    if (effect->Load)
+      ShowMemStats();
   }
 }
 
@@ -177,6 +185,15 @@ int main(void) {
 #if VQ == 1 || DELTA == 1
   Log("[Init] Decoding samples\n");
   DecodeSamples(Samples, (int)SamplesSize);
+#endif
+
+#if KLANG == 1
+  Log("[Init] Generating samples\n");
+  {
+    void *TmpBuf = MemAlloc(32768, MEMF_PUBLIC);
+    AK_Generate(TmpBuf);
+    MemFree(TmpBuf);
+  }
 #endif
 
   PtInstallCIA();

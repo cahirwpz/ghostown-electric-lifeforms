@@ -1,10 +1,10 @@
 TOPDIR := $(realpath ..)
 
-DELTA := 1
+DELTA := 0
 VQ := 0
+KLANG := 0
 
-MODULE := JazzCat-ElectricLifeforms
-SMP_TOTALSIZE := 181610
+MODULE := JazzCat-DerKlang
 
 RLE2PNG = rle2png.py
 ELECTRONS2C = electrons2c.py
@@ -15,6 +15,8 @@ ifeq ($(DELTA), 1)
 OBJECTS += data/$(MODULE)-Delta.smp.o
 else ifeq ($(VQ), 1)
 OBJECTS += data/$(MODULE)-VQ.smp.o
+else ifeq ($(KLANG), 1)
+OBJECTS += data/$(MODULE).o 
 else
 OBJECTS += data/$(MODULE).smp.o
 endif
@@ -24,9 +26,9 @@ LIBS := libpt
 BUILD-FILES := audiovq
 
 CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
-	data/$(MODULE)-*.o data/$(MODULE).{smp,trk} data/text-scroll-font.c \
+	data/$(MODULE)-*.o data/$(MODULE).{smp,trk}* data/text-scroll-font.c \
 	data/intro.c data/electric-lifeforms-0[1-2].c \
-	data/fruit.c data/tilemover-pal.c data/anemone-pal.c \
+	data/fruit-*.c data/tilemover-pal.c data/anemone-pal.c \
 	data/ghostown-logo-crop.c data/p46basedprng.c data/cell-gradient.c \
 	data/logo-electrons.c data/electric-lifeforms.c \
 	data/ghostown-logo-0[1-3].c \
@@ -35,26 +37,28 @@ CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
 	data/wireworld-vitruvian.c \
 	data/wireworld-vitruvian-electrons.c \
 	data/turmite-credits-[1-3].c data/anemone-pal-[1-3].c \
-	data/turmite-pal-[1-3].c data/circles.c
+	data/turmite-pal-[1-3].c data/circles.c data/grass.c
 
 SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   tilemover.c sea-anemone.c game-of-life.c vitruvian.c
 MAIN := #
 
 PNG2C.bar := --bitmap bar,480x67x4,+limit_depth --palette bar_pal,32
-PNG2C.stripes := --bitmap stripes,128x64x2,+limit_depth,+interleaved --palette stripes_pal,16
-PNG2C.text-scroll-font := --bitmap font,768x8x1 --palette font_pal,2
-PNG2C.turmite-credits-1 := --bitmap turmite_credits_1,256x256x1
-PNG2C.turmite-credits-2 := --bitmap turmite_credits_2,256x256x1
-PNG2C.turmite-credits-3 := --bitmap turmite_credits_3,256x256x1
+PNG2C.stripes := --bitmap stripes,128x64x2,+limit_depth,+interleaved,-displayable --palette stripes_pal,16
+PNG2C.text-scroll-font := --bitmap font,768x8x1,-displayable --palette font_pal,2
+PNG2C.turmite-credits-1 := --bitmap turmite_credits_1,256x256x1,+onlydata,-displayable
+PNG2C.turmite-credits-2 := --bitmap turmite_credits_2,256x256x1,+onlydata,-displayable
+PNG2C.turmite-credits-3 := --bitmap turmite_credits_3,256x256x1,+onlydata,-displayable
 PNG2C.turmite-pal := --palette turmite_pal,16
-PNG2C.electric-lifeforms-01 := --bitmap electric_lifeforms,320x256x3 --palette electric_lifeforms_1_pal,8
+PNG2C.electric-lifeforms-01 := --bitmap electric_lifeforms,320x256x3,-displayable --palette electric_lifeforms_1_pal,8
 PNG2C.electric-lifeforms-02 := --palette electric_lifeforms_2_pal,8
-PNG2C.fruit := --bitmap fruit,16x16x1
+PNG2C.fruit-1 := --bitmap fruit_1,16x16x2,+onlydata --palette fruit_1_pal,4
+PNG2C.fruit-2 := --bitmap fruit_2,16x16x2,+onlydata --palette fruit_2_pal,4
+PNG2C.grass := --sprite grass,32,4 --palette grass_pal,4
 PNG2C.tilemover-pal := --palette tilemover_pal,16
 PNG2C.p46basedprng := --bitmap p46basedprng,156x75x1
 PNG2C.cell-gradient := --pixmap gradient,4x64x12
-PNG2C.ghostown-logo-crop := --bitmap ghostown_logo,196x127x3,+shared
+PNG2C.ghostown-logo-crop := --bitmap ghostown_logo,192x131x3,+shared
 PNG2C.ghostown-logo-01 := --palette ghostown_logo_1_pal,8
 PNG2C.ghostown-logo-02 := --palette ghostown_logo_2_pal,8
 PNG2C.ghostown-logo-03 := --palette ghostown_logo_3_pal,8
@@ -100,7 +104,7 @@ PNG2C.anemone-pal-3 := --palette anemone_pal_3,16
 PNG2C.anemone-pal-3-dark := --palette anemone_pal_3_dark,16
 PNG2C.anemone-pal-3-light := --palette anemone_pal_3_light,16
 
-CPPFLAGS += -DINTRO -DVQ=$(VQ) -DDELTA=$(DELTA) -I.
+CPPFLAGS += -DINTRO -DVQ=$(VQ) -DDELTA=$(DELTA) -DKLANG=$(KLANG) -I.
 
 data/wireworld-%-electrons.c: data/wireworld-%.png
 	@echo "[PNG] $(DIR)$< -> $(DIR)$@"

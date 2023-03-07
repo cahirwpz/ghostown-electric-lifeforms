@@ -54,6 +54,9 @@ def parse(desc, *params):
         convert(name, cast, value, result)
 
     for s in desc:
+        if not s:
+            continue
+
         if s[0] in '+-':
             name, value = s[1:], bool(s[0] == '+')
         else:
@@ -128,8 +131,10 @@ def do_bitmap(im, desc):
                   ('width,height,depth', (int, int, int)),
                   ('extract_at', (int, int), (0, 0)),
                   ('interleaved', bool, False),
+                  ('displayable', bool, True),
                   ('shared', bool, False),
-                  ('limit_depth', bool, False))
+                  ('limit_depth', bool, False),
+                  ('onlydata', bool, False))
 
     name = param['name']
     has_width = param['width']
@@ -137,8 +142,10 @@ def do_bitmap(im, desc):
     has_depth = param['depth']
     x, y = param['extract_at']
     interleaved = param['interleaved']
+    displayable = param['displayable']
     shared = param['shared']
     limit_depth = param['limit_depth']
+    onlydata = param['onlydata']
 
     w, h = im.size
     im = im.copy().crop((x, y, min(x + has_width, w), min(y + has_height, h)))
@@ -162,7 +169,9 @@ def do_bitmap(im, desc):
     bplSize = bytesPerRow * height
     bpl = planar(pix, width, height, depth)
 
-    print('static __data_chip u_short _%s_bpl[] = {' % name)
+    data_chip = '__data_chip' if displayable else ''
+
+    print(f'static {data_chip} u_short _{name}_bpl[] = {{')
     if interleaved:
         for i in range(0, depth * wordsPerRow * height, wordsPerRow):
             words = ['0x%04x' % bpl[i + x] for x in range(wordsPerRow)]
@@ -176,19 +185,26 @@ def do_bitmap(im, desc):
     print('};')
     print('')
 
-    print('#define %s_width %d' % (name, width))
-    print('#define %s_height %d' % (name, height))
-    print('#define %s_bytesPerRow %d' % (name, bytesPerRow))
-    print('#define %s_bplSize %d' % (name, bplSize))
+    print(f'#define {name}_width {width}')
+    print(f'#define {name}_height {height}')
+    print(f'#define {name}_depth {depth}')
+    print(f'#define {name}_bytesPerRow {bytesPerRow}')
+    print(f'#define {name}_bplSize {bplSize}')
+    print(f'#define {name}_size {bplSize*depth}')
     print('')
 
+    if onlydata:
+        return
+
     print('%sconst BitmapT %s = {' % ('' if shared else 'static ', name))
-    print('  .width = %d,' % width)
-    print('  .height = %d,' % height)
-    print('  .depth = %s,' % depth)
-    print('  .bytesPerRow = %d,' % bytesPerRow)
-    print('  .bplSize = %d,' % bplSize)
-    flags = ['BM_DISPLAYABLE', 'BM_STATIC']
+    print(f'  .width = {width},')
+    print(f'  .height = {height},')
+    print(f'  .depth = {depth},')
+    print(f'  .bytesPerRow = {bytesPerRow},')
+    print(f'  .bplSize = {bplSize},')
+    flags = ['BM_STATIC']
+    if displayable:
+        flags.append('BM_DISPLAYABLE')
     if interleaved:
         flags.append('BM_INTERLEAVED')
     print('  .flags = %s,' % '|'.join(flags))
@@ -198,7 +214,7 @@ def do_bitmap(im, desc):
             offset = i * bytesPerRow
         else:
             offset = i * bplSize
-        print('    (void *)_%s_bpl + %d,' % (name, offset))
+        print(f'    (void *)_{name}_bpl + {offset},')
     print('  }')
     print('};')
 
@@ -211,16 +227,12 @@ def do_sprite(im, desc):
                   ('name', str),
                   ('height', int),
                   ('count', int),
-                  ('attached', bool, False),
-                  ('array', bool, False),
-                  ('onlydata', bool, False))
+                  ('attached', bool, False))
 
     name = param['name']
     has_height = param['height']
     has_count = param['count']
-    sequence = param['array']
     attached = param['attached']
-    onlydata = param['onlydata']
 
     pix = array('B', im.getdata())
 
@@ -230,57 +242,73 @@ def do_sprite(im, desc):
 
     if height != has_height:
         raise SystemExit(
-            'Image height is %d, expected %d!' % (height, has_height))
+            f'Image height is {height}, expected {has_height}!')
 
-    if width != has_count * 16:
+    exp_width = has_count * 16
+    if width != exp_width:
         raise SystemExit(
-            'Image width is %d, expected %d!' % (width, has_count * 16))
+            f'Image width is {width}, expected {exp_width}!')
 
     if not attached and depth != 2:
-        raise SystemExit('Image depth is %d, expected 2!' % depth)
+        raise SystemExit(f'Image depth is {depth}, expected 2!')
 
     if attached and depth != 4:
-        raise SystemExit('Image depth is %d, expected 2!' % depth)
+        raise SystemExit(f'Image depth is {depth}, expected 4!')
 
     stride = ((width + 15) & ~15) // 16
     bpl = planar(pix, width, height, depth)
 
-    print('static const short %s_height = %d;' % (name, height))
+    print(f'static const short {name}_height = {height};')
     print('')
 
-    for i in range(width // 16):
+    n = width // 16
+    if attached:
+        n *= 2
+
+    sprites = []
+
+    for i in range(n):
         sprite = name
         if width > 16:
             sprite += str(i)
 
-        attached_str = ['false', 'true'][attached]
+        attached_sprite = attached and i % 2 == 1
 
-        print('static __data_chip SprDataT %s_sprdat = {' % sprite)
-        print('  .pos = SPRPOS(0, 0),')
-        print('  .ctl = SPRCTL(0, 0, %s, %d),' % (attached_str, height))
+        offset = stride * 2 if attached_sprite else 0
+        offset += i // 2 if attached else i
+
+        attached_str = str(attached_sprite).lower()
+
+        print(f'static __data_chip SprDataT {sprite}_sprdat = {{')
+        print(f'  .pos = SPRPOS(0, 0),')
+        print(f'  .ctl = SPRCTL(0, 0, {attached_str}, {height}),')
         print('  .data = {')
         for j in range(0, stride * depth * height, stride * depth):
-            words = bpl[i + j], bpl[i + j + stride]
+            words = bpl[offset + j], bpl[offset + j + stride]
             print('    { 0x%04x, 0x%04x },' % words)
         print('    /* sprite channel terminator */')
         print('    { 0x0000, 0x0000 },')
         print('  }')
         print('};')
         print('')
-        if not onlydata:
-            print('static SpriteT %s = {' % sprite)
-            print('  .sprdat = &%s_sprdat,' % sprite)
-            print('  .height = %d,' % height)
-            print('  .attached = %s,' % attached_str)
-            print('};')
-            print('')
 
-    if sequence and not onlydata:
-        sprites = ['&%s%d' % (name, i) for i in range(width // 16)]
-        print('static SpriteT *%s[] = {' % name)
-        print('  %s' % ', '.join(sprites))
+        sprites.append((sprite, attached_str))
+
+    if n > 1:
+        print(f'static SpriteT {name}[{n}] = {{')
+        for sprite, attached_str in sprites:
+            print('  {')
+            print(f'    .sprdat = &{sprite}_sprdat,')
+            print(f'    .height = {height},')
+            print(f'    .attached = {attached_str},')
+            print('  },')
         print('};')
-        print('')
+    else:
+        print(f'static SpriteT {name} = {{')
+        print(f'  .sprdat = &{name}_sprdat,')
+        print(f'  .height = {height},')
+        print(f'  .attached = false,')
+        print('};')
 
 
 def do_pixmap(im, desc):

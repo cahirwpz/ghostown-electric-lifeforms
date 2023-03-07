@@ -1,29 +1,40 @@
 package ilbm
 
 import (
-	"fmt"
+	"bytes"
 	"ghostown.pl/iff"
+	"log"
+	"text/template"
 )
 
+const drngTemplate = `{
+  Min: {{.Min}},
+  Max: {{.Max}},
+  Rate: {{.Rate}},
+  Flags: {{if .Flags}} RNG_ACTIVE {{- else}} NONE {{- end}},
+  DColor: { {{- range .Dcolor }} {{ .Cell}}: {{ printf "#%02x%02x%02x" .R .G .B}}, {{ end -}} },
+  DIndex:  { {{- range .Dindex }} {{.Cell}}: {{.Index}}, {{ end -}} }
+}`
+
 type DColor struct {
-	cell  uint8
-	r     uint8
-	g     uint8
-	b     uint8
+	Cell uint8
+	R    uint8
+	G    uint8
+	B    uint8
 }
 
 type DIndex struct {
-	cell  uint8
-	index uint8
+	Cell  uint8
+	Index uint8
 }
 
 type DRNG struct {
-	min   uint8
-	max   uint8
-	rate  int16
-	flags int16
-	dcolor []DColor
-	dindex []DIndex
+	Min    uint8
+	Max    uint8
+	Rate   int16
+	Flags  int16
+	Dcolor []DColor
+	Dindex []DIndex
 }
 
 func (drng DRNG) Name() string {
@@ -31,60 +42,41 @@ func (drng DRNG) Name() string {
 }
 
 func (drng *DRNG) Read(r iff.Reader) {
-	drng.min = r.ReadU8()
-	drng.max = r.ReadU8()
-	drng.rate = r.ReadI16()
-	drng.flags = r.ReadI16()
+	drng.Min = r.ReadU8()
+	drng.Max = r.ReadU8()
+	drng.Rate = r.ReadI16()
+	drng.Flags = r.ReadI16()
 	ntrue := r.ReadU8()
 	nregs := r.ReadU8()
 
-	drng.dcolor = make([]DColor, ntrue, ntrue)
+	drng.Dcolor = make([]DColor, ntrue, ntrue)
 	for i := 0; uint8(i) < ntrue; i++ {
-		drng.dcolor[i].cell = r.ReadU8()
-		drng.dcolor[i].r = r.ReadU8()
-		drng.dcolor[i].g = r.ReadU8()
-		drng.dcolor[i].b = r.ReadU8()
+		drng.Dcolor[i].Cell = r.ReadU8()
+		drng.Dcolor[i].R = r.ReadU8()
+		drng.Dcolor[i].G = r.ReadU8()
+		drng.Dcolor[i].B = r.ReadU8()
 	}
 
-	drng.dindex = make([]DIndex, nregs, nregs)
+	drng.Dindex = make([]DIndex, nregs, nregs)
 	for i := 0; uint8(i) < nregs; i++ {
-		drng.dindex[i].cell = r.ReadU8()
-		drng.dindex[i].index = r.ReadU8()
+		drng.Dindex[i].Cell = r.ReadU8()
+		drng.Dindex[i].Index = r.ReadU8()
 	}
 }
 
 func (drng DRNG) String() string {
-	s := "{"
-
-	var flags string
-	if drng.flags == 0x1 {
-		flags = "RNG_ACTIVE"
-	} else {
-		flags = "NONE"
+	t, err := template.New("drng_chunk").Parse(drngTemplate)
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	s += fmt.Sprintf("min: %d, max: %d, ", drng.min, drng.max)
-	s += fmt.Sprintf("rate: %d, flags = %s, ", drng.rate, flags)
-
-	sep := ""
-	s += "DColor: {"
-	for _, dc := range drng.dcolor {
-		s += sep
-		s += fmt.Sprintf("%d: #%02x%02x%02x", dc.cell, dc.r, dc.g, dc.b)
-		sep = ", "
+	var out bytes.Buffer
+	err = t.Execute(&out, drng)
+	if err != nil {
+		log.Fatal(err)
 	}
-	s += "}, "
 
-	sep = ""
-	s += "DIndex: {"
-	for _, di := range drng.dindex {
-		s += sep
-		s += fmt.Sprintf("%d: %d", di.cell, di.index)
-		sep = ", "
-	}
-	s += "}}"
-
-	return s
+	return out.String()
 }
 
 func makeDRNG() iff.Chunk {
