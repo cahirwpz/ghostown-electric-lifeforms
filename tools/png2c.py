@@ -227,14 +227,12 @@ def do_sprite(im, desc):
                   ('name', str),
                   ('height', int),
                   ('count', int),
-                  ('attached', bool, False),
-                  ('onlydata', bool, False))
+                  ('attached', bool, False))
 
     name = param['name']
     has_height = param['height']
     has_count = param['count']
     attached = param['attached']
-    onlydata = param['onlydata']
 
     pix = array('B', im.getdata())
 
@@ -296,22 +294,21 @@ def do_sprite(im, desc):
 
         sprites.append((sprite, attached_str))
 
-    if not onlydata:
-        if n > 1:
-            print(f'static SpriteT {name}[{n}] = {{')
-            for sprite, attached_str in sprites:
-                print('  {')
-                print(f'    .sprdat = &{sprite}_sprdat,')
-                print(f'    .height = {height},')
-                print(f'    .attached = {attached_str},')
-                print('  },')
-            print('};')
-        else:
-            print(f'static SpriteT {name} = {{')
-            print(f'  .sprdat = &{name}_sprdat,')
-            print(f'  .height = {height},')
-            print(f'  .attached = false,')
-            print('};')
+    if n > 1:
+        print(f'static SpriteT {name}[{n}] = {{')
+        for sprite, attached_str in sprites:
+            print('  {')
+            print(f'    .sprdat = &{sprite}_sprdat,')
+            print(f'    .height = {height},')
+            print(f'    .attached = {attached_str},')
+            print('  },')
+        print('};')
+    else:
+        print(f'static SpriteT {name} = {{')
+        print(f'  .sprdat = &{name}_sprdat,')
+        print(f'  .height = {height},')
+        print(f'  .attached = false,')
+        print('};')
 
 
 def do_pixmap(im, desc):
