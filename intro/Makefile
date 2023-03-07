@@ -37,7 +37,8 @@ CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
 	data/wireworld-vitruvian.c \
 	data/wireworld-vitruvian-electrons.c \
 	data/turmite-credits-[1-3].c data/anemone-pal-[1-3].c \
-	data/turmite-pal-[1-3].c data/circles.c data/grass.c
+	data/turmite-pal-[1-3].c data/circles.c data/grass.c \
+	data/chip.c
 
 SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   tilemover.c sea-anemone.c game-of-life.c vitruvian.c
@@ -66,6 +67,8 @@ ELECTRONS2C.wireworld-fullscreen := --name pcb_electrons
 PNG2C.wireworld-fullscreen := --bitmap wireworld_pcb,160x128x1,+limit_depth
 ELECTRONS2C.wireworld-vitruvian := --name vitruvian_electrons
 PNG2C.wireworld-vitruvian := --bitmap wireworld_vitruvian,160x128x1,+limit_depth
+PNG2C.chip := --sprite wireworld_chip,64,4,+attached --palette wireworld_chip_pal,16
+
 PNG2C.circles := \
 	--bitmap circle1,3x3x1,extract_at=0x0 \
 	--bitmap circle2,5x5x1,extract_at=0x4 \

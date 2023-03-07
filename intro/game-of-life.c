@@ -98,6 +98,7 @@
 #include "data/wireworld-vitruvian-electrons.c"
 #include "data/wireworld-fullscreen.c"
 #include "data/wireworld-fullscreen-electrons.c"
+#include "data/chip.c"
 
 extern TrackT GOLPaletteH;
 extern TrackT GOLPaletteS;
@@ -119,6 +120,8 @@ static CopInsT *bplptr[DISP_DEPTH];
 
 // pointers to copper instructions, for setting colors
 static CopInsT *palptr[COLORS];
+
+static CopInsT *sprptr[8];
 
 // circular buffer of previous game states as they would be rendered (with
 // horizontally doubled pixels)
@@ -412,6 +415,16 @@ static void MakeCopperList(CopListT *cp) {
   for (i = 0; i < DISP_DEPTH; i++)
     bplptr[i] = CopMove32(cp, bplpt[i], prev_states[i]->planes[0]);
 
+  if (TrackValueGet(&WireworldBg, frameCount) == 1) {
+    CopSetupSprites(cp, sprptr);
+    for (i = 0; i < 8; i++) {
+      SpriteT *spr = &wireworld_chip[i];
+      SpriteUpdatePos(spr, X(DISP_WIDTH/2 + (i/2)*16 - 32), Y(DISP_HEIGHT/2 - spr->height/2));
+      CopInsSetSprite(sprptr[i], spr);
+    }
+    LoadPalette(&wireworld_chip_pal, 16);
+  }
+
   for (i = 1; i <= DISP_HEIGHT; i += 2) {
     // vertical pixel doubling
     CopMove16(cp, bpl1mod, -prev_states[0]->bytesPerRow);
@@ -595,7 +608,7 @@ static void SharedPreInit(void) {
   KeyboardInit();
 #endif
 
-  EnableDMA(DMAF_RASTER | DMAF_BLITTER);
+  EnableDMA(DMAF_RASTER | DMAF_BLITTER | DMAF_SPRITE | DMAF_COPPER);
 
   current_board = boards[0];
   for (i = 0; i < PREV_STATES_DEPTH; i++) {
