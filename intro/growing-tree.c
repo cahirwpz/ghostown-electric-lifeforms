@@ -11,15 +11,17 @@
 #define WIDTH 320
 #define HEIGHT 256
 #define DEPTH 3
-#define NSPRITES 4
+#define NSPRITES 8
 
 static CopListT *cp;
 static CopInsT *bplptr[DEPTH];
 static BitmapT *screen;
+static CopInsT *sprptr[8];
 
 #include "data/fruit-1.c"
 #include "data/fruit-2.c"
-#include "data/grass.c"
+#include "data/grass-1.c"
+#include "data/grass-2.c"
 
 typedef struct Branch {
   short pos_x, pos_y; // Q12.4
@@ -65,22 +67,32 @@ static inline int fastrand(void) {
 
 static u_short nrPal = 0;
 static void setTreePalette(void) {
-  const u_short *pal;
+  const u_short *fruit_cols;
+  const PaletteT *grass_pal;
+  SpriteT *grass;
   short i;
   if (nrPal) {
-    pal = &fruit_2_pal.colors[1],
+    fruit_cols = &fruit_2_pal.colors[1],
+    grass_pal = &grass_2_pal;
+    grass = grass_2;
     SetColor(0, 0x123);
     SetColor(1, 0x068);
   } else {
-    pal = &fruit_1_pal.colors[1],
+    fruit_cols = &fruit_1_pal.colors[1],
+    grass_pal = &grass_1_pal;
+    grass = grass_1;
     SetColor(0, 0xfdb);
     SetColor(1, 0x653);
   }
   for (i = 0; i < 3; i++) {
-    u_short c = *pal++;
+    u_short c = *fruit_cols++;
     SetColor(2 + i * 2, c);
     SetColor(3 + i * 2, c);
   }
+  for (i = 16; i < 32; i += 4)
+    LoadPalette(grass_pal, i);
+  for (i = 0; i < NSPRITES; i++)
+    CopInsSetSprite(sprptr[i], &grass[i]);
   nrPal ^= 1;
 }
 
@@ -91,14 +103,11 @@ static void Init(void) {
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
 
-  setTreePalette();
-
-  for (i = 0; i < NSPRITES; i++)
-    SpriteUpdatePos(&grass[i], X(i * 16 + (WIDTH - 16 * NSPRITES) / 2),
-                    Y(HEIGHT - grass_height));
-
-  for (i = 16; i < 32; i += 4)
-    LoadPalette(&grass_pal, i);
+  for (i = 0; i < NSPRITES; i++) {
+    short hp = X(i * 16 + (WIDTH - 16 * NSPRITES) / 2);
+    SpriteUpdatePos(&grass_1[i], hp, Y(HEIGHT - grass_1_height));
+    SpriteUpdatePos(&grass_2[i], hp, Y(HEIGHT - grass_2_height));
+  }
 
   /* Move sprites into background. */
   custom->bplcon2 = BPLCON2_PF1P2;
@@ -106,9 +115,11 @@ static void Init(void) {
   cp = NewCopList(50);
   CopInit(cp);
   CopSetupBitplanes(cp, bplptr, screen, DEPTH);
-  for (i = 0; i < NSPRITES; i++)
-    CopMove32(cp, sprpt[i], grass[i].sprdat);
+  CopSetupSprites(cp, sprptr);
   CopEnd(cp);
+
+  setTreePalette();
+
   CopListActivate(cp);
 
   EnableDMA(DMAF_RASTER | DMAF_SPRITE | DMAF_BLITTER);
