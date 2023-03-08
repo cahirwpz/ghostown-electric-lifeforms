@@ -100,7 +100,7 @@ PNG2C.anemone-pal-3-light := --palette anemone_pal_3_light,16
 
 PNG2C.uvmap-u := --pixmap umap,160x100x8,+onlydata
 PNG2C.uvmap-v := --pixmap vmap,160x100x8,+onlydata
-PNG2C.texture-16 := --pixmap texture,128x128x8 --palette texture_pal,16
+PNG2C.texture-16 := --pixmap texture,64x64x8 --palette texture_pal,16
 PNG2C.gradient := --pixmap gradient,16x16x12
 
 CPPFLAGS += -DINTRO -DVQ=$(VQ) -DDELTA=$(DELTA) -DKLANG=$(KLANG) -I.

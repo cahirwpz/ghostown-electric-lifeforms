@@ -65,7 +65,7 @@ static void ScrambleUVMap(u_short *uvmap) {
   u_char *vmap = vmap_pixels;
   short i;
 
-#define MAKEUV() (((*umap++) << 8) | ((*vmap++) << 1))
+#define MAKEUV() (((*umap++) << 7) | ((*vmap++) << 1))
 
   for (i = 0; i < WIDTH * HEIGHT; i += 8) {
     uvmap[i + 0] = MAKEUV();

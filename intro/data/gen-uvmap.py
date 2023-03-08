@@ -6,6 +6,6 @@ import sys
 
 
 if __name__ == '__main__':
-    uvmap = UVMap(160, 100)
+    uvmap = UVMap(160, 100, texsize=64)
     uvmap.generate(FancyEye, (-1.6, 1.6, -1.0, 1.0))
     uvmap.save_uv(sys.argv[1])
