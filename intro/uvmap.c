@@ -20,6 +20,7 @@ static CopInsT *bplptr[DEPTH];
 #include "data/gradient.c"
 #include "data/uvgut/map-u.c"
 #include "data/uvgut/map-v.c"
+#include "data/uvgut/map-o.c"
 
 #define UVMapRenderSize ((5 + WIDTH * HEIGHT / 32 * (8 * 8 + 2)) * 2)
 void (*UVMapRender)(u_short *chunkyEnd asm("a0"),
@@ -64,6 +65,8 @@ static void ScrambleUVMap(u_short *uvmap) {
   u_char *u = umap;
   u_char *v = vmap;
   short i;
+
+  (void)omap;
 
 #define MAKEUV() (((*u++) << 7) | ((*v++) << 1))
 

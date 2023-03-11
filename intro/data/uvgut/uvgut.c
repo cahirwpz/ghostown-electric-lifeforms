@@ -7,8 +7,8 @@ static const int HEIGHT = 100;
 static const int TEXSIZE = 64;
 
 static const int MAX_STEPS = 100;
-static const float MAX_DIST = 10.0;
-static const float SURF_DIST = 0.001;
+static const float MAX_DIST = 100.0;
+static const float SURF_DIST = 0.01;
 
 static float iTime;
 static SDL_Surface *iChannel0;
@@ -16,6 +16,7 @@ static SDL_Surface *iChannel1;
 
 static uint8_t umap[WIDTH * HEIGHT];
 static uint8_t vmap[WIDTH * HEIGHT];
+static uint8_t omap[WIDTH * HEIGHT];
 
 typedef struct vec3 {
   float x, y, z, w;
@@ -277,13 +278,17 @@ void Render(SDL_Surface *canvas) {
           break;
 
         default:
+          SDL_Log("Missed the surface at (%d,%d)!", x, y);
           break;
       }
 
-      umap[y * WIDTH + x] = texpos(tuv.x, TEXSIZE);
-      vmap[y * WIDTH + x] = texpos(tuv.y, TEXSIZE);
+      int pos = y * WIDTH + x;
 
-      buffer[y * WIDTH + x] = col;
+      umap[pos] = texpos(tuv.x, TEXSIZE);
+      vmap[pos] = texpos(tuv.y, TEXSIZE);
+      omap[pos] = h.obj;
+
+      buffer[pos] = col;
     }
   }
 
@@ -371,6 +376,7 @@ int main(void) {
 
   SaveMap("map-u.c", "umap", umap);
   SaveMap("map-v.c", "vmap", vmap);
+  SaveMap("map-o.c", "omap", omap);
 
   return 0;
 }
