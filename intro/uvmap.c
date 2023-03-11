@@ -18,8 +18,8 @@ static CopInsT *bplptr[DEPTH];
 
 #include "data/texture-16.c"
 #include "data/gradient.c"
-#include "data/uvmap-u.c"
-#include "data/uvmap-v.c"
+#include "data/uvgut/map-u.c"
+#include "data/uvgut/map-v.c"
 
 #define UVMapRenderSize ((5 + WIDTH * HEIGHT / 32 * (8 * 8 + 2)) * 2)
 void (*UVMapRender)(u_short *chunkyEnd asm("a0"),
@@ -61,11 +61,11 @@ static void PixmapToTexture(const PixmapT *image,
 }
 
 static void ScrambleUVMap(u_short *uvmap) {
-  u_char *umap = umap_pixels;
-  u_char *vmap = vmap_pixels;
+  u_char *u = umap;
+  u_char *v = vmap;
   short i;
 
-#define MAKEUV() (((*umap++) << 7) | ((*vmap++) << 1))
+#define MAKEUV() (((*u++) << 7) | ((*v++) << 1))
 
   for (i = 0; i < WIDTH * HEIGHT; i += 8) {
     uvmap[i + 0] = MAKEUV();

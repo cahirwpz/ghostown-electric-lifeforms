@@ -2,8 +2,9 @@
 #include <SDL_image.h>
 #include <math.h>
 
-static const int WIDTH = 640;
-static const int HEIGHT = 360;
+static const int WIDTH = 160;
+static const int HEIGHT = 100;
+static const int TEXSIZE = 64;
 
 static const int MAX_STEPS = 100;
 static const float MAX_DIST = 10.0;
@@ -12,6 +13,9 @@ static const float SURF_DIST = 0.001;
 static float iTime;
 static SDL_Surface *iChannel0;
 static SDL_Surface *iChannel1;
+
+static uint8_t umap[WIDTH * HEIGHT];
+static uint8_t vmap[WIDTH * HEIGHT];
 
 typedef struct vec3 {
   float x, y, z, w;
@@ -168,6 +172,10 @@ mat4 m4_camera_lookat(vec3 pos, vec3 target, float rot) {
     0.0, 0.0, 0.0, 1.0};
 }
 
+static int texpos(float x, int n) {
+  return (int)((x - floorf(x)) * (float)n);
+}
+
 Uint32 texture(SDL_Surface *img, vec3 uv) {
   Uint32 *tex = (Uint32 *)img->pixels;
   int u = (uv.x - floorf(uv.x)) * img->w;
@@ -272,6 +280,9 @@ void Render(SDL_Surface *canvas) {
           break;
       }
 
+      umap[y * WIDTH + x] = texpos(tuv.x, TEXSIZE);
+      vmap[y * WIDTH + x] = texpos(tuv.y, TEXSIZE);
+
       buffer[y * WIDTH + x] = col;
     }
   }
@@ -297,6 +308,20 @@ SDL_Surface *LoadTexture(const char *path) {
   SDL_FreeFormat(pixelfmt);
   SDL_FreeSurface(loaded);
   return native;
+}
+
+void SaveMap(const char *path, const char *name, uint8_t *map) {
+  FILE *f = fopen(path, "wb");
+
+  fprintf(f, "static u_char %s[%d] = {\n", name, WIDTH * HEIGHT);
+  for (int y = 0; y < HEIGHT; y++) {
+    fprintf(f, "  ");
+    for (int x = 0; x < WIDTH; x++) {
+      fprintf(f, "%d, ", map[y * WIDTH + x]);
+    }
+    fprintf(f, "\n");
+  }
+  fprintf(f, "};\n");
 }
 
 int main(void) {
@@ -343,6 +368,9 @@ int main(void) {
   SDL_FreeSurface(iChannel1);
   IMG_Quit();
   SDL_Quit();
+
+  SaveMap("map-u.c", "umap", umap);
+  SaveMap("map-v.c", "vmap", vmap);
 
   return 0;
 }
