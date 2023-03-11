@@ -1,18 +1,18 @@
 #include <custom.h>
 #include <effect.h>
-#include <cinter.h>
+#include <ptplayer.h>
 #include <sync.h>
-#include <system/interrupt.h>
 #include <system/task.h>
 
 #define _SYSTEM
 #include <system/memory.h>
 #include <system/cia.h>
 
-static CinterPlayerT CinterPlayer[1];
-extern u_char CinterModule[];
-extern u_char CinterSamples[];
-extern u_char CinterSamplesSize[];
+extern u_char Module[];
+extern u_char Samples[];
+#if VQ == 1 || DELTA == 1 || KLANG == 0
+extern u_char SamplesSize[];
+#endif
 
 extern EffectT LogoEffect;
 extern EffectT WeaveEffect;
@@ -106,13 +106,10 @@ static void DecodeSamples(u_char *smp, int size) {
 }
 #endif
 
-static int CinterMusic(CinterPlayerT *player) {
-  CinterPlay1(player);
-  CinterPlay2(player);
-  return 0;
-}
-
-INTSERVER(CinterMusicServer, 10, (IntFuncT)CinterMusic, CinterPlayer);
+#if KLANG == 1
+extern u_int AK_Progress;
+void AK_Generate(void *TmpBuf asm("a1"));
+#endif
 
 static void ShowMemStats(void) {
   Log("[Memory] CHIP: %d FAST: %d\n", MemAvail(MEMF_CHIP), MemAvail(MEMF_FAST));
@@ -122,7 +119,8 @@ static void LoadEffects(EffectT **effects) {
   EffectT *effect;
   for (effect = *effects; effect; effect = *effects++) { 
     EffectLoad(effect);
-    ShowMemStats();
+    if (effect->Load)
+      ShowMemStats();
   }
 }
 
@@ -133,10 +131,17 @@ static void UnLoadEffects(EffectT **effects) {
   }
 }
 
+#define SYNCPOS(pos) (((((pos) & 0xff00) >> 2) | ((pos) & 0x3f)) * 6)
+
 static void RunEffects(void) {
-  /* Reset frame counter and wait for all time actions to finish. */
-  SetFrameCounter(0);
-  frameCount = 0;
+  /* Set the beginning of intro. Useful for effect synchronization! */
+  short pos = 0;
+
+  frameCount = SYNCPOS(pos);
+  SetFrameCounter(frameCount);
+  PtData.mt_SongPos = pos >> 8;
+  PtData.mt_PatternPos = (pos & 0x3f) << 4;
+  PtEnable = -1;
 
   for (;;) {
     static short prev = -1;
@@ -177,22 +182,30 @@ int main(void) {
    * fetch segments locations to relocate symbol information read from file. */
   asm volatile("exg %d7,%d7");
 
-  Log("[Init] Generating Cinter samples\n");
-  CinterInit(CinterModule, CinterSamples, CinterPlayer);
-#if VQ == 1 || ADPCM == 1 || DELTA == 1
-  DecodeSamples(CinterSamples, (int)CinterSamplesSize);
+#if VQ == 1 || DELTA == 1
+  Log("[Init] Decoding samples\n");
+  DecodeSamples(Samples, (int)SamplesSize);
 #endif
+
+#if KLANG == 1
+  Log("[Init] Generating samples\n");
+  {
+    void *TmpBuf = MemAlloc(32768, MEMF_PUBLIC);
+    AK_Generate(TmpBuf);
+    MemFree(TmpBuf);
+  }
+#endif
+
+  PtInstallCIA();
+  PtInit(Module, Samples, 0);
 
   TrackInit(&EffectNumber);
   LoadEffects(AllEffects);
 
-  EnableDMA(DMAF_AUDIO);
-  AddIntServer(INTB_VERTB, CinterMusicServer);
-
   RunEffects();
 
-  RemIntServer(INTB_VERTB, CinterMusicServer);
-  DisableDMA(DMAF_AUDIO);
+  PtEnd();
+  PtRemoveCIA();
 
   UnLoadEffects(AllEffects);
 

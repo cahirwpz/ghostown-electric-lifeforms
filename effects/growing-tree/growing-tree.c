@@ -35,15 +35,31 @@ typedef struct Branch {
 #define vel_x_b _vel_x.byte
 #define vel_y_b _vel_y.byte
 
-#define MAXBRANCHES 256
+//#define MAXBRANCHES 256
+#define MAXBRANCHES 192
 
 static BranchT branches[MAXBRANCHES];
 static BranchT *lastBranch = branches;
 
+static int mTable[] = {
+  0x3050B28C, 0xD061A7F9,
+  0x3150B28C, 0xD161A7F9,
+  0x3250B28C, 0xD261A7F9,
+  0x3350B28C, 0xD431A7F9
+};
+static int mTableIdx = 0;
+//static int canSee = 1;
+
 static inline int fastrand(void) {
-  static int m[2] = { 0x3E50B28C, 0xD461A7F9 };
+//  static int m[2] = { 0x3E50B28C, 0xD461A7F9 };
 
   int a, b;
+  int *mAddr = &mTable[mTableIdx*2];
+
+  // if (canSee) {
+  //   Log("mTableIdx = %d, mTable[0] = %x, mTable[1] = %x\n", mTableIdx, mAddr[0], mAddr[1]);
+  //   canSee = 0;
+  // }
 
   // https://www.atari-forum.com/viewtopic.php?p=188000#p188000
   asm volatile("move.l (%2)+,%0\n"
@@ -52,21 +68,88 @@ static inline int fastrand(void) {
                "add.l  %0,(%2)\n"
                "add.l  %1,-(%2)\n"
                : "=d" (a), "=d" (b)
-               : "a" (m));
+               : "a" (mAddr));
   
+/*
+    lea     m(pc),a0
+    lea     4(a0),a1
+
+    move.l  (a0),d0  ; AB
+    move.l  (a1),d1  ; CD
+    swap    d1       ; DC
+    add.l   d1,(a0)  ; AB + DC
+    add.l   d0,(a1)  ; CD + AB
+
+*/  
   return a;
 }
 
 #define random fastrand
 
+static u_short palette[] = {
+  // pal0
+  0xfdb,
+  0x653,
+  0xd43,
+  0xd43,
+  // pal1
+  0x123,
+  0x068,
+  0x9df,
+  0x9df
+};
+
+static u_short nrPal = 0;
+static void setTreePalette(void) {
+  u_short x = 0;
+  u_short *pal = &palette[nrPal<<2];
+  for (x = 0; x < 4; x++) {
+    SetColor(x, *pal++);
+  }
+  nrPal++;
+  nrPal &= 1;
+}
+
+// could be readed from group data
+unsigned short greets_x = 0;
+unsigned short greets_y = 0;
+
+unsigned char greetingsElude[] = {
+  // todo: start x,y here
+  109,31,100,29,85,27,69,27,50,30,33,36,15,46,0,57,255,255,
+  62,25,57,23,59,12,55,26,51,28,48,27,49,13,46,27,41,30,35,29,31,20,31,11,36,2,37,11,36,18,28,33,23,38,16,41,9,38,7,29,11,23,18,20,22,22,20,28,14,33,6,34,255,255,
+  99,22,93,23,89,23,84,20,83,14,85,10,89,10,91,14,88,18,82,18,77,14,73,13,68,14,65,18,66,22,68,25,73,23,75,18,76,9,74,0,255,255,
+  128,128
+};
+
+unsigned char *greetings[] = {
+  greetingsElude,
+  NULL,
+};
+
+static unsigned char *currGreetsPtr;
+static int greetsIdx = 0;
+
+static void GreetsNextTrack(void) {
+  currGreetsPtr = greetings[greetsIdx];
+  if (currGreetsPtr == NULL) {
+    return;
+  }
+  greetsIdx++;
+}
+
+static void GreetsInit(void) {
+  GreetsNextTrack();
+  BlitterLineSetup(screen, 0, LINE_OR|LINE_SOLID);
+}
+
 static void Init(void) {
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH);
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
-  SetColor(0, 0xfff);
-  SetColor(1, 0x000);
-  SetColor(2, 0xf00);
-  SetColor(3, 0xf00);
+
+  setTreePalette();
+  GreetsInit();
 
   cp = NewCopList(50);
   CopInit(cp);
@@ -173,8 +256,9 @@ static void DrawBranch(short x1, short y1, short x2, short y2) {
   }
 
   derr = dy + dy - dx;
-  if (derr < 0)
+  if (derr < 0) {
     bltcon1 |= SIGNFLAG;
+  }
 
   {
     u_short bltamod = derr - dx;
@@ -237,6 +321,39 @@ static bool SplitBranch(BranchT *parent, BranchT **lastp) {
   KillBranch(parent, lastp);
   return false;
 }
+
+
+static void DrawGreetigs(void) {
+  unsigned char x1, x2, y1, y2;
+  if (currGreetsPtr == NULL) {
+    return;
+  }
+  x1 = *currGreetsPtr++;
+  y1 = *currGreetsPtr++;
+
+  x2 = *currGreetsPtr;
+  y2 = *(currGreetsPtr+1);
+
+  if (x1 == 128 && y1 == 128) {
+    // end of group
+    GreetsNextTrack();
+    return;
+  }
+
+  if (x2 == 255 || y2 == 255) {
+    // to next curve
+    currGreetsPtr++; currGreetsPtr++;
+    return;
+  }
+
+  //Log("x1=%d, y1=%d, x2=%d, y2=%d\n", x1, y1, x2, y2);
+  //BlitterLine(x1, y1, x2, y2);
+  DrawBranch(
+    greets_x + x1, greets_y + y1,
+    greets_x + x2, greets_y + y2
+  );
+}
+
 
 void GrowingTree(BranchT *branches, BranchT **lastp) {
   BranchT *b;
@@ -306,14 +423,21 @@ static void Render(void) {
     }
     waitFrame = 0;
     BitmapClear(screen);
+    setTreePalette();
   }
 
   if (lastBranch == branches) {
-    MakeBranch(WIDTH / 2, HEIGHT - fruit_height / 2 - 1);
+    MakeBranch((WIDTH-60) / 2, HEIGHT - fruit_height / 2 - 1);
+    mTableIdx++; mTableIdx &= 3;
+    //canSee++;
+    greetsIdx = 0;
   }
 
   ProfilerStart(GrowTree);
   GrowingTree(branches, &lastBranch);
+
+  DrawGreetigs();
+
   ProfilerStop(GrowTree);
 
   if (lastBranch == branches) {

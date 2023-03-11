@@ -7,9 +7,9 @@ import argparse
 
 rle_pattern = re.compile(r"(\d*)(o|b|\$)")
 rotate_transforms = {
-    90: Image.ROTATE_90,
-    180: Image.ROTATE_180,
-    270: Image.ROTATE_270,
+    90: Image.Transpose.ROTATE_90,
+    180: Image.Transpose.ROTATE_180,
+    270: Image.Transpose.ROTATE_270,
 }
 
 

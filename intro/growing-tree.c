@@ -4,18 +4,24 @@
 #include <fx.h>
 #include <gfx.h>
 #include <line.h>
+#include <sprite.h>
 #include <stdlib.h>
 #include <system/memory.h>
 
 #define WIDTH 320
 #define HEIGHT 256
-#define DEPTH 2
+#define DEPTH 3
+#define NSPRITES 8
 
 static CopListT *cp;
 static CopInsT *bplptr[DEPTH];
 static BitmapT *screen;
+static CopInsT *sprptr[8];
 
-#include "data/fruit.c"
+#include "data/fruit-1.c"
+#include "data/fruit-2.c"
+#include "data/grass-1.c"
+#include "data/grass-2.c"
 
 typedef struct Branch {
   short pos_x, pos_y; // Q12.4
@@ -59,48 +65,68 @@ static inline int fastrand(void) {
 
 #define random fastrand
 
-static u_short palette[] = {
-  // pal0
-  0xfdb,
-  0x653,
-  0xd43,
-  0xd43,
-  // pal1
-  0x123,
-  0x068,
-  0x9df,
-  0x9df
-};
-
 static u_short nrPal = 0;
 static void setTreePalette(void) {
-  u_short x = 0;
-  u_short *pal = &palette[nrPal<<2];
-  for (x = 0; x < 4; x++) {
-    SetColor(x, *pal++);
+  const u_short *fruit_cols;
+  const PaletteT *grass_pal;
+  SpriteT *grass;
+  short i;
+  if (nrPal) {
+    fruit_cols = &fruit_2_pal.colors[1],
+    grass_pal = &grass_2_pal;
+    grass = grass_2;
+    SetColor(0, 0x123);
+    SetColor(1, 0x068);
+  } else {
+    fruit_cols = &fruit_1_pal.colors[1],
+    grass_pal = &grass_1_pal;
+    grass = grass_1;
+    SetColor(0, 0xfdb);
+    SetColor(1, 0x653);
   }
-  nrPal++;
-  nrPal &= 1;
+  for (i = 0; i < 3; i++) {
+    u_short c = *fruit_cols++;
+    SetColor(2 + i * 2, c);
+    SetColor(3 + i * 2, c);
+  }
+  for (i = 16; i < 32; i += 4)
+    LoadPalette(grass_pal, i);
+  for (i = 0; i < NSPRITES; i++)
+    CopInsSetSprite(sprptr[i], &grass[i]);
+  nrPal ^= 1;
 }
 
 static void Init(void) {
+  short i;
+
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH);
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
 
-  setTreePalette();
+  for (i = 0; i < NSPRITES; i++) {
+    short hp = X(i * 16 + (WIDTH - 16 * NSPRITES) / 2);
+    SpriteUpdatePos(&grass_1[i], hp, Y(HEIGHT - grass_1_height));
+    SpriteUpdatePos(&grass_2[i], hp, Y(HEIGHT - grass_2_height));
+  }
+
+  /* Move sprites into background. */
+  custom->bplcon2 = BPLCON2_PF1P2;
 
   cp = NewCopList(50);
   CopInit(cp);
   CopSetupBitplanes(cp, bplptr, screen, DEPTH);
+  CopSetupSprites(cp, sprptr);
   CopEnd(cp);
+
+  setTreePalette();
+
   CopListActivate(cp);
 
-  EnableDMA(DMAF_RASTER | DMAF_BLITTER);
+  EnableDMA(DMAF_RASTER | DMAF_SPRITE | DMAF_BLITTER);
 }
 
 static void Kill(void) {
-  DisableDMA(DMAF_COPPER | DMAF_BLITTER | DMAF_RASTER);
+  DisableDMA(DMAF_COPPER | DMAF_BLITTER | DMAF_RASTER | DMAF_SPRITE);
 
   DeleteBitmap(screen);
   DeleteCopList(cp);
@@ -115,20 +141,26 @@ static inline BranchT *NewBranch(void) {
 }
 
 #define screen_bytesPerRow (WIDTH / 8)
+#define fruit_bytesPerRow 2
+#define fruit_width 16
+#define fruit_height 16
+#define fruit_bplSize (fruit_bytesPerRow * fruit_height)
 
-static void _CopyFruit(u_short x, u_short y) {
+static void _CopyFruit(void *srcbpt, u_short x, u_short y) {
   u_short dstmod = screen_bytesPerRow - fruit_bytesPerRow;
   u_short bltshift = rorw(x & 15, 4);
   u_short bltsize = (fruit_height << 6) | (fruit_bytesPerRow >> 1);
-  void *srcbpt = fruit.planes[0];
   void *dstbpt = screen->planes[1];
+  short dstoff; 
   u_short bltcon0;
+
+  dstoff = (x & ~15) >> 3;
+  dstoff += y * screen_bytesPerRow;
 
   if (bltshift)
     bltsize++, dstmod -= 2;
 
-  dstbpt += (x & ~15) >> 3;
-  dstbpt += y * screen_bytesPerRow;
+  dstbpt += dstoff;
   bltcon0 = (SRCA | SRCB | DEST | A_OR_B) | bltshift;
 
   WaitBlitter();
@@ -150,10 +182,19 @@ static void _CopyFruit(u_short x, u_short y) {
   custom->bltbpt = dstbpt;
   custom->bltdpt = dstbpt;
   custom->bltsize = bltsize;
+
+  dstbpt = screen->planes[2];
+  dstbpt += dstoff;
+  WaitBlitter();
+
+  custom->bltapt = srcbpt + fruit_bplSize;
+  custom->bltbpt = dstbpt;
+  custom->bltdpt = dstbpt;
+  custom->bltsize = bltsize;
 }
 
-static void CopyFruit(u_short x, u_short y) {
-  _CopyFruit(x - fruit_width / 2, y - fruit_height / 2);
+static void CopyFruit(u_short *fruit, u_short x, u_short y) {
+  _CopyFruit(fruit, x - fruit_width / 2, y - fruit_height / 2);
 }
 
 static void DrawBranch(short x1, short y1, short x2, short y2) {
@@ -261,6 +302,7 @@ static bool SplitBranch(BranchT *parent, BranchT **lastp) {
 }
 
 void GrowingTree(BranchT *branches, BranchT **lastp) {
+  u_short *fruit = nrPal ? _fruit_2_bpl : _fruit_1_bpl;
   BranchT *b;
 
   for (b = *lastp - 1; b >= branches; b--) {
@@ -294,7 +336,7 @@ void GrowingTree(BranchT *branches, BranchT **lastp) {
         curr_y < fx4i(fruit_height / 2) ||
         curr_y >= fx4i(HEIGHT - (fruit_height / 2)))
     {
-      CopyFruit(prev_x >> 4, prev_y >> 4);
+      CopyFruit(fruit, prev_x >> 4, prev_y >> 4);
       KillBranch(b, lastp);
     } else {
       b->pos_x = curr_x;
@@ -309,7 +351,7 @@ void GrowingTree(BranchT *branches, BranchT **lastp) {
 
       if ((u_short)random() < (u_short)(65536 * 0.2f)) {
         if (!SplitBranch(b, lastp)) {
-          CopyFruit(curr_x, curr_y);
+          CopyFruit(fruit, curr_x, curr_y);
         }
       }
     }
