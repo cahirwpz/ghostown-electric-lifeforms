@@ -36,7 +36,7 @@
 #define TWO_PI 25736
 #define PI 12868
 
-static BitmapT *screen1;
+static BitmapT *screen;
 static int active = 0;
 static short prev_active = 0;
 static CopListT *cp;
@@ -44,7 +44,6 @@ static CopInsT *bplptr[DEPTH + 1];
 
 /* 1 bit version of logo for blitting */
 static BitmapT *logo_blit;
-
 
 /* for each tile following array stores source and destination offsets relative
  * to the beginning of a bitplane */
@@ -54,7 +53,6 @@ static short tiles[NFLOWFIELDS][NTILES];
 #include "data/tilemover-bg-pal.c"
 #include "data/tilemover-windmills.c"
 #include "data/tilemover-wave.c"
-#include "data/tilemover-logo.c"
 #include "data/tilemover-drops.c"
 #include "data/tilemover-block.c"
 
@@ -62,12 +60,17 @@ static short tiles[NFLOWFIELDS][NTILES];
 #include "data/sea-anemone-pal2.c"
 #include "data/sea-anemone-pal3.c"
 
-typedef const PaletteT *TilemoverPalT[4];
+typedef const PaletteT *TilemoverPalT[8];
 
 static TilemoverPalT tilemover_palettes = {
-  &tilemover_pal,    // blue
-  &sea_anemone_pal2, // green
-  &sea_anemone_pal3, // red
+  NULL,
+  &tilemover_pal,    // static - blue
+  &tilemover_pal,    // kitchen sink - blue
+  &tilemover_pal,    // soundwave - blue
+  &sea_anemone_pal2, // windmills - red
+  &sea_anemone_pal3, // rolling tube - green
+  &sea_anemone_pal2, // funky soundwave - red
+  &tilemover_pal,    // static - blue
 };
 
 static short lightLevel = 0;
@@ -142,7 +145,7 @@ static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
           vy = px >> 10;
           break;
 
-        // SOUND WAVE
+    // SOUND WAVE
         case 3:
           /* -SIN_PI/2, SIN_PI/2, 0, SIN_PI/2 */
           vx = min(py_real, normfx(px_real * py_real)) >> 9;
@@ -167,7 +170,7 @@ static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
           vy = COS(px) >> 15;
           break;
 
-        // FUNKY SOUND WAVE
+    // FUNKY SOUND WAVE
         case 6:
 	  /* {-2*SIN_PI, 2*SIN_PI, -SIN_PI, SIN_PI} */
           vx = px >> 9;
@@ -227,7 +230,7 @@ static void BlitSimple(void *sourceA, void *sourceB, void *sourceC,
 static void BlitBitmap(short x, short y, BitmapT blit) {
   short i;
   short j = active;
-  BlitterCopySetup(screen1, MARGIN + x, MARGIN+y, &blit);
+  BlitterCopySetup(screen, MARGIN + x, MARGIN+y, &blit);
   // monkeypatch minterms to perform screen1 = screen1 | blit
   custom->bltcon0 = (SRCB | SRCC | DEST) | (ABC | ANBC | ABNC);
 
@@ -244,7 +247,7 @@ static void UpdateBitplanePointers(void) {
   short i;
   short j = active;
   for (i = DEPTH - 1; i >= 0; i--) {
-    CopInsSet32(bplptr[i], screen1->planes[j] + offset);
+    CopInsSet32(bplptr[i], screen->planes[j] + offset);
     j--;
     if (j < 0)
       j += DEPTH + 1;
@@ -257,17 +260,13 @@ static void Load(void) {
     CalculateTiles(tiles[i], ranges[i], i);
 
   {
-    u_short w = ghostown_logo.width;
-    u_short h = ghostown_logo.height;
-
     EnableDMA(DMAF_BLITTER);
 
     // bitmap width aligned to word
-    logo_blit = NewBitmap(w + (16 - (w % 16)), h, 1);
+    logo_blit = NewBitmap(ghostown_logo.width, ghostown_logo.height, 1);
     BlitSimple(ghostown_logo.planes[0], ghostown_logo.planes[1],
                ghostown_logo.planes[2], logo_blit,
                ABC | ANBC | ABNC | ANBNC | NABC | NANBC | NABNC); 
-
 
     WaitBlitter();
     DisableDMA(DMAF_BLITTER);
@@ -291,9 +290,9 @@ INTSERVER(BlipBackgroundInterrupt, 0, (IntFuncT)BgBlip, NULL);
 extern void KillLogo(void);
 
 static void Init(void) {
-  screen1 = NewBitmap(WIDTH, HEIGHT, DEPTH + 1);  
+  screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1);  
   EnableDMA(DMAF_BLITTER);
-  BlitBitmap(S_WIDTH/2 - 96 - 6, S_HEIGHT/2 - 66, tilemover_logo); 
+  BlitBitmap(S_WIDTH/2 - 96 - 6, S_HEIGHT/2 - 66, *logo_blit); 
   WaitBlitter();
   DisableDMA(DMAF_BLITTER);
   SetupPlayfield(MODE_LORES, DEPTH, X(MARGIN), Y((256 - S_HEIGHT) / 2),
@@ -301,14 +300,16 @@ static void Init(void) {
 
 
   LoadPalette(&tilemover_pal, 0);
+
   KillLogo();
+
   TrackInit(&TileMoverNumber);
   TrackInit(&TileMoverBlit);
   TrackInit(&TileMoverBgBlip);
 
   cp = NewCopList(100);
   CopInit(cp);
-  CopSetupBitplanes(cp, bplptr, screen1, DEPTH);
+  CopSetupBitplanes(cp, bplptr, screen, DEPTH);
   CopMove16(cp, bpl1mod, (WIDTH - S_WIDTH) / 8);
   CopMove16(cp, bpl2mod, (WIDTH - S_WIDTH) / 8);
   CopEnd(cp);
@@ -324,7 +325,7 @@ static void Init(void) {
 static void Kill(void) {
   RemIntServer(INTB_VERTB, BlipBackgroundInterrupt);
   DisableDMA(DMAF_COPPER | DMAF_RASTER | DMAF_BLITTER | DMAF_BLITHOG);
-  DeleteBitmap(screen1);
+  DeleteBitmap(screen);
   DeleteCopList(cp);
 }
 
@@ -418,28 +419,8 @@ static void Render(void) {
   
   if (current_ff != prev_active) {
     prev_active = current_ff;
-
-    switch (current_ff) {
-        case 1: // static
-            LoadPalette(tilemover_palettes[0], 0);
-            break;
-        case 2: // kitchen sink
-            LoadPalette(tilemover_palettes[0], 0);
-            break;
-        case 3: // soundwave
-            LoadPalette(tilemover_palettes[2], 0);
-            break;
-        case 4: // windmills
-            LoadPalette(tilemover_palettes[1], 0);
-            break;
-        case 5: // rolling tube
-            LoadPalette(tilemover_palettes[2], 0);
-            break;
-        case 6: // funk soundwave
-            LoadPalette(tilemover_palettes[0], 0);
-            break;
-    }
-  };
+    LoadPalette(tilemover_palettes[current_ff], 0);
+  }
 
   if (current_blip)
     lightLevel = current_blip;
@@ -459,7 +440,7 @@ static void Render(void) {
     switch (val) {
 	// Logo
         case 9: 
-            BlitBitmap(S_WIDTH/2 - 96, S_HEIGHT/2 - 66, tilemover_logo);
+            BlitBitmap(S_WIDTH/2 - 96, S_HEIGHT/2 - 66, *logo_blit);
 	    break;
 	// Noise for kitchen sink        
 	case 2:
@@ -487,31 +468,30 @@ static void Render(void) {
             BlitBitmap(105 + (random() & 9), random() & 100, tilemover_drops);
             BlitBitmap(105 + (random() & 9), random() & 100, tilemover_drops);
             break;
-
-    };
-  };
+    }
+  }
 
   ProfilerStart(TileMover);
   if (false)
-    DrawSeed(screen1->planes[active]);
+    DrawSeed(screen->planes[active]);
   {
     short xshift = random() & (TILESIZE - 1);
     short yshift = random() & (TILESIZE - 1);
-    void *src = screen1->planes[active];
+    void *src = screen->planes[active];
     void *dst;
     if (++active == DEPTH + 1)
       active = 0;
-    dst = screen1->planes[active];
+    dst = screen->planes[active];
 
     /* Clear margin around destination display window,
      * to avoid moving garbage while rendering next frame. */
-    BlitterClearArea(screen1, active,
+    BlitterClearArea(screen, active,
                      (&(Area2D){TILESIZE, TILESIZE, TILESIZE, S_HEIGHT}));
-    BlitterClearArea(screen1, active,
+    BlitterClearArea(screen, active,
                      (&(Area2D){WIDTH - MARGIN, TILESIZE, TILESIZE, S_HEIGHT}));
-    BlitterClearArea(screen1, active,
+    BlitterClearArea(screen, active,
                      (&(Area2D){MARGIN, TILESIZE, S_WIDTH, TILESIZE}));
-    BlitterClearArea(screen1, active,
+    BlitterClearArea(screen, active,
                      (&(Area2D){MARGIN, HEIGHT - MARGIN, S_WIDTH, TILESIZE}));
 
     /* Move to target window origin minus offset. */

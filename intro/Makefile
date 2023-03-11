@@ -33,7 +33,8 @@ CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
 	data/logo-electrons.c data/electric-lifeforms.c \
 	data/electric-lifeforms-wireworld.c data/ghostown-logo-0[1-3].c \
 	data/turmite-credits-[1-3].c data/anemone-pal-[1-3].c \
-	data/turmite-pal-[1-3].c data/circles.c data/grass-[1-2].c
+	data/turmite-pal-[1-3].c data/circles.c data/grass-[1-2].c \
+	data/tilemover-*.c
 
 SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   tilemover.c sea-anemone.c game-of-life.c vitruvian.c
@@ -104,7 +105,6 @@ PNG2C.anemone-pal-3-light := --palette anemone_pal_3_light,16
 PNG2C.tilemover-windmills := --bitmap tilemover_windmills,32x32x1
 PNG2C.tilemover-wave := --bitmap tilemover_wave,192x64x1
 PNG2C.tilemover-drops := --bitmap tilemover_drops,16x16x1
-PNG2C.tilemover-logo := --bitmap tilemover_logo,192x132x1
 PNG2C.tilemover-block := --bitmap tilemover_block,96x80x1
 PNG2C.tilemover-bg-pal := --palette tilemover_bg_pal,6
 
