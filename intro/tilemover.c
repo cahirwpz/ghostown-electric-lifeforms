@@ -133,26 +133,23 @@ static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
 
       switch (field_idx) {
         // STATIC
-	case 1:
+        case 1:
           vx = 0;
           vy = 0;
           break;
-
-	// KITCHEN SINK
+        // KITCHEN SINK
         case 2:
-	  /* {-PI/4, PI/4, -PI, PI} */
+	      /* {-PI/4, PI/4, -PI, PI} */
           vx = py >> 10;
           vy = px >> 10;
           break;
-
-    // SOUND WAVE
+        // SOUND WAVE
         case 3:
           /* -SIN_PI/2, SIN_PI/2, 0, SIN_PI/2 */
           vx = min(py_real, normfx(px_real * py_real)) >> 9;
           vy = mag >> 9;
           break;
-
-	// WINDMILLS
+        // WINDMILLS
         case 4:
           /*
            * -SIN_PI/3, SIN_PI/3, -SIN_PI/3, SIN_PI/3
@@ -162,23 +159,21 @@ static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
           vx = (SIN(py * 6) / 2) >> 9;
           vy = (SIN(px * 6) / 2) >> 9;
           break;
-	
-	// ROLLING TUBE
+        // ROLLING TUBE
         case 5:
-	  /* {-PI / 4, PI / 4, -PI, PI} */
+	      /* {-PI / 4, PI / 4, -PI, PI} */
           vx = (SIN(px)) >> 10;
           vy = COS(px) >> 15;
           break;
-
-    // FUNKY SOUND WAVE
+        // FUNKY SOUND WAVE
         case 6:
-	  /* {-2*SIN_PI, 2*SIN_PI, -SIN_PI, SIN_PI} */
+	      /* {-2*SIN_PI, 2*SIN_PI, -SIN_PI, SIN_PI} */
           vx = px >> 9;
           vy = COS((px - (px^px)) + 127) >> 9;
           break;
-
-	// SLOW KITCHEN SINK
+        // SLOW KITCHEN SINK
         case 7:
+          /* {-PI/4, PI/4, -PI, PI} */
           vx = py >> 11;
           vy = px >> 11;
           break;
@@ -197,7 +192,7 @@ static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
 
 static short ranges[NFLOWFIELDS][4] = {
   {0, 0, 0, 0},                               // unused
-  {-PI/4, PI/4, -PI, PI},                     // static
+  {0, 0, 0, 0},                               // static
   {-PI/4, PI/4, -PI, PI},                     // kitchen sink
   {-SIN_PI/2, SIN_PI/2, 0, SIN_PI/2},         // sound wave
   {-SIN_PI/3, SIN_PI/3, -SIN_PI/3, SIN_PI/3}, // windmills
@@ -438,18 +433,16 @@ static void Render(void) {
 
   if ((val = TrackValueGet(&TileMoverBlit, frameCount))) {
     switch (val) {
-	// Logo
-        case 9: 
-            BlitBitmap(S_WIDTH/2 - 96, S_HEIGHT/2 - 66, *logo_blit);
-	    break;
-	// Noise for kitchen sink        
-	case 2:
+	    // Noise for kitchen sink        
+	    case 2:
             BlitBitmap(170, 1, tilemover_block);
             break;
+
         // Pseudo soundwave
         case 3:
             BlitBitmap(10, 170, tilemover_wave);
             break;
+
         // Windmills
         case 4:
             BlitBitmap(1 + (random() & 230), 1 + (random() & 170), tilemover_windmills);
@@ -459,6 +452,7 @@ static void Render(void) {
             BlitBitmap(1 + (random() & 230), 1 + (random() & 170), tilemover_windmills);
             BlitBitmap(1 + (random() & 230), 1 + (random() & 170), tilemover_windmills);
             break;
+
         // Tube with stardrops
         case 5:
             BlitBitmap(165 + (random() & 10), random() & 170, tilemover_drops);
