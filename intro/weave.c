@@ -8,6 +8,7 @@
 #include "fx.h"
 #include <strings.h>
 #include <system/memory.h>
+#include <color.h>
 
 #include "data/bar.c"
 #include "data/stripes.c"
@@ -34,6 +35,8 @@
 typedef struct StateBar {
   /* two halves of the screen: 4 bitplane pointers and bplcon1 */
   CopInsT *bar[4];
+  /* pointers for palette modification instructions */
+  CopInsT *palette[4];
   short bar_y[4];
 } StateBarT;
 
@@ -52,9 +55,9 @@ static StateT state[2];
 static StateBarT stateBars[2];
 static SpriteT stripe[NSPRITES];
 
-/* These numbers must be odd due to optimizations. */
-static char StripePhase[STRIPES] = { 4, 24, 16, 8, 12 };
-static char StripePhaseIncr[STRIPES] = { 8, -10, 14, -6, 6 };
+/* These numbers must be even due to optimizations. */
+static char StripePhase[STRIPES] = { 4, 24, 16, 2, 10 };
+static char StripePhaseIncr[STRIPES] = { 10, -10, 4, -12, 8 };
 
 static inline void CopSpriteSetHP(CopListT *cp, short n) {
   CopMove16(cp, spr[n * 2 + 0].pos, 0);
@@ -98,9 +101,9 @@ static void MakeCopperListFull(CopListT *cp, StateT *state) {
       CopMove16(cp, bplcon1, 0);
     } else if (my == 8) {
       if (y & 64) {
-        CopLoadColorArray(cp, &bar_pal.colors[16], 16, 0);
+        state->bars.palette[b] = CopLoadColorArray(cp, &bar_pal.colors[16], 16, 0);
       } else {
-        CopLoadColorArray(cp, &bar_pal.colors[0], 16, 0);
+        state->bars.palette[b] = CopLoadColorArray(cp, &bar_pal.colors[0], 16, 0);
       }
     } else if (my == 16) {
       /* Advance bitplane pointers to display consecutive lines. */
@@ -197,14 +200,26 @@ static void MakeCopperListBars(CopListT *cp, StateBarT *bars) {
 }
 
 static void UpdateBarState(StateBarT *bars) {
+  short a = frameCount % 5;
   short w = (bar_width - WIDTH) / 2;
   short f = frameCount * 16;
-  short shift, offset, i, j;
+  short shift, offset, i, j, k;
 
   for (i = 0; i < BARS; i++) {
     CopInsT *ins = bars->bar[i];
+    CopInsT *pal = bars->palette[i];
     short by = bars->bar_y[i];
     short bx = w + normfx(SIN(f) * w);
+    
+    if (pal) {
+      for (k = 1; k < 16; k++) {
+        if (i % 2 == 0) {
+          CopInsSet16(pal + k, ColorTransition(bar_pal.colors[k], 0xfff, a));
+        } else {
+          CopInsSet16(pal + k, ColorTransition(bar_pal.colors[16 + k], 0xfff, a));
+        }
+      }
+    }
 
     if (ins) {
       /* fixes a glitch on the right side of the screen */
@@ -497,6 +512,7 @@ static void Render(void) {
     UpdateStripeState(&state[active]);
     ProfilerStop(UpdateStripeState);
     CopListRun(cpFull[active]);
+
   }
 
   WaitVBlank();
