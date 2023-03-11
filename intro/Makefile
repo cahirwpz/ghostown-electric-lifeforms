@@ -34,7 +34,7 @@ CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
 	data/electric-lifeforms-wireworld.c data/ghostown-logo-0[1-3].c \
 	data/turmite-credits-[1-3].c data/anemone-pal-[1-3].c \
 	data/turmite-pal-[1-3].c data/circles.c data/grass-[1-2].c \
-	data/texture-16.c data/gradient.c data/gradient.png
+	data/texture-16-[12].c data/gradient.c data/gradient.png
 
 SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   tilemover.c sea-anemone.c game-of-life.c vitruvian.c uvmap.c
@@ -99,7 +99,8 @@ PNG2C.anemone-pal-3 := --palette anemone_pal_3,16
 PNG2C.anemone-pal-3-dark := --palette anemone_pal_3_dark,16
 PNG2C.anemone-pal-3-light := --palette anemone_pal_3_light,16
 
-PNG2C.texture-16 := --pixmap texture,64x64x8 --palette texture_pal,16
+PNG2C.texture-16-1 := --pixmap texture_1,64x64x8 --palette texture_pal,16
+PNG2C.texture-16-2 := --pixmap texture_2,64x64x8
 PNG2C.gradient := --pixmap gradient,16x16x12
 
 CPPFLAGS += -DINTRO -DVQ=$(VQ) -DDELTA=$(DELTA) -DKLANG=$(KLANG) -I.
@@ -153,7 +154,7 @@ data/%.png: data/%.rle
 	@echo "[RLE] $(DIR)$< -> $(DIR)$@"
 	$(PYTHON3) $(RLE2PNG) $< $@ || (rm -f $@ && exit 1)
 
-data/gradient.png: $(GRADIENT) data/texture-16.png
+data/gradient.png: $(GRADIENT) data/texture-16-1.png
 	@echo "[GEN] $@"
 	$(PYTHON3) $(GRADIENT) load $(word 2,$^) copy hue 0.25 save $@
 

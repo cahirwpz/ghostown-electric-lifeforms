@@ -5,4 +5,4 @@ LDLIBS = $(shell pkg-config --libs sdl2 SDL2_image) -lm
 uvgut: uvgut.c
 
 clean:
-	rm -rf uvgut uvgut.dSYM *~
+	rm -rf uvgut uvgut.dSYM map-*.* *~

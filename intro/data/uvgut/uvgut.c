@@ -286,7 +286,7 @@ void Render(SDL_Surface *canvas) {
 
       umap[pos] = texpos(tuv.x, TEXSIZE);
       vmap[pos] = texpos(tuv.y, TEXSIZE);
-      omap[pos] = h.obj;
+      omap[pos] = h.obj * 2;
 
       buffer[pos] = col;
     }
@@ -327,6 +327,8 @@ void SaveMap(const char *path, const char *name, uint8_t *map) {
     fprintf(f, "\n");
   }
   fprintf(f, "};\n");
+
+  fclose(f);
 }
 
 int main(void) {
