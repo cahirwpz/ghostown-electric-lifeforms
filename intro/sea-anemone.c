@@ -1,6 +1,7 @@
 #include <effect.h>
 #include <blitter.h>
 #include <copper.h>
+#include <color.h>
 #include <fx.h>
 #include <gfx.h>
 #include <line.h>
@@ -18,7 +19,8 @@
 #define DIAMETER 32
 #define NARMS 15 /* must be power of two minus one */
 
-static CopListT *cp;
+static CopListT *cp0;
+static CopListT *cp1;
 static CopInsT *bplptr[DEPTH];
 static BitmapT *screen;
 
@@ -33,6 +35,8 @@ static BitmapT *screen;
 #include "data/anemone-pal-3.c"
 #include "data/anemone-pal-3-dark.c"
 #include "data/anemone-pal-3-light.c"
+
+#include "data/anemone-gradient.c"
 
 #include "data/circles.c"
 
@@ -108,29 +112,29 @@ static const short blip_sequence[] = {
 };
 
 static const short gradient[GRADIENTL][2] = {
- {1, 0x412},
- {5, 0x522},
- {6, 0x722},
- {11, 0xc41},
- {13, 0x412},
- {18, 0x722},
- {24, 0x932},
- {30, 0x522},
- {32, 0x412},
- {47, 0x722},
- {62, 0x932},
- {70, 0xb32},
- {71, 0x932},
- {74, 0xc41},
- {93, 0xe41},
- {105, 0xe62},
- {106, 0xe82},
- {110, 0xfa1},
- {112, 0xfb1},
- {115, 0xfc3},
- {120, 0xfd6},
- {125, 0xfe8},
- {127, 0xffb},
+ {1, 11},
+ {5, 11},
+ {6, 11},
+ {11, 10},
+ {13, 11},
+ {18, 10},
+ {24, 10},
+ {30, 9},
+ {32, 10},
+ {47, 9},
+ {62, 3},
+ {70, 5},
+ {71, 7},
+ {74, 2},
+ {93, 9},
+ {105, 6},
+ {106, 0},
+ {110, 0},
+ {112, 1},
+ {115, 3},
+ {120, 6},
+ {125, 8},
+ {127, 2},
 };
 
 static inline int fastrand(void) {
@@ -299,27 +303,32 @@ static int PaletteBlip(void) {
 
 INTSERVER(PulsatePaletteInterrupt, 0, (IntFuncT)PaletteBlip, NULL);
 
-static void Init(void) {
-  short i = GRADIENTL;
+static void MakeCopperList(CopListT *cp) {
   short j;
+  int a = frameCount % 15;
+  CopInit(cp);
+  CopSetupBitplanes(cp, bplptr, screen, DEPTH);
+  for(j=1;j<GRADIENTL;j++) {
+    CopWaitSafe(cp, Y(gradient[j][0]), 0);
+    CopSetColor(cp, 0, ColorTransition(anemone_gradient.colors[gradient[j][1]], 0, a));
+  }
+  for (j=1;j<GRADIENTL;j++) { 
+    CopWaitSafe(cp, Y(HEIGHT/2 + gradient[j][0]), 0); 
+    CopSetColor(cp, 0, ColorTransition(anemone_gradient.colors[gradient[GRADIENTL-j][1]], 0, a));
+  }
+  CopEnd(cp);
+}
+
+static void Init(void) {
   screen = NewBitmap(WIDTH, HEIGHT * 4, DEPTH);
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
   LoadPalette(&anemone_pal_1, 0);
 
-  cp = NewCopList(140);
-  CopInit(cp);
-  CopSetupBitplanes(cp, bplptr, screen, DEPTH);
-  for (j=0;j<i;j++) {
-    CopWaitSafe(cp, Y(gradient[j][0]), 0); 
-    CopSetColor(cp, 0, gradient[j][1]);
-  };
-  for (j=0;j<i;j++) { 
-    CopWaitSafe(cp, Y(HEIGHT/2 + gradient[j][0]), 0); 
-    CopSetColor(cp, 0, gradient[j][1]);
-  };
-  CopEnd(cp);
-  CopListActivate(cp);
+  cp0 = NewCopList(140);
+  cp1 = NewCopList(140);
+  MakeCopperList(cp0);
+  CopListActivate(cp0);
 
   EnableDMA(DMAF_RASTER | DMAF_BLITTER | DMAF_BLITHOG);
 
@@ -343,7 +352,8 @@ static void Kill(void) {
   DisableDMA(DMAF_COPPER | DMAF_BLITTER | DMAF_RASTER | DMAF_BLITHOG);
 
   DeleteBitmap(screen);
-  DeleteCopList(cp);
+  DeleteCopList(cp0);
+  DeleteCopList(cp1);
 }
 
 #define screen_bytesPerRow (WIDTH / 8)
@@ -479,6 +489,7 @@ static void Render(void) {
 
   ProfilerStart(SeaAnemone);
 
+  MakeCopperList(cp1);
   // Scroll the screen vertically
   if (ArmVariant == 4) {
     vShift = frameCount % (HEIGHT * 3);
@@ -491,10 +502,11 @@ static void Render(void) {
   }
 
   SeaAnemone(&AnemoneArms, vShift);
-
+  CopListRun(cp1); 
   ProfilerStop(SeaAnemone);
 
   TaskWaitVBlank();
+  swapr(cp0, cp1);
 }
 
 EFFECT(SeaAnemone, NULL, NULL, Init, Kill, Render);
