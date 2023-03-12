@@ -2,8 +2,15 @@
 #include <SDL_image.h>
 #include <math.h>
 
+#define TEST 0
+
+#if TEST
+static const int WIDTH = 640;
+static const int HEIGHT = 360;
+#else
 static const int WIDTH = 160;
 static const int HEIGHT = 100;
+#endif
 static const int TEXSIZE = 64;
 
 static const int MAX_STEPS = 100;
@@ -217,20 +224,21 @@ hit GetDist(vec3 p) {
 hit RayMarch(vec3 ro, vec3 rd) {
   // distance from origin 
   float dO = 0.0;
+  hit h;
 
   for (int i = 0; i < MAX_STEPS; i++) {
     vec3 p = v3_add(ro, v3_mul(rd, dO));
     // distance to the scene
-    hit h = GetDist(p);
+    h = GetDist(p);
     if (h.dist < SURF_DIST)
-      return (hit){dO, h.obj}; 
+      break;
     dO += h.dist;
     // prevent ray from escaping the scene
     if (dO > MAX_DIST)
-      break;
+      return (hit){INFINITY, -1};
   }
 
-  return (hit){INFINITY, -1};
+  return (hit){dO, h.obj}; 
 }
 
 void Render(SDL_Surface *canvas) {
@@ -241,9 +249,9 @@ void Render(SDL_Surface *canvas) {
   for (int y = 0; y < HEIGHT; y++) {
     // SDL_Log("y = %d\n", y);
     for (int x = 0; x < WIDTH; x++) {
-      // Normalized pixel coordinates (from -1.0 to 1.0)
-      vec3 uv =
-        (vec3){(float)x / WIDTH * 2.0 - 1.0, 1.0 - (float)y / HEIGHT * 2.0};
+      // Normalized pixel coordinates (Y from -1.0 to 1.0)
+      vec3 uv = (vec3){
+        (2.0f * (float)x - WIDTH) / HEIGHT, 1.0f - (float)y / HEIGHT * 2.0f};
 
       // camera-to-world transformation
       vec3 lookat = (vec3){0.0, 0.0, -1.0};
@@ -376,9 +384,11 @@ int main(void) {
   IMG_Quit();
   SDL_Quit();
 
+#if !TEST
   SaveMap("map-u.c", "umap", umap);
   SaveMap("map-v.c", "vmap", vmap);
   SaveMap("map-o.c", "omap", omap);
+#endif
 
   return 0;
 }
