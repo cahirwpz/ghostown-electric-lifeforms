@@ -42,7 +42,7 @@
 // see variable prev_states_depth
 #define DISP_DEPTH 4
 #define PREV_STATES_DEPTH (DISP_DEPTH + 1)
-#define COLORS 8
+#define COLORS 32
 
 #define EXT_WIDTH_LEFT 16
 #define EXT_WIDTH_RIGHT 16
@@ -99,6 +99,42 @@
 #include "data/wireworld-fullscreen.c"
 #include "data/wireworld-fullscreen-electrons.c"
 #include "data/chip.c"
+
+typedef struct PalRotT {
+  const PaletteT* pal;
+  short head;
+  short rate;
+  short step;
+  short len;
+  char indices[0];
+} PalRotT;
+
+static PalRotT rot0 = {
+  .pal = &wireworld_chip_pal,
+  .head = 0,
+  .rate = 2560,
+  .step = 0,
+  .len = 5,
+  .indices = {1, 3, 5, 7, 9}
+};
+
+static PalRotT rot1 = {
+  .pal = &wireworld_chip_pal,
+  .head = 0,
+  .rate = 2560,
+  .step = 0,
+  .len = 5,
+  .indices = {2, 4, 6, 8, 10}
+};
+
+static PalRotT rot2 = {
+  .pal = &wireworld_chip_pal,
+  .head = 0,
+  .rate = 1664,
+  .step = 0,
+  .len = 6,
+  .indices = {11, 12, 13, 14, 13, 12}
+};
 
 extern TrackT GOLPaletteH;
 extern TrackT GOLPaletteS;
@@ -415,15 +451,17 @@ static void MakeCopperList(CopListT *cp) {
   for (i = 0; i < DISP_DEPTH; i++)
     bplptr[i] = CopMove32(cp, bplpt[i], prev_states[i]->planes[0]);
 
-  if (TrackValueGet(&WireworldBg, frameCount) == 1) {
-    CopSetupSprites(cp, sprptr);
-    for (i = 0; i < 8; i++) {
-      SpriteT *spr = &wireworld_chip[i];
-      SpriteUpdatePos(spr, X(DISP_WIDTH/2 + (i/2)*16 - 32), Y(DISP_HEIGHT/2 - spr->height/2));
+  CopSetupSprites(cp, sprptr);
+  for (i = 0; i < 8; i++) {
+    SpriteT *spr = &wireworld_chip[i];
+    SpriteUpdatePos(spr, X(DISP_WIDTH/2 + (i/2)*16 - 32), Y(DISP_HEIGHT/2 - spr->height/2));
+    if (TrackValueGet(&WireworldBg, frameCount) == 1)
       CopInsSetSprite(sprptr[i], spr);
-    }
-    LoadPalette(&wireworld_chip_pal, 16);
+    else CopInsSetSprite(sprptr[i], NULL);
   }
+
+  for (i = 0; i < COLORS; i++)
+      palptr[i] = CopSetColor(cp, i, 0x0);
 
   for (i = 1; i <= DISP_HEIGHT; i += 2) {
     // vertical pixel doubling
@@ -533,6 +571,36 @@ static void CyclePalette(PalStateT *pal) {
   }
 }
 
+static void SpriteCyclePal(PalRotT *rot) {
+  // From https://wiki.amigaos.net/wiki/ILBM_IFF_Interleaved_Bitmap#CRNG
+  // "The field rate determines the speed at which the colors will step when
+  // color cycling is on. The units are such that a rate of 60 steps per
+  // second is represented as 2^14 = 16384. Slower rates can be obtained
+  // by linear scaling: for 30 steps/second, rate = 8192; for 1 step/second,
+  // rate = 16384/60 ~273."
+
+  // frameCount - lastFrameCount gives wrong frame delta so just trust me
+  // on this one (this function gets called every 2 frames in this effect)
+  rot->step += 2 * rot->rate;
+  if (rot->step >= (1 << 14)) {
+    short i;
+    short n = rot->head;
+    for (i = 0; i < rot->len; i++) {
+      short cn = rot->indices[n];
+      short ci = rot->indices[i];
+      CopInsSet16(palptr[ci + 16], rot->pal->colors[cn]);
+
+      n++;
+      if (n >= rot->len)
+        n -= rot->len;
+    }
+    rot->step -= 1 << 14;
+    rot->head++;
+    if (rot->head >= rot->len)
+        rot->head -= rot->len;
+  }
+}
+
 static void GameOfLife(void *boards) {
   ClearIRQ(INTF_BLIT);
   if (phase < current_game->num_phases) {
@@ -600,7 +668,7 @@ static void SharedPreInit(void) {
 
   SetupPlayfield(MODE_LORES, DISP_DEPTH, X(0), Y(0), DISP_WIDTH, DISP_HEIGHT);
 
-  cp = NewCopList(800);
+  cp = NewCopList(850);
   MakeCopperList(cp);
   CopListActivate(cp);
 
@@ -631,6 +699,7 @@ static void SharedPostInit(void) {
 
 static void InitWireworld(void) {
   BitmapT *tmp;
+  short i;
   const BitmapT *desired_bg;
   const PaletteT *pal;
   short display_bg = TrackValueGet(&WireworldDisplayBg, frameCount);
@@ -643,7 +712,8 @@ static void InitWireworld(void) {
   pal = bg_idx ? &palette_pcb : &palette_vitruvian;
 
   SharedPreInit();
-  LoadPalette(pal, 0);
+  for (i = 0; i < pal->count; i++)
+    CopInsSet16(palptr[i], pal->colors[i]);
   InitSpawnFrames(cur_electrons);
 
   if (display_bg) {
@@ -680,7 +750,7 @@ static void InitGameOfLife(void) {
 
 static void Kill(void) {
   short i;
-  DisableDMA(DMAF_RASTER | DMAF_BLITTER);
+  DisableDMA(DMAF_RASTER | DMAF_BLITTER | DMAF_SPRITE | DMAF_COPPER);
   DisableINT(INTF_BLIT);
   ResetIntVector(INTB_BLIT);
 
@@ -722,6 +792,9 @@ static void GolStep(void) {
   phase = 0;
   GameOfLife(boards);
   (void)CyclePalette;
+  SpriteCyclePal(&rot0);
+  SpriteCyclePal(&rot1);
+  SpriteCyclePal(&rot2);
   stepCount++;
 
   ProfilerStop(GOLStep);
