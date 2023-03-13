@@ -199,27 +199,34 @@ static void MakeCopperListBars(CopListT *cp, StateBarT *bars) {
   CopEnd(cp);
 }
 
-static void UpdateBarState(StateBarT *bars) {
+static void UpdateBarColor(StateBarT *bars) {
   short a = frameCount % 5;
+  short i;
+
+  for (i = 0; i < BARS; i++) {
+    CopInsT *pal = bars->palette[i];
+    const u_short *col;
+    short k;
+
+    if (!pal)
+      continue;
+
+    col = &bar_pal.colors[i & 1 ? 16 : 0];
+    
+    for (k = 1; k < 16; k++)
+      CopInsSet16(&pal[k], ColorTransition(col[k], 0xfff, a));
+  }
+}
+
+static void UpdateBarState(StateBarT *bars) {
   short w = (bar_width - WIDTH) / 2;
   short f = frameCount * 16;
-  short shift, offset, i, j, k;
+  short shift, offset, i, j;
 
   for (i = 0; i < BARS; i++) {
     CopInsT *ins = bars->bar[i];
-    CopInsT *pal = bars->palette[i];
     short by = bars->bar_y[i];
     short bx = w + normfx(SIN(f) * w);
-    
-    if (pal) {
-      for (k = 1; k < 16; k++) {
-        if (i % 2 == 0) {
-          CopInsSet16(pal + k, ColorTransition(bar_pal.colors[k], 0xfff, a));
-        } else {
-          CopInsSet16(pal + k, ColorTransition(bar_pal.colors[16 + k], 0xfff, a));
-        }
-      }
-    }
 
     if (ins) {
       /* fixes a glitch on the right side of the screen */
@@ -506,13 +513,13 @@ static void Render(void) {
   } else {
     EnableDMA(DMAF_SPRITE);
     ControlStripes();
+    UpdateBarColor(&state[active].bars);
     UpdateBarState(&state[active].bars);
     UpdateSpriteState(&state[active]);
     ProfilerStart(UpdateStripeState);
     UpdateStripeState(&state[active]);
     ProfilerStop(UpdateStripeState);
     CopListRun(cpFull[active]);
-
   }
 
   WaitVBlank();
