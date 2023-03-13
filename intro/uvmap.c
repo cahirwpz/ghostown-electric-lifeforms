@@ -1,6 +1,7 @@
 #include <effect.h>
 #include <blitter.h>
 #include <copper.h>
+#include <fx.h>
 #include <pixmap.h>
 #include <system/interrupt.h>
 #include <system/memory.h>
@@ -337,10 +338,13 @@ static void Kill(void) {
 
 PROFILE(UVMap);
 
+#define TW texture_1_width
+#define TH texture_1_height
+
 static void Render(void) {
-  int size = texture_1_width * texture_1_height;
-  short fstOff = (frameCount * 128) & (size - 1);
-  short sndOff = (-frameCount * 128) & (size - 1);
+  int size = TW * TH;
+  short fstOff = (frameCount * TW * 2) & (size - 1);
+  short sndOff = (-frameCount * TW * 2 + TH / 2 + (SIN(frameCount * 32) / 256)) & (size - 1);
 
   /* screen's bitplane #0 is used as a chunky buffer */
   ProfilerStart(UVMap);

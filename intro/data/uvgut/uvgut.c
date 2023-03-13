@@ -271,16 +271,16 @@ void Render(SDL_Surface *canvas) {
 
       // fetch a color from texture for given object
       switch (h.obj) {
-        case 0:
+        case 0: // Outer pipe
           tuv.x *= 2.;
           tuv.y *= 1.;
           tuv = v3_add(tuv, (vec3){iTime * 0.1, iTime * 0.1});
           col = texture(iChannel1, tuv);
           break;
           
-        case 1:
-          tuv.x *= 1.;
-          tuv.y *= 2.;
+        case 1: // Inner pipe
+          tuv.x *= 2.;
+          tuv.y *= 4.;
           tuv = v3_add(tuv, (vec3){iTime * 0.1, -iTime * 0.25});
           col = texture(iChannel0, tuv);
           break;
