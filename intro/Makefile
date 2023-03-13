@@ -33,7 +33,7 @@ CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
 	data/logo-electrons.c data/electric-lifeforms.c \
 	data/electric-lifeforms-wireworld.c data/ghostown-logo-0[1-3].c \
 	data/turmite-credits-[1-3].c data/anemone-pal-[1-3].c \
-	data/turmite-pal-[1-3].c data/circles.c data/grass.c
+	data/turmite-pal-[1-3].c data/circles.c data/grass-[1-2].c
 
 SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   tilemover.c sea-anemone.c game-of-life.c vitruvian.c
@@ -50,7 +50,8 @@ PNG2C.electric-lifeforms-01 := --bitmap electric_lifeforms,320x256x3,-displayabl
 PNG2C.electric-lifeforms-02 := --palette electric_lifeforms_2_pal,8
 PNG2C.fruit-1 := --bitmap fruit_1,16x16x2,+onlydata --palette fruit_1_pal,4
 PNG2C.fruit-2 := --bitmap fruit_2,16x16x2,+onlydata --palette fruit_2_pal,4
-PNG2C.grass := --sprite grass,32,4 --palette grass_pal,4
+PNG2C.grass-1 := --sprite grass_1,32,8 --palette grass_1_pal,4
+PNG2C.grass-2 := --sprite grass_2,32,8 --palette grass_2_pal,4
 PNG2C.tilemover-pal := --palette tilemover_pal,16
 PNG2C.p46basedprng := --bitmap p46basedprng,156x75x1
 PNG2C.electric-lifeforms-wireworld := --bitmap wireworld_logo,160x128x1
