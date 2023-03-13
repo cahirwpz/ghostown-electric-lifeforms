@@ -34,7 +34,8 @@ CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
 	data/electric-lifeforms-wireworld.c data/ghostown-logo-0[1-3].c \
 	data/turmite-credits-[1-3].c data/anemone-pal-[1-3].c \
 	data/turmite-pal-[1-3].c data/circles.c data/grass-[1-2].c \
-	data/texture-16-[12].c data/gradient.c data/gradient.png
+	data/texture-16-[12].c data/gradient.c data/gradient.png \
+	data/tilemover-*.c
 
 SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   tilemover.c sea-anemone.c game-of-life.c vitruvian.c uvmap.c
@@ -89,6 +90,9 @@ PNG2C.turmite-pal-3 := --palette turmite_pal_3,16
 PNG2C.turmite-pal-3-dark := --palette turmite_pal_3_dark,16
 PNG2C.turmite-pal-3-light := --palette turmite_pal_3_light,16
 
+PNG2C.sea-anemone-pal1 := --palette sea_anemone_pal1,16
+PNG2C.sea-anemone-pal2 := --palette sea_anemone_pal2,16
+PNG2C.sea-anemone-pal3 := --palette sea_anemone_pal3,16
 PNG2C.anemone-pal-1 := --palette anemone_pal_1,16
 PNG2C.anemone-pal-1-dark := --palette anemone_pal_1_dark,16
 PNG2C.anemone-pal-1-light := --palette anemone_pal_1_light,16
@@ -98,6 +102,12 @@ PNG2C.anemone-pal-2-light := --palette anemone_pal_2_light,16
 PNG2C.anemone-pal-3 := --palette anemone_pal_3,16
 PNG2C.anemone-pal-3-dark := --palette anemone_pal_3_dark,16
 PNG2C.anemone-pal-3-light := --palette anemone_pal_3_light,16
+
+PNG2C.tilemover-windmills := --bitmap tilemover_windmills,32x32x1
+PNG2C.tilemover-wave := --bitmap tilemover_wave,192x64x1
+PNG2C.tilemover-drops := --bitmap tilemover_drops,16x16x1
+PNG2C.tilemover-block := --bitmap tilemover_block,96x80x1
+PNG2C.tilemover-bg-pal := --palette tilemover_bg_pal,6
 
 PNG2C.texture-16-1 := --pixmap texture_1,64x64x8 --palette texture_pal,16
 PNG2C.texture-16-2 := --pixmap texture_2,64x64x8
