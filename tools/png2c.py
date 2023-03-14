@@ -314,12 +314,14 @@ def do_sprite(im, desc):
 def do_pixmap(im, desc):
     param = parse(desc,
                   ('name', str),
-                  ('width,height,bpp', (int, int, int)))
+                  ('width,height,bpp', (int, int, int)),
+                  ('onlydata', bool, False))
 
     name = param['name']
     has_width = param['width']
     has_height = param['height']
     has_bpp = param['bpp']
+    onlydata = param['onlydata']
 
     width, height = im.size
 
@@ -377,13 +379,14 @@ def do_pixmap(im, desc):
     print('#define %s_height %d' % (name, height))
     print('')
 
-    print('static const PixmapT %s = {' % name)
-    print('  .type = %s,' % pixeltype)
-    print('  .width = %d,' % width)
-    print('  .height = %d,' % height)
-    print('  .pixels = %s_pixels' % name)
-    print('};')
-    print('')
+    if not onlydata:
+        print('static const PixmapT %s = {' % name)
+        print('  .type = %s,' % pixeltype)
+        print('  .width = %d,' % width)
+        print('  .height = %d,' % height)
+        print('  .pixels = %s_pixels' % name)
+        print('};')
+        print('')
 
 
 def do_palette(im, desc):
