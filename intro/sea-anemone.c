@@ -112,29 +112,27 @@ static const short blip_sequence[] = {
 };
 
 static const short gradient[GRADIENTL][2] = {
- {1, 11},
- {5, 11},
- {6, 11},
- {11, 10},
- {13, 11},
- {18, 10},
- {24, 10},
- {30, 9},
- {32, 10},
- {47, 9},
- {62, 3},
- {70, 5},
- {71, 7},
- {74, 2},
- {93, 9},
- {105, 6},
- {106, 0},
- {110, 0},
- {112, 1},
- {115, 3},
- {120, 6},
+ {0, 10},
+ {11, 9},
+ {12, 10},
+ {15, 9},
+ {27, 10},
+ {29, 9},
+ {32, 8},
+ {33, 9},
+ {35, 8},
+ {37, 9},
+ {71, 8},
+ {74, 7},
+ {93, 8},
+ {105, 7},
+ {106, 8},
+ {110, 7},
+ {112, 9},
+ {115, 7},
+ {120, 9},
  {125, 8},
- {127, 2},
+ {127, 9},
 };
 
 static inline int fastrand(void) {
@@ -305,16 +303,16 @@ INTSERVER(PulsatePaletteInterrupt, 0, (IntFuncT)PaletteBlip, NULL);
 
 static void MakeCopperList(CopListT *cp) {
   short j;
-  int a = frameCount % 15;
+  int a = frameCount % 15 << 2;
   CopInit(cp);
   CopSetupBitplanes(cp, bplptr, screen, DEPTH);
   for(j=1;j<GRADIENTL;j++) {
     CopWaitSafe(cp, Y(gradient[j][0]), 0);
-    CopSetColor(cp, 0, ColorTransition(anemone_gradient.colors[gradient[j][1]], 0, a));
+    CopSetColor(cp, 0, ColorTransition(anemone_gradient.colors[gradient[j][1]], 0x012, a));
   }
   for (j=1;j<GRADIENTL;j++) { 
     CopWaitSafe(cp, Y(HEIGHT/2 + gradient[j][0]), 0); 
-    CopSetColor(cp, 0, ColorTransition(anemone_gradient.colors[gradient[GRADIENTL-j][1]], 0, a));
+    CopSetColor(cp, 0, ColorTransition(anemone_gradient.colors[gradient[GRADIENTL-j][1]], 0x012, a));
   }
   CopEnd(cp);
 }
