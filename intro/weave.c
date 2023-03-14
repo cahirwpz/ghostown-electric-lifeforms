@@ -143,8 +143,6 @@ static void MakeCopperListFull(StateFullT *state) {
   }
 
   CopEnd(cp);
-
-  state->cp = cp;
 }
 
 static void MakeCopperListBars(StateBarT *bars) {
