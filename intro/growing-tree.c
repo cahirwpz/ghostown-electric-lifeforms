@@ -46,10 +46,26 @@ typedef struct Branch {
 static BranchT branches[MAXBRANCHES];
 static BranchT *lastBranch = branches;
 
-static inline int fastrand(void) {
-  static int m[2] = { 0x3E50B28C, 0xD461A7F9 };
+typedef struct Greets {
+  unsigned char x, y; // pos x,y
+  unsigned char delay; // delay in frames
+  unsigned char *currentDataPos; // ptr to data
+} GreetsT;
 
-  int a, b;
+static GreetsT greetsData[3];
+
+static int mTableIdx = 0;
+static int mTable[] = {
+  0x22ba87eb, 0x95211585,
+  0x9801ea78, 0x8e47f432,
+  0x8c3b3199, 0x497d7457,
+  0x74a7beec, 0xb2818113
+};
+
+static int fastrand_a = 0, fastrand_b = 0;
+static inline int fastrand(void) {
+  int *mAddr = &mTable[mTableIdx*2];
+
 
   // https://www.atari-forum.com/viewtopic.php?p=188000#p188000
   asm volatile("move.l (%2)+,%0\n"
@@ -57,10 +73,10 @@ static inline int fastrand(void) {
                "swap   %1\n"
                "add.l  %0,(%2)\n"
                "add.l  %1,-(%2)\n"
-               : "=d" (a), "=d" (b)
-               : "a" (m));
+               : "=d" (fastrand_a), "=d" (fastrand_b)
+               : "a" (mAddr));
   
-  return a;
+  return fastrand_a;
 }
 
 #define random fastrand
@@ -96,6 +112,71 @@ static void setTreePalette(void) {
   nrPal ^= 1;
 }
 
+// format danych:
+// x, y, [0..255], [0..255]
+// delay, [0..255]
+// data .. to 255,255 - end of line
+// data ... to 255,255, 128, 128 - end of logo
+unsigned char greetingsElude0[] = {
+  10,10,
+  1,
+  109,31,100,29,85,27,69,27,50,30,33,36,15,46,0,57,255,255,
+  62,25,57,23,59,12,55,26,51,28,48,27,49,13,46,27,41,30,35,29,31,20,31,11,36,2,37,11,36,18,28,33,23,38,16,41,9,38,7,29,11,23,18,20,22,22,20,28,14,33,6,34,255,255,
+  99,22,93,23,89,23,84,20,83,14,85,10,89,10,91,14,88,18,82,18,77,14,73,13,68,14,65,18,66,22,68,25,73,23,75,18,76,9,74,0,255,255,
+  128,128
+};
+unsigned char greetingsElude1[] = {
+  180,30,
+  10,
+  109,31,100,29,85,27,69,27,50,30,33,36,15,46,0,57,255,255,
+  62,25,57,23,59,12,55,26,51,28,48,27,49,13,46,27,41,30,35,29,31,20,31,11,36,2,37,11,36,18,28,33,23,38,16,41,9,38,7,29,11,23,18,20,22,22,20,28,14,33,6,34,255,255,
+  99,22,93,23,89,23,84,20,83,14,85,10,89,10,91,14,88,18,82,18,77,14,73,13,68,14,65,18,66,22,68,25,73,23,75,18,76,9,74,0,255,255,
+  128,128
+};
+unsigned char greetingsElude2[] = {
+  140,200,
+  20,
+  109,31,100,29,85,27,69,27,50,30,33,36,15,46,0,57,255,255,
+  62,25,57,23,59,12,55,26,51,28,48,27,49,13,46,27,41,30,35,29,31,20,31,11,36,2,37,11,36,18,28,33,23,38,16,41,9,38,7,29,11,23,18,20,22,22,20,28,14,33,6,34,255,255,
+  99,22,93,23,89,23,84,20,83,14,85,10,89,10,91,14,88,18,82,18,77,14,73,13,68,14,65,18,66,22,68,25,73,23,75,18,76,9,74,0,255,255,
+  128,128
+};
+
+unsigned char *greetsSet0[] = {
+  greetingsElude0,
+  NULL,
+};
+
+unsigned char *greetsSet1[] = {
+  greetingsElude1,
+  NULL,
+};
+
+unsigned char *greetsSet2[] = {
+  greetingsElude2,
+  NULL,
+};
+
+static int greetsIdx = 0;
+static void GreetsSetTrack(short idx, unsigned char *greetzData) {
+  greetsData[idx].x = *greetzData++;
+  greetsData[idx].y = *greetzData++;
+  greetsData[idx].delay = *greetzData++;
+  greetsData[idx].currentDataPos = greetzData;
+}
+
+static void GreetsNextTrack(void) {
+  GreetsSetTrack(0, greetsSet0[greetsIdx]);
+  GreetsSetTrack(1, greetsSet1[greetsIdx]);
+  GreetsSetTrack(2, greetsSet2[greetsIdx]);
+  greetsIdx++;
+}
+
+static void GreetsInit(void) {
+  GreetsNextTrack();
+}
+
+
 static void Init(void) {
   short i;
 
@@ -119,6 +200,8 @@ static void Init(void) {
   CopEnd(cp);
 
   setTreePalette();
+  GreetsInit();
+
 
   CopListActivate(cp);
 
@@ -301,6 +384,43 @@ static bool SplitBranch(BranchT *parent, BranchT **lastp) {
   return false;
 }
 
+static void DrawGreetigs(short nr) {
+  unsigned char x1, x2, y1, y2;
+
+  if (greetsData[nr].currentDataPos == NULL) {
+    return;
+  }
+
+  if (greetsData[nr].delay != 0) {
+    greetsData[nr].delay--;
+    return;
+  }
+
+  x1 = *greetsData[nr].currentDataPos++;
+  y1 = *greetsData[nr].currentDataPos++;
+
+  x2 = *greetsData[nr].currentDataPos;
+  y2 = *(greetsData[nr].currentDataPos+1);
+
+  if (x1 == 128 && y1 == 128) {
+    // end of logo
+    greetsData[nr].currentDataPos = NULL;
+    return;
+  }
+
+  if (x2 == 255 || y2 == 255) {
+    // to next logo branch
+    greetsData[nr].currentDataPos++;
+    greetsData[nr].currentDataPos++;
+    return;
+  }
+
+  DrawBranch(
+    greetsData[nr].x + x1, greetsData[nr].y + y1,
+    greetsData[nr].x + x2, greetsData[nr].y + y2
+  );
+}
+
 void GrowingTree(BranchT *branches, BranchT **lastp) {
   u_short *fruit = nrPal ? _fruit_2_bpl : _fruit_1_bpl;
   BranchT *b;
@@ -375,10 +495,17 @@ static void Render(void) {
 
   if (lastBranch == branches) {
     MakeBranch(WIDTH / 2, HEIGHT - fruit_height / 2 - 1);
+    mTableIdx++; mTableIdx &= 3;
+    fastrand_a = fastrand_b = 0;
+    greetsIdx = 0;
+    GreetsNextTrack();
   }
 
   ProfilerStart(GrowTree);
   GrowingTree(branches, &lastBranch);
+  DrawGreetigs(0);
+  DrawGreetigs(1);
+  DrawGreetigs(2);
   ProfilerStop(GrowTree);
 
   if (lastBranch == branches) {
