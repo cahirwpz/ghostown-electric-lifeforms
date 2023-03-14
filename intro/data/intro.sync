@@ -17,10 +17,8 @@ $0800 6
 $0A00 3
 # weave
 $0C00 2
-# wireworld
-$0E00 7
-# tilemover
-$0F00 5
+# uvmap
+$0E00 10
 # logo
 $1000 0
 # scrolling text
