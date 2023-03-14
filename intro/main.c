@@ -24,6 +24,7 @@ extern EffectT SeaAnemoneEffect;
 extern EffectT WireworldEffect;
 extern EffectT GameOfLifeEffect;
 extern EffectT VitruvianEffect;
+extern EffectT UVMapEffect;
 
 short frameFromStart;
 short frameTillEnd;
@@ -41,6 +42,7 @@ static EffectT *AllEffects[] = {
   &WireworldEffect,
   &GameOfLifeEffect,
   &VitruvianEffect,
+  &UVMapEffect,
   NULL,
 };
 

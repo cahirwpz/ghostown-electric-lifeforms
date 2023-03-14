@@ -1,6 +1,7 @@
 #include <effect.h>
 #include <blitter.h>
 #include <copper.h>
+#include <fx.h>
 #include <pixmap.h>
 #include <system/interrupt.h>
 #include <system/memory.h>
@@ -10,20 +11,26 @@
 #define DEPTH 4
 #define FULLPIXEL 1
 
-static u_short *textureHi, *textureLo;
+static u_short *texFstHi, *texFstLo;
+static u_short *texSndHi, *texSndLo;
 static BitmapT *screen[2];
 static u_short active = 0;
 static CopListT *cp;
 static CopInsT *bplptr[DEPTH];
 
 #include "data/texture-16-1.c"
+#include "data/texture-16-2.c"
 #include "data/gradient.c"
-#include "data/uvmap.c"
+#include "data/uvgut/map-u.c"
+#include "data/uvgut/map-v.c"
+#include "data/uvgut/map-o.c"
 
-#define UVMapRenderSize (WIDTH * HEIGHT / 2 * 10 + 2)
+#define UVMapRenderSize ((5 + WIDTH * HEIGHT / 32 * (8 * 8 + 2)) * 2)
 void (*UVMapRender)(u_short *chunkyEnd asm("a0"),
-                    u_short *textureHi asm("a1"),
-                    u_short *textureLo asm("a2"));
+                    u_short *texFstHi asm("a1"),
+                    u_short *texFstLo asm("a2"),
+                    u_short *texSndHi asm("a3"),
+                    u_short *texSndLo asm("a4"));
 
 /* [0 0 0 0 a0 a1 a2 a3] => [a0 a1 0 0 a2 a3 0 0] x 2 */
 static u_short PixelHi[16] = {
@@ -59,9 +66,31 @@ static void PixmapToTexture(const PixmapT *image,
   }
 }
 
-static void MakeUVMapRenderCode(void) {
+static void ScrambleUVMap(u_short *uvmap) {
+  u_char *u = umap;
+  u_char *v = vmap;
+  short i;
+
+#define MAKEUV() (((*v++) << 7) | ((*u++) << 1))
+
+  for (i = 0; i < WIDTH * HEIGHT; i += 8) {
+    uvmap[i + 0] = MAKEUV();
+    uvmap[i + 1] = MAKEUV();
+    uvmap[i + 4] = MAKEUV();
+    uvmap[i + 5] = MAKEUV();
+    uvmap[i + 2] = MAKEUV();
+    uvmap[i + 3] = MAKEUV();
+    uvmap[i + 6] = MAKEUV();
+    uvmap[i + 7] = MAKEUV();
+  }
+
+#undef MAKEUV
+}
+
+static void MakeUVMapRenderCode(u_short *uvmap) {
   u_short *code = (void *)UVMapRender;
   u_short *data = uvmap + WIDTH * HEIGHT;
+  u_char *obj = omap + WIDTH * HEIGHT;
 
   /* The map is pre-scrambled to avoid one c2p pass:
    * [a b c d e f g h] => [a b e f c d g h] */
@@ -73,14 +102,15 @@ static void MakeUVMapRenderCode(void) {
     short m;
 
     for (m = 0x0e00; m >= 0; m -= 0x0200) {
+      obj -= 4;
       data -= 4;
-      *code++ = 0x3029 | m;  /* 3029 xxxx | move.w xxxx(a1),d0 */
+      *code++ = (0x3029 | m) + obj[0];  /* 3029 xxxx | move.w xxxx(a1),d0 */
       *code++ = data[0];
-      *code++ = 0x806a | m;  /* 806a yyyy | or.w   yyyy(a2),d0 */
+      *code++ = (0x806a | m) + obj[1];  /* 806a yyyy | or.w   yyyy(a2),d0 */
       *code++ = data[1];
-      *code++ = 0x1029 | m;  /* 1029 wwww | move.b wwww(a1),d0 */
+      *code++ = (0x1029 | m) + obj[2];  /* 1029 wwww | move.b wwww(a1),d0 */
       *code++ = data[2];
-      *code++ = 0x802a | m;  /* 802a zzzz | or.b   zzzz(a2),d0 */
+      *code++ = (0x802a | m) + obj[3];  /* 802a zzzz | or.b   zzzz(a2),d0 */
       *code++ = data[3];
     }
 
@@ -89,6 +119,25 @@ static void MakeUVMapRenderCode(void) {
 
   *code++ = 0x4cdf; *code++ = 0x00fc; /* movem.l (sp)+,d2-d7 */
   *code++ = 0x4e75; /* rts */
+}
+
+static void Load(void) {
+  short *uvmap;
+
+  uvmap = MemAlloc(WIDTH * HEIGHT * sizeof(short), MEMF_PUBLIC);
+  ScrambleUVMap(uvmap);
+
+  UVMapRender = MemAlloc(UVMapRenderSize, MEMF_PUBLIC);
+  MakeUVMapRenderCode(uvmap);
+  MemFree(uvmap);
+
+  texFstHi = MemAlloc(texture_1.width * texture_1.height * 4, MEMF_PUBLIC);
+  texFstLo = MemAlloc(texture_1.width * texture_1.height * 4, MEMF_PUBLIC);
+  PixmapToTexture(&texture_1, texFstHi, texFstLo);
+
+  texSndHi = MemAlloc(texture_2.width * texture_2.height * 4, MEMF_PUBLIC);
+  texSndLo = MemAlloc(texture_2.width * texture_2.height * 4, MEMF_PUBLIC);
+  PixmapToTexture(&texture_2, texSndHi, texSndLo);
 }
 
 static struct {
@@ -253,13 +302,6 @@ static void Init(void) {
   screen[0] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH);
   screen[1] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH);
 
-  UVMapRender = MemAlloc(UVMapRenderSize, MEMF_PUBLIC);
-  MakeUVMapRenderCode();
-
-  textureHi = MemAlloc(texture.width * texture.height * 4, MEMF_PUBLIC);
-  textureLo = MemAlloc(texture.width * texture.height * 4, MEMF_PUBLIC);
-  PixmapToTexture(&texture, textureHi, textureLo);
-
   EnableDMA(DMAF_BLITTER);
 
   BitmapClear(screen[0]);
@@ -284,8 +326,10 @@ static void Kill(void) {
   ResetIntVector(INTB_BLIT);
 
   DeleteCopList(cp);
-  MemFree(textureHi);
-  MemFree(textureLo);
+  MemFree(texFstHi);
+  MemFree(texFstLo);
+  MemFree(texSndHi);
+  MemFree(texSndLo);
   MemFree(UVMapRender);
 
   DeleteBitmap(screen[0]);
@@ -294,18 +338,24 @@ static void Kill(void) {
 
 PROFILE(UVMap);
 
+#define TW texture_1_width
+#define TH texture_1_height
+
 static void Render(void) {
-  int size = texture.width * texture.height;
-  short offset = (frameCount * 127) & (size - 1);
+  int size = TW * TH;
+  short fstOff = (frameCount * TW * 2) & (size - 1);
+  short sndOff = (-frameCount * TW * 2 + TH / 2 + (SIN(frameCount * 32) / 256)) & (size - 1);
 
   /* screen's bitplane #0 is used as a chunky buffer */
   ProfilerStart(UVMap);
   {
     u_short *chunky = screen[active]->planes[0] + WIDTH * HEIGHT / 2;
-    u_short *txtHi = textureHi + offset;
-    u_short *txtLo = textureLo + offset;
+    u_short *fstHi = texFstHi + fstOff;
+    u_short *fstLo = texFstLo + fstOff;
+    u_short *sndHi = texSndHi + sndOff;
+    u_short *sndLo = texSndLo + sndOff;
 
-    (*UVMapRender)(chunky, txtHi, txtLo);
+    (*UVMapRender)(chunky, fstHi, fstLo, sndHi, sndLo);
   }
   ProfilerStop(UVMap);
 
@@ -315,4 +365,4 @@ static void Render(void) {
   active ^= 1;
 }
 
-EFFECT(UVMap, NULL, NULL, Init, Kill, Render);
+EFFECT(UVMap, Load, NULL, Init, Kill, Render);
