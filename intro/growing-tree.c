@@ -463,6 +463,10 @@ static void Render(void) {
 
   if (lastBranch == branches) {
     MakeBranch(WIDTH / 2, HEIGHT - fruit_height / 2 - 1);
+    mTableIdx++; mTableIdx &= 3;
+    fastrand_a = fastrand_b = 0;
+    greetsIdx = 0;
+    GreetsNextTrack();
   }
 
   ProfilerStart(GrowTree);
