@@ -184,6 +184,19 @@ $0520 6
 $0530 3
 @end
 
+@track WireworldDisplayBg
+# 0 - hide bg, 1 - show bg
+# must happen before wireworld effect change
+$0000 0 !step
+$0500 1
+@end
+
+@track WireworldBg
+# 0 - vitruvian, 1 - pcb
+$0000 0 !step
+$0500 1
+@end
+
 @track SeaAnemoneVariant
 $0000 1 !event
 $0010 1

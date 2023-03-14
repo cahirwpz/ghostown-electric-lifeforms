@@ -31,11 +31,15 @@ CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
 	data/fruit-*.c data/tilemover-pal.c data/anemone-pal.c \
 	data/ghostown-logo-crop.c data/p46basedprng.c data/cell-gradient.c \
 	data/logo-electrons.c data/electric-lifeforms.c \
-	data/electric-lifeforms-wireworld.c data/ghostown-logo-0[1-3].c \
+	data/ghostown-logo-0[1-3].c \
+	data/wireworld-fullscreen.c \
+	data/wireworld-fullscreen-electrons.c \
+	data/wireworld-vitruvian.c \
+	data/wireworld-vitruvian-electrons.c \
 	data/turmite-credits-[1-3].c data/anemone-pal-[1-3].c \
 	data/turmite-pal-[1-3].c data/circles.c data/grass-[1-2].c \
 	data/texture-16-[12].c data/gradient.c data/gradient.png \
-	data/tilemover-*.c
+	data/tilemover-*.c data/chip.c
 
 SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   tilemover.c sea-anemone.c game-of-life.c vitruvian.c uvmap.c
@@ -56,12 +60,17 @@ PNG2C.grass-1 := --sprite grass_1,32,8 --palette grass_1_pal,4
 PNG2C.grass-2 := --sprite grass_2,32,8 --palette grass_2_pal,4
 PNG2C.tilemover-pal := --palette tilemover_pal,16
 PNG2C.p46basedprng := --bitmap p46basedprng,156x75x1
-PNG2C.electric-lifeforms-wireworld := --bitmap wireworld_logo,160x128x1
 PNG2C.cell-gradient := --pixmap gradient,4x64x12
 PNG2C.ghostown-logo-crop := --bitmap ghostown_logo,192x131x3,+shared
 PNG2C.ghostown-logo-01 := --palette ghostown_logo_1_pal,8
 PNG2C.ghostown-logo-02 := --palette ghostown_logo_2_pal,8
 PNG2C.ghostown-logo-03 := --palette ghostown_logo_3_pal,8
+ELECTRONS2C.wireworld-fullscreen := --name pcb_electrons
+PNG2C.wireworld-fullscreen := --bitmap wireworld_pcb,160x128x1,+limit_depth
+ELECTRONS2C.wireworld-vitruvian := --name vitruvian_electrons
+PNG2C.wireworld-vitruvian := --bitmap wireworld_vitruvian,160x128x1,+limit_depth
+PNG2C.chip := --sprite wireworld_chip,64,4,+attached --palette wireworld_chip_pal,16
+
 PNG2C.circles := \
 	--bitmap circle1,3x3x1,extract_at=0x0 \
 	--bitmap circle2,5x5x1,extract_at=0x4 \
@@ -115,9 +124,9 @@ PNG2C.gradient := --pixmap gradient,16x16x12
 
 CPPFLAGS += -DINTRO -DVQ=$(VQ) -DDELTA=$(DELTA) -DKLANG=$(KLANG) -I.
 
-data/%-electrons.c: data/%-electrons.png
+data/wireworld-%-electrons.c: data/wireworld-%.png
 	@echo "[PNG] $(DIR)$< -> $(DIR)$@"
-	$(PYTHON3) $(ELECTRONS2C) $< $@ || (rm -f $@ && exit 1)
+	$(PYTHON3) $(ELECTRONS2C) $(ELECTRONS2C.wireworld-$*) $< $@ || (rm -f $@ && exit 1)
 
 include $(TOPDIR)/build/effect.mk
 
