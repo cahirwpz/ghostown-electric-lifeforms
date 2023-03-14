@@ -14,7 +14,7 @@
 #define HEIGHT 256
 #define DEPTH 4
 
-#define GRADIENTL 25
+#define GRADIENTL 41
 
 #define DIAMETER 32
 #define NARMS 15 /* must be power of two minus one */
@@ -111,29 +111,51 @@ static const short blip_sequence[] = {
   3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 };
 
-static const short gradient[GRADIENTL][2] = {
- {0, 10},
- {11, 9},
- {12, 10},
- {15, 9},
- {27, 10},
- {29, 9},
- {32, 8},
- {33, 9},
- {35, 8},
- {37, 9},
- {71, 8},
- {74, 7},
- {93, 8},
- {105, 7},
- {106, 8},
- {110, 7},
- {112, 9},
- {115, 7},
- {120, 9},
- {125, 8},
- {127, 9},
+short gradient[GRADIENTL*2] = {
+  0, 11,
+  15, 10,  // +15
+  16, 11,  // +1
+  25, 10,  // + 9
+  27, 11,  // + 2
+  32, 10,  // + 5
+  45, 11,  // + 7
+  46, 10,  // + 1
+  61, 9,   // + 15 
+  62, 10,
+  71, 9,
+  73, 10,
+  78, 9,
+  85, 10,
+  86, 9,
+  101, 8, // +15
+  102, 9,
+  111, 8,
+  113, 9,
+  118, 8,
+  126, 9,
+  127, 8,
+  142, 7, // +15
+  143, 8,
+  152, 7,
+  154, 8,
+  159, 7,
+  166, 8,
+  167, 7,
+  192, 6,
+  193, 7,
+  203, 6,
+  205, 7,
+  210, 6,
+  220, 7,
+  221, 6,
+  235, 5,
+  236, 6,
+  246, 5,
+  248, 6,
+  250, 5,
 };
+
+bool gradient_ascending = true;
 
 static inline int fastrand(void) {
   static int m[2] = { 0x3E50B28C, 0xD461A7F9 };
@@ -303,16 +325,19 @@ INTSERVER(PulsatePaletteInterrupt, 0, (IntFuncT)PaletteBlip, NULL);
 
 static void MakeCopperList(CopListT *cp) {
   short j;
-  int a = frameCount % 15 << 2;
+  short *ptr = gradient;
+  short a = frameCount % 16;
+  if(a == 0) {
+   gradient_ascending = !gradient_ascending;
+  }
   CopInit(cp);
   CopSetupBitplanes(cp, bplptr, screen, DEPTH);
   for(j=1;j<GRADIENTL;j++) {
-    CopWaitSafe(cp, Y(gradient[j][0]), 0);
-    CopSetColor(cp, 0, ColorTransition(anemone_gradient.colors[gradient[j][1]], 0x012, a));
-  }
-  for (j=1;j<GRADIENTL;j++) { 
-    CopWaitSafe(cp, Y(HEIGHT/2 + gradient[j][0]), 0); 
-    CopSetColor(cp, 0, ColorTransition(anemone_gradient.colors[gradient[GRADIENTL-j][1]], 0x012, a));
+    CopWaitSafe(cp, Y(*(ptr++)), 0);
+    if(gradient_ascending)
+      CopSetColor(cp, 0, ColorTransition(anemone_gradient.colors[*(ptr++)-3], 0x114, a));
+    else
+      CopSetColor(cp, 0, ColorTransition(0x114, anemone_gradient.colors[*(ptr++)-3], a));
   }
   CopEnd(cp);
 }
