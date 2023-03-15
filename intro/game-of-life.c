@@ -152,11 +152,6 @@ static const ElectronArrayT *cur_electrons;
 
 static const GameDefinitionT *current_game;
 
-static const GameDefinitionT *games[] = {
-  &classic_gol, &coagulation,   &maze,       &diamoeba,
-  &stains,      &day_and_night, &three_four,
-};
-
 // Used by CPU to quickly transform 1x1 pixels into 2x1 pixels.
 static u_short double_pixels[256];
 
@@ -289,7 +284,7 @@ static void WireworldSwitch(__unused const BitmapT *sourceA,
   static short wireworld_step = 0;
 
   current_board = boards[wireworld_step];
-  current_game = wireworlds[wireworld_step];
+  current_game = &wireworlds[wireworld_step];
   wireworld_step ^= 1;
 
   // set pixels on correct board
@@ -485,7 +480,7 @@ static void InitWireworld(void) {
   short display_bg = TrackValueGet(&WireworldDisplayBg, frameCount);
   short bg_idx = TrackValueGet(&WireworldBg, frameCount);
 
-  current_game = &wireworld1;
+  current_game = &wireworlds[1];
   wireworld = true;
   prev_states_depth = display_bg ? 4 : 5;
   desired_bg = bg_idx ? &wireworld_pcb : &wireworld_vitruvian;
@@ -517,7 +512,7 @@ static void InitWireworld(void) {
 }
 
 static void InitGameOfLife(void) {
-  current_game = games[0];
+  current_game = &games[0];
   wireworld = false;
   prev_states_depth = 5;
 
@@ -563,7 +558,7 @@ static void GolStep(void) {
 
   ProfilerStart(GOLStep);
   if (!wireworld)
-    current_game = games[TrackValueGet(&GOLGame, frameCount)];
+    current_game = &games[TrackValueGet(&GOLGame, frameCount)];
   WaitBlitter();
   PixelDouble(src, dst, double_pixels);
   UpdateBitplanePointers();
