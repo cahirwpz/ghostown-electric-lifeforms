@@ -18,6 +18,7 @@ static CopInsT *bplptr[DEPTH];
 static BitmapT *screen;
 static CopInsT *sprptr[8];
 
+#include "growing-tree-greets.c"
 #include "data/fruit-1.c"
 #include "data/fruit-2.c"
 #include "data/grass-1.c"
@@ -56,10 +57,10 @@ static GreetsT greetsData[3];
 
 static int mTableIdx = 0;
 static int mTable[] = {
-  0x22ba87eb, 0x95211585,
-  0x9801ea78, 0x8e47f432,
-  0x8c3b3199, 0x497d7457,
-  0x74a7beec, 0xb2818113
+  0x74a7beec, 0xb2818113, // 1 
+  0x4ffa0d80, 0x23743a06, // 2
+  0x237f164b, 0x9ffa9d90, //3
+  0x011bad37, 0x7a6433ee, // 4
 };
 
 static int fastrand_a = 0, fastrand_b = 0;
@@ -112,7 +113,7 @@ static void setTreePalette(void) {
   nrPal ^= 1;
 }
 
-// format danych:
+// format:
 // x, y, [0..255], [0..255]
 // delay, [0..255]
 // data .. to 255,255 - end of line
@@ -172,11 +173,6 @@ static void GreetsNextTrack(void) {
   greetsIdx++;
 }
 
-static void GreetsInit(void) {
-  GreetsNextTrack();
-}
-
-
 static void Init(void) {
   short i;
 
@@ -200,7 +196,7 @@ static void Init(void) {
   CopEnd(cp);
 
   setTreePalette();
-  GreetsInit();
+  GreetsNextTrack();
 
 
   CopListActivate(cp);
@@ -391,7 +387,7 @@ static void DrawGreetigs(short nr) {
     return;
   }
 
-  if (greetsData[nr].delay != 0) {
+  if (greetsData[nr].delay) {
     greetsData[nr].delay--;
     return;
   }
@@ -399,16 +395,16 @@ static void DrawGreetigs(short nr) {
   x1 = *greetsData[nr].currentDataPos++;
   y1 = *greetsData[nr].currentDataPos++;
 
-  x2 = *greetsData[nr].currentDataPos;
-  y2 = *(greetsData[nr].currentDataPos+1);
-
   if (x1 == 128 && y1 == 128) {
     // end of logo
     greetsData[nr].currentDataPos = NULL;
     return;
   }
 
-  if (x2 == 255 || y2 == 255) {
+  x2 = *greetsData[nr].currentDataPos;
+  y2 = *(greetsData[nr].currentDataPos+1);
+
+  if (x2 == 255 && y2 == 255) {
     // to next logo branch
     greetsData[nr].currentDataPos++;
     greetsData[nr].currentDataPos++;
