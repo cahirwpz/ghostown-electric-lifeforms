@@ -573,7 +573,7 @@ static void GolStep(void) {
   phase = 0;
   GameOfLife(boards);
   if (wireworld) {
-    SpriteCyclePal(&palptr[16], rot, 3);
+    ColorCyclingStep(&palptr[16], wireworld_chip_cycling, &wireworld_chip_pal);
   } else {
     ColorPingPongStep(pingpong);
   }
