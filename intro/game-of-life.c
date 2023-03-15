@@ -86,9 +86,9 @@
 #define RAND_SPAWN_MIN_DELAY 8
 #define NUM_SCENES 4
 
-#define DEBUG_KBD
+#define DEBUG_KBD 0
 
-#ifdef DEBUG_KBD
+#if DEBUG_KBD
 #include <system/event.h>
 #include <system/keyboard.h>
 #endif
@@ -137,9 +137,6 @@ static u_short phase = 0;
 
 // like frameCount, but counts game of life generations (sim steps)
 static u_short stepCount = 0;
-
-// which wireworld game (0-1) phase are we on
-static u_short wireworld_step = 0;
 
 // are we running wireworld?
 static bool wireworld = false;
@@ -340,6 +337,9 @@ static void WireworldSwitch(__unused const BitmapT *sourceA,
                             __unused const BitmapT *sourceC,
                             __unused const BitmapT *target,
                             __unused u_short minterms) {
+  // which wireworld game (0-1) phase are we on
+  static short wireworld_step = 0;
+
   current_board = boards[wireworld_step];
   current_game = wireworlds[wireworld_step];
   wireworld_step ^= 1;
@@ -348,19 +348,11 @@ static void WireworldSwitch(__unused const BitmapT *sourceA,
   SpawnElectrons(cur_electrons, wireworld_step ^ 1, wireworld_step);
 }
 
-static void BlitterInit(void) {
-  custom->bltafwm = 0xFFFF;
-  custom->bltalwm = 0xFFFF;
-  custom->bltamod = 0;
-  custom->bltbmod = 0;
-  custom->bltcmod = 0;
-  custom->bltdmod = 0;
-}
-
 static void (*PixelDouble)(u_char *source asm("a0"), u_short *target asm("a1"),
                            u_short *lut asm("a2"));
 
-#define PixelDoubleSize ((BOARD_WIDTH / 8) * BOARD_HEIGHT * 10 + BOARD_HEIGHT * 2 + 6)
+#define PixelDoubleSize \
+  ((BOARD_WIDTH / 8) * BOARD_HEIGHT * 10 + BOARD_HEIGHT * 2 + 6)
 
 // doubles pixels horizontally
 static void MakePixelDoublingCode(const BitmapT *bitmap) {
@@ -445,6 +437,42 @@ static void UpdateBitplanePointers(void) {
   }
 }
 
+static void ChangePalette(const u_short *pal) {
+  register short i asm("d6");
+  register short j asm("d7");
+
+  // unrolling this loop gives worse performance for some reason
+  // increment `pal` on every power of 2, essentially setting
+  // 4 consecutive colors from `pal` to 1, 2, 4 and 8 colors respectively
+  for (i = 1; i < COLORS;) {
+    short next_i = i + i;
+    CopInsT *ins = &palptr[i];
+    for (j = i; j < next_i; j++)
+      CopInsSet16(ins++, *pal);
+    i = next_i;
+    pal++;
+  }
+}
+
+static void CyclePalette(PalStateT *pal) {
+  u_short *end = (u_short *)(pal->dynamic) + 1024 - 4;
+
+  ChangePalette(pal->cur);
+
+  if (pal->phase)
+    pal->cur -= 4;
+  else
+    pal->cur += 4;
+
+  if (pal->cur >= end || pal->cur <= pal->dynamic) {
+    pal->phase ^= 1;
+    if (pal->phase)
+      pal->cur -= 4;
+    else
+      pal->cur += 4;
+  }
+}
+
 static void GameOfLife(void *boards) {
   ClearIRQ(INTF_BLIT);
   if (phase < current_game->num_phases) {
@@ -516,7 +544,7 @@ static void SharedPreInit(void) {
   MakeCopperList(cp);
   CopListActivate(cp);
 
-#ifdef DEBUG_KBD
+#if DEBUG_KBD
   KeyboardInit();
 #endif
 
@@ -535,7 +563,13 @@ static void SharedPostInit(void) {
   // the bits we're setting below *after* they're set
   WaitBlitter();
   ClearIRQ(INTF_BLIT);
-  BlitterInit();
+
+  custom->bltafwm = 0xFFFF;
+  custom->bltalwm = 0xFFFF;
+  custom->bltamod = 0;
+  custom->bltbmod = 0;
+  custom->bltcmod = 0;
+  custom->bltdmod = 0;
 
   SetIntVector(INTB_BLIT, (IntHandlerT)GameOfLife, boards);
   EnableINT(INTF_BLIT);
@@ -598,7 +632,7 @@ static void Kill(void) {
   DisableINT(INTF_BLIT);
   ResetIntVector(INTB_BLIT);
 
-#ifdef DEBUG_KBD
+#if DEBUG_KBD
   KeyboardKill();
 #endif
 
@@ -635,14 +669,18 @@ static void GolStep(void) {
     states_head -= prev_states_depth;
   phase = 0;
   GameOfLife(boards);
-  if (wireworld)
+  if (wireworld) {
     SpriteCyclePal(&palptr[16], rot, 3);
+  } else {
+    CyclePalette(&pal);
+  }
+
   stepCount++;
 
   ProfilerStop(GOLStep);
 }
 
-#ifdef DEBUG_KBD
+#if DEBUG_KBD
 static bool run_continous = 1;
 
 static bool HandleEvent(void) {
