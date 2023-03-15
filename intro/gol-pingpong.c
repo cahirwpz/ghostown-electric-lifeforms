@@ -5,7 +5,7 @@ typedef struct ColorPingPong {
 
 static ColorPingPongT *pingpong;
 
-static void ColorPingPongStep(ColorPingPongT *pp) {
+static void ColorPingPongStep(CopInsT *palptr, ColorPingPongT *pp) {
   u_short *pal = pp->palette[pp->cur];
   short i;
 

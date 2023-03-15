@@ -121,35 +121,31 @@ static CopInsT *palptr;
 
 static CopInsT *sprptr[8];
 
-#include "gol-cycling.c"
-#include "gol-doubling.c"
-#include "gol-games.c"
-#include "gol-palette.c"
-#include "gol-pingpong.c"
-
 // circular buffer of previous game states as they would be rendered (with
 // horizontally doubled pixels)
 static BitmapT *prev_states[PREV_STATES_DEPTH];
 
 // states_head % PREV_STATES_DEPTH points to the newest (currently being
 // pixel-doubled, not displayed yet) game state in prev_states
-static u_short states_head = 0;
+static short states_head = 0;
 
 // phase (0-8) of blitter calculations
-static u_short phase = 0;
+static short phase = 0;
 
 // like frameCount, but counts game of life generations (sim steps)
-static u_short stepCount = 0;
+static short stepCount = 0;
 
 // are we running wireworld?
 static bool wireworld = false;
 
 static short prev_states_depth = PREV_STATES_DEPTH;
 
-// frame at which to spawn specific electron next - counting from stepCount
-static short next_spawn[128];
-
-static const ElectronArrayT *cur_electrons;
+#include "gol-cycling.c"
+#include "gol-doubling.c"
+#include "gol-games.c"
+#include "gol-electrons.c"
+#include "gol-palette.c"
+#include "gol-pingpong.c"
 
 static const GameDefinitionT *current_game;
 
@@ -222,37 +218,6 @@ static void BlitFunc(const BitmapT *sourceA, const BitmapT *sourceB,
   custom->bltsize = BLTSIZE;
 }
 
-static void InitSpawnFrames(const ElectronArrayT *electrons) {
-  short i;
-  for (i = 0; i < electrons->num_electrons; i++)
-    next_spawn[i] = stepCount + (random() & RAND_SPAWN_MASK);
-}
-
-static void SpawnElectrons(const ElectronArrayT *electrons, short board_heads,
-                           short board_tails) {
-  u_char *bpl_heads = boards[board_heads]->planes[0];
-  u_char *bpl_tails = boards[board_tails]->planes[0];
-  short *pts = (short *)electrons->points;
-  short n = electrons->num_electrons - 1;
-  if (n < 0)
-    return;
-  do {
-    if (next_spawn[n] <= stepCount) {
-      short hx = (*pts++) + EXT_WIDTH_LEFT;
-      short hy = (*pts++) + EXT_HEIGHT_TOP;
-      short tx = (*pts++) + EXT_WIDTH_LEFT;
-      short ty = (*pts++) + EXT_HEIGHT_TOP;
-      int posh = EXT_BOARD_WIDTH * hy + hx;
-      int post = EXT_BOARD_WIDTH * ty + tx;
-      bset(bpl_heads + (posh >> 3), ~posh);
-      bset(bpl_tails + (post >> 3), ~post);
-      next_spawn[n] += (random() & RAND_SPAWN_MASK) + RAND_SPAWN_MIN_DELAY;
-    } else {
-      pts += 4;
-    }
-  } while (--n != -1);
-}
-
 // This is a bit hacky way to reuse the current interface for blitter phases
 // to do something after the last blit has been completed. For technical
 // reasons wireworld implementation requires 2 separate games to be ran
@@ -272,11 +237,12 @@ static void WireworldSwitch(__unused const BitmapT *sourceA,
   wireworld_step ^= 1;
 
   // set pixels on correct board
-  SpawnElectrons(cur_electrons, wireworld_step ^ 1, wireworld_step);
+  SpawnElectrons(cur_electrons,
+                 boards[wireworld_step ^ 1], boards[wireworld_step]);
 }
 
 static void MakeCopperList(CopListT *cp) {
-  u_short i;
+  short i;
 
   CopInit(cp);
   // initially previous states are empty
@@ -288,7 +254,9 @@ static void MakeCopperList(CopListT *cp) {
   CopSetupSprites(cp, sprptr);
   for (i = 0; i < 8; i++) {
     SpriteT *spr = &wireworld_chip[i];
-    SpriteUpdatePos(spr, X(DISP_WIDTH/2 + (i/2)*16 - 32), Y(DISP_HEIGHT/2 - spr->height/2));
+    SpriteUpdatePos(spr,
+                    X(DISP_WIDTH / 2 + (i / 2) * 16 - 32),
+                    Y(DISP_HEIGHT / 2 - spr->height / 2));
     if (TrackValueGet(&WireworldBg, frameCount) == 1) {
       CopInsSetSprite(sprptr[i], spr);
     } else {
@@ -314,8 +282,8 @@ static void MakeCopperList(CopListT *cp) {
 
 static void UpdateBitplanePointers(void) {
   BitmapT *cur;
-  u_short i;
-  u_short last = states_head + 1;
+  short i;
+  short last = states_head + 1;
   for (i = 0; i < prev_states_depth - 1; i++) {
     // update bitplane order: (states_head + 2) % prev_states_depth iterates
     // from the oldest+1 (to facilitate double buffering; truly oldest state is
@@ -520,7 +488,7 @@ static void GolStep(void) {
   if (wireworld) {
     ColorCyclingStep(&palptr[16], wireworld_chip_cycling, &wireworld_chip_pal);
   } else {
-    ColorPingPongStep(pingpong);
+    ColorPingPongStep(palptr, pingpong);
   }
 
   stepCount++;

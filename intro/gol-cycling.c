@@ -3,28 +3,28 @@ typedef struct ColorCycling {
   short rate;
   short step;
   short len;
-  char *indices;
+  char indices[6];
 } ColorCyclingT;
 
-static ColorCyclingT wireworld_chip_cycling[4] = {
+static ColorCyclingT wireworld_chip_cycling[] = {
   {
     .head = 0,
     .rate = 2560,
     .step = 0,
     .len = 5,
-    .indices = (char[5]){1, 3, 5, 7, 9}
+    .indices = {1, 3, 5, 7, 9}
   }, {
     .head = 0,
     .rate = 2560,
     .step = 0,
     .len = 5,
-    .indices = (char[5]){2, 4, 6, 8, 10}
+    .indices = {2, 4, 6, 8, 10}
   }, {
     .head = 0,
     .rate = 1664,
     .step = 0,
     .len = 6,
-    .indices = (char[6]){11, 12, 13, 14, 13, 12}
+    .indices = {11, 12, 13, 14, 13, 12}
   }
 };
 
@@ -39,8 +39,9 @@ static void ColorCyclingStep(CopInsT *ins, ColorCyclingT *rot,
   // rate = 16384/60 ~273."
   // frameCount - lastFrameCount gives wrong frame delta so just trust me
   // on this one (this function gets called every 2 frames in this effect)
+  short j;
 
-  for (; rot->len; rot++) {
+  for (j = 0; j < 3; j++) {
     short i, n;
 
     rot->step += 2 * rot->rate;

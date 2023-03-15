@@ -4,15 +4,15 @@ static u_short double_pixels[256];
 static void MakeDoublePixels(void) {
   u_short *data = double_pixels;
   u_short w = 0;
-  short i;
+  short n = 255;
 
-  for (i = 0; i < 256; i++) {
+  do {
     *data++ = w;
     w |= 0xAAAA; /* let carry propagate through odd bits */
     w++;
     w &= 0x5555;
     w |= w << 1;
-  }
+  } while (--n != -1);
 }
 
 static void (*PixelDouble)(u_char *source asm("a0"), u_short *target asm("a1"),
