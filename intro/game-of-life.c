@@ -1,11 +1,11 @@
-#include "bitmap.h"
-#include "blitter.h"
-#include "copper.h"
-#include "effect.h"
-#include "fx.h"
-#include "sprite.h"
-#include "pixmap.h"
-#include "color.h"
+#include <bitmap.h>
+#include <blitter.h>
+#include <copper.h>
+#include <effect.h>
+#include <fx.h>
+#include <sprite.h>
+#include <pixmap.h>
+#include <color.h>
 #include <sync.h>
 #include <system/interrupt.h>
 #include <system/memory.h>
@@ -358,8 +358,9 @@ static void SpawnElectrons(const ElectronArrayT *electrons, short board_heads,
       bset(bpl_heads + (posh >> 3), ~posh);
       bset(bpl_tails + (post >> 3), ~post);
       next_spawn[n] += (random() & RAND_SPAWN_MASK) + RAND_SPAWN_MIN_DELAY;
-    } else
+    } else {
       pts += 4;
+    }
   } while (--n != -1);
 }
 
@@ -424,23 +425,6 @@ static void MakePixelDoublingCode(const BitmapT *bitmap) {
   *code++ = 0x4e75; // rts
 }
 
-static void ChangePalette(const u_short *pal) {
-  register u_short i asm("d6");
-  register u_short j asm("d7");
-
-  // unrolling this loop gives worse performance for some reason
-  // increment `pal` on every power of 2, essentially setting
-  // 4 consecutive colors from `pal` to 1, 2, 4 and 8 colors respectively
-  for (i = 1; i < COLORS;) {
-    u_short next_i = i + i;
-    CopInsT **ins = &palptr[i];
-    for (j = i; j < next_i; j++)
-      CopInsSet16(*ins++, *pal);
-    i = next_i;
-    pal++;
-  }
-}
-
 static void MakeCopperList(CopListT *cp) {
   u_short i;
 
@@ -455,9 +439,11 @@ static void MakeCopperList(CopListT *cp) {
   for (i = 0; i < 8; i++) {
     SpriteT *spr = &wireworld_chip[i];
     SpriteUpdatePos(spr, X(DISP_WIDTH/2 + (i/2)*16 - 32), Y(DISP_HEIGHT/2 - spr->height/2));
-    if (TrackValueGet(&WireworldBg, frameCount) == 1)
+    if (TrackValueGet(&WireworldBg, frameCount) == 1) {
       CopInsSetSprite(sprptr[i], spr);
-    else CopInsSetSprite(sprptr[i], NULL);
+    } else {
+      CopInsSetSprite(sprptr[i], NULL);
+    }
   }
 
   for (i = 0; i < COLORS; i++)
@@ -493,84 +479,6 @@ static void UpdateBitplanePointers(void) {
   }
 }
 
-// Forgive me, Cahir, for I have sinned...
-// https://stackoverflow.com/a/14733008
-
-static u_short HsvToRgb(short h, short s, short v) {
-  short region, remainder, p, q, t;
-  u_char r, g, b;
-
-  if (s == 0) {
-    v &= 0xf0;
-    return (v << 4) | v | (v >> 4);
-  }
-
-  region = h / 43;
-  remainder = (h - (region * 43)) * 6;
-
-  p = (v * (short)(255 - s)) >> 8;
-  q = (v * (short)(255 - ((s * remainder) >> 8))) >> 8;
-  t = (v * (short)(255 - ((s * (short)(255 - remainder)) >> 8))) >> 8;
-
-  switch (region) {
-    case 0:
-      r = v;
-      g = t;
-      b = p;
-      break;
-    case 1:
-      r = q;
-      g = v;
-      b = p;
-      break;
-    case 2:
-      r = p;
-      g = v;
-      b = t;
-      break;
-    case 3:
-      r = p;
-      g = q;
-      b = v;
-      break;
-    case 4:
-      r = t;
-      g = p;
-      b = v;
-      break;
-    default:
-      r = v;
-      g = p;
-      b = q;
-      break;
-  }
-
-  r &= 0xf0;
-  g &= 0xf0;
-  b &= 0xf0;
-
-  return (r << 4) | g | (b >> 4);
-}
-
-static void CyclePalette(PalStateT *pal) {
-  u_short *end = (u_short *)(pal->dynamic) + 1024 - 4;
-
-  ChangePalette(pal->cur);
-
-  if (pal->phase)
-    pal->cur -= 4;
-  else
-    pal->cur += 4;
-
-  if (pal->cur >= end || pal->cur <= pal->dynamic) {
-    pal->phase ^= 1;
-    if (pal->phase)
-      pal->cur -= 4;
-    else
-      pal->cur += 4;
-  }
-}
-
 static void SpriteCyclePal(PalRotT *rot) {
   // From https://wiki.amigaos.net/wiki/ILBM_IFF_Interleaved_Bitmap#CRNG
   // "The field rate determines the speed at which the colors will step when
@@ -581,24 +489,28 @@ static void SpriteCyclePal(PalRotT *rot) {
 
   // frameCount - lastFrameCount gives wrong frame delta so just trust me
   // on this one (this function gets called every 2 frames in this effect)
-  rot->step += 2 * rot->rate;
-  if (rot->step >= (1 << 14)) {
-    short i;
-    short n = rot->head;
-    for (i = 0; i < rot->len; i++) {
-      short cn = rot->indices[n];
-      short ci = rot->indices[i];
-      CopInsSet16(palptr[ci + 16], rot->pal->colors[cn]);
+  short i, n;
 
-      n++;
-      if (n >= rot->len)
-        n -= rot->len;
-    }
-    rot->step -= 1 << 14;
-    rot->head++;
-    if (rot->head >= rot->len)
-        rot->head -= rot->len;
+  rot->step += 2 * rot->rate;
+  if (rot->step < (1 << 14))
+    return;
+
+  n = rot->head;
+  for (i = 0; i < rot->len; i++) {
+    short cn = rot->indices[n];
+    short ci = rot->indices[i];
+    CopInsSet16(palptr[ci + 16], rot->pal->colors[cn]);
+
+    n++;
+    if (n >= rot->len)
+      n -= rot->len;
   }
+
+  rot->step -= 1 << 14;
+
+  rot->head++;
+  if (rot->head >= rot->len)
+      rot->head -= rot->len;
 }
 
 static void GameOfLife(void *boards) {
@@ -628,10 +540,6 @@ static void Load(void) {
     TrackInit(&GOLPaletteS);
     TrackInit(&GOLPaletteV);
   }
-}
-
-static void UnLoad(void) {
-
 }
 
 static void SharedPreInit(void) {
@@ -698,12 +606,12 @@ static void SharedPostInit(void) {
 }
 
 static void InitWireworld(void) {
-  BitmapT *tmp;
   short i;
   const BitmapT *desired_bg;
   const PaletteT *pal;
   short display_bg = TrackValueGet(&WireworldDisplayBg, frameCount);
   short bg_idx = TrackValueGet(&WireworldBg, frameCount);
+
   current_game = &wireworld1;
   wireworld = true;
   prev_states_depth = display_bg ? 4 : 5;
@@ -717,7 +625,7 @@ static void InitWireworld(void) {
   InitSpawnFrames(cur_electrons);
 
   if (display_bg) {
-    tmp = NewBitmap(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH);
+    BitmapT *tmp = NewBitmap(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH);
     BitmapCopy(tmp, 0, 0, desired_bg);
     WaitBlitter();
     PixelDouble(tmp->planes[0], prev_states[4]->planes[0], double_pixels);
@@ -791,18 +699,18 @@ static void GolStep(void) {
     states_head -= prev_states_depth;
   phase = 0;
   GameOfLife(boards);
-  (void)CyclePalette;
-  SpriteCyclePal(&rot0);
-  SpriteCyclePal(&rot1);
-  SpriteCyclePal(&rot2);
+  if (wireworld) {
+    SpriteCyclePal(&rot0);
+    SpriteCyclePal(&rot1);
+    SpriteCyclePal(&rot2);
+  }
   stepCount++;
 
   ProfilerStop(GOLStep);
 }
 
 #ifdef DEBUG_KBD
-
-static u_short run_continous = 1;
+static bool run_continous = 1;
 
 static bool HandleEvent(void) {
   EventT ev[1];
@@ -822,17 +730,16 @@ static bool HandleEvent(void) {
   return true;
 }
 
-#endif
-
 static void Render(void) {
-#ifdef DEBUG_KBD
   if (run_continous)
-#endif
     GolStep();
-#ifdef DEBUG_KBD
   exitLoop = !HandleEvent();
-#endif
 }
+#else
+static void Render(void) {
+  GolStep();
+}
+#endif
 
-EFFECT(Wireworld, Load, UnLoad, InitWireworld, Kill, Render);
-EFFECT(GameOfLife, Load, UnLoad, InitGameOfLife, Kill, Render);
+EFFECT(Wireworld, Load, NULL, InitWireworld, Kill, Render);
+EFFECT(GameOfLife, Load, NULL, InitGameOfLife, Kill, Render);
