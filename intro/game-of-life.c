@@ -437,7 +437,7 @@ static void InitGameOfLife(void) {
   SharedPreInit();
 
   BitmapClear(boards[0]);
-  BitmapCopy(boards[0], EXT_WIDTH_LEFT, EXT_HEIGHT_TOP, &wireworld_pcb);
+  BitmapCopy(boards[0], EXT_WIDTH_LEFT, EXT_HEIGHT_TOP, &wireworld_vitruvian);
 
   SharedPostInit();
 }
