@@ -100,42 +100,6 @@
 #include "data/wireworld-fullscreen-electrons.c"
 #include "data/chip.c"
 
-typedef struct PalRotT {
-  const PaletteT* pal;
-  short head;
-  short rate;
-  short step;
-  short len;
-  char indices[0];
-} PalRotT;
-
-static PalRotT rot0 = {
-  .pal = &wireworld_chip_pal,
-  .head = 0,
-  .rate = 2560,
-  .step = 0,
-  .len = 5,
-  .indices = {1, 3, 5, 7, 9}
-};
-
-static PalRotT rot1 = {
-  .pal = &wireworld_chip_pal,
-  .head = 0,
-  .rate = 2560,
-  .step = 0,
-  .len = 5,
-  .indices = {2, 4, 6, 8, 10}
-};
-
-static PalRotT rot2 = {
-  .pal = &wireworld_chip_pal,
-  .head = 0,
-  .rate = 1664,
-  .step = 0,
-  .len = 6,
-  .indices = {11, 12, 13, 14, 13, 12}
-};
-
 extern TrackT GOLPaletteH;
 extern TrackT GOLPaletteS;
 extern TrackT GOLPaletteV;
@@ -150,12 +114,13 @@ static BitmapT *current_board;
 static BitmapT *boards[BOARD_COUNT];
 
 #include "games.c"
+#include "chip-pal-rotate.c"
 
 // pointers to copper instructions, for rewriting bitplane pointers
 static CopInsT *bplptr[DISP_DEPTH];
 
 // pointers to copper instructions, for setting colors
-static CopInsT *palptr[COLORS];
+static CopInsT *palptr;
 
 static CopInsT *sprptr[8];
 
@@ -446,8 +411,9 @@ static void MakeCopperList(CopListT *cp) {
     }
   }
 
-  for (i = 0; i < COLORS; i++)
-      palptr[i] = CopSetColor(cp, i, 0x0);
+  palptr = CopSetColor(cp, 0, 0);
+  for (i = 1; i < COLORS; i++)
+    CopSetColor(cp, i, 0);
 
   for (i = 1; i <= DISP_HEIGHT; i += 2) {
     // vertical pixel doubling
@@ -479,40 +445,6 @@ static void UpdateBitplanePointers(void) {
   }
 }
 
-static void SpriteCyclePal(PalRotT *rot) {
-  // From https://wiki.amigaos.net/wiki/ILBM_IFF_Interleaved_Bitmap#CRNG
-  // "The field rate determines the speed at which the colors will step when
-  // color cycling is on. The units are such that a rate of 60 steps per
-  // second is represented as 2^14 = 16384. Slower rates can be obtained
-  // by linear scaling: for 30 steps/second, rate = 8192; for 1 step/second,
-  // rate = 16384/60 ~273."
-
-  // frameCount - lastFrameCount gives wrong frame delta so just trust me
-  // on this one (this function gets called every 2 frames in this effect)
-  short i, n;
-
-  rot->step += 2 * rot->rate;
-  if (rot->step < (1 << 14))
-    return;
-
-  n = rot->head;
-  for (i = 0; i < rot->len; i++) {
-    short cn = rot->indices[n];
-    short ci = rot->indices[i];
-    CopInsSet16(palptr[ci + 16], rot->pal->colors[cn]);
-
-    n++;
-    if (n >= rot->len)
-      n -= rot->len;
-  }
-
-  rot->step -= 1 << 14;
-
-  rot->head++;
-  if (rot->head >= rot->len)
-      rot->head -= rot->len;
-}
-
 static void GameOfLife(void *boards) {
   ClearIRQ(INTF_BLIT);
   if (phase < current_game->num_phases) {
@@ -525,29 +457,31 @@ static void GameOfLife(void *boards) {
   phase++;
 }
 
-static bool loaded = false;
-static bool allocated = false;
 static short scene_count = 0;
 
 static void Load(void) {
-  if (!loaded) {
-    loaded = true;
+  static bool loaded = false;
 
-    TrackInit(&GOLGame);
-    TrackInit(&WireworldDisplayBg);
-    TrackInit(&WireworldBg);
-    TrackInit(&GOLPaletteH);
-    TrackInit(&GOLPaletteS);
-    TrackInit(&GOLPaletteV);
-  }
+  if (loaded)
+    return;
+
+  TrackInit(&GOLGame);
+  TrackInit(&WireworldDisplayBg);
+  TrackInit(&WireworldBg);
+  TrackInit(&GOLPaletteH);
+  TrackInit(&GOLPaletteS);
+  TrackInit(&GOLPaletteV);
+
+  loaded = true;
 }
 
 static void SharedPreInit(void) {
-  u_short i;
+  static bool allocated = false;
+
+  short i;
 
   scene_count++;
   if (!allocated) {
-    allocated = true;
     for (i = 0; i < BOARD_COUNT; i++)
       boards[i] = NewBitmap(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH);
 
@@ -572,6 +506,8 @@ static void SharedPreInit(void) {
       pal.dynamic[4 * i + 3] = HsvToRgb(h, s, v);
     }
     pal.cur = pal.dynamic;
+
+    allocated = true;
   }
 
   SetupPlayfield(MODE_LORES, DISP_DEPTH, X(0), Y(0), DISP_WIDTH, DISP_HEIGHT);
@@ -621,7 +557,7 @@ static void InitWireworld(void) {
 
   SharedPreInit();
   for (i = 0; i < pal->count; i++)
-    CopInsSet16(palptr[i], pal->colors[i]);
+    CopInsSet16(&palptr[i], pal->colors[i]);
   InitSpawnFrames(cur_electrons);
 
   if (display_bg) {
@@ -699,11 +635,8 @@ static void GolStep(void) {
     states_head -= prev_states_depth;
   phase = 0;
   GameOfLife(boards);
-  if (wireworld) {
-    SpriteCyclePal(&rot0);
-    SpriteCyclePal(&rot1);
-    SpriteCyclePal(&rot2);
-  }
+  if (wireworld)
+    SpriteCyclePal(&palptr[16], rot, 3);
   stepCount++;
 
   ProfilerStop(GOLStep);
