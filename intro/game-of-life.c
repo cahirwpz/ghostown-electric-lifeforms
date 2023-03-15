@@ -11,6 +11,13 @@
 #include <system/memory.h>
 #include <stdlib.h>
 
+#define DEBUG_KBD 0
+
+#if DEBUG_KBD
+#include <system/event.h>
+#include <system/keyboard.h>
+#endif
+
 // This effect calculates Conway's game of life (with the classic rules: live
 // cells with <2 or >3 neighbours die, live cells with 2-3 neighbouring cells
 // live to the next generation and dead cells with 3 neighbours become alive).
@@ -86,13 +93,6 @@
 #define RAND_SPAWN_MIN_DELAY 8
 #define NUM_SCENES 4
 
-#define DEBUG_KBD 0
-
-#if DEBUG_KBD
-#include <system/event.h>
-#include <system/keyboard.h>
-#endif
-
 #include "data/cell-gradient.c"
 #include "data/wireworld-vitruvian.c"
 #include "data/wireworld-vitruvian-electrons.c"
@@ -113,9 +113,6 @@ static BitmapT *current_board;
 // current board = boards[0], the rest is intermediate results
 static BitmapT *boards[BOARD_COUNT];
 
-#include "games.c"
-#include "chip-pal-rotate.c"
-
 // pointers to copper instructions, for rewriting bitplane pointers
 static CopInsT *bplptr[DISP_DEPTH];
 
@@ -123,6 +120,11 @@ static CopInsT *bplptr[DISP_DEPTH];
 static CopInsT *palptr;
 
 static CopInsT *sprptr[8];
+
+#include "gol-games.c"
+#include "gol-cycling.c"
+#include "gol-palette.c"
+#include "gol-pingpong.c"
 
 // circular buffer of previous game states as they would be rendered (with
 // horizontally doubled pixels)
@@ -154,60 +156,6 @@ static const GameDefinitionT *games[] = {
   &classic_gol, &coagulation,   &maze,       &diamoeba,
   &stains,      &day_and_night, &three_four,
 };
-
-static PaletteT palette_vitruvian = {
-  .count = 16,
-  .colors =
-    {
-      0x000, // 0000
-      0x006, // 0001
-      0x026, // 0010
-      0x026, // 0011
-      0x05B, // 0100
-      0x05B, // 0101
-      0x05B, // 0110
-      0x05B, // 0111
-      0x09F, // 1000
-      0x09F, // 1001
-      0x09F, // 1010
-      0x09F, // 1011
-      0x09F, // 1100
-      0x09F, // 1101
-      0x09F, // 1110
-      0x09F, // 1111
-    },
-};
-
-static PaletteT palette_pcb = {
-  .count = 16,
-  .colors =
-    {
-      0x000, // 0000
-      0x000, // 0001
-      0x000, // 0010
-      0x000, // 0011
-      0x000, // 0100
-      0x000, // 0101
-      0x000, // 0110
-      0x000, // 0111
-      0x006, // 1000
-      0x009, // 1001
-      0x01c, // 1010
-      0x01c, // 1011
-      0x03f, // 1100
-      0x03f, // 1101
-      0x03f, // 1110
-      0x03f, // 1111
-    },
-};
-
-typedef struct PalState {
-  u_short *dynamic;
-  u_short *cur;
-  u_short phase;
-} PalStateT;
-
-static PalStateT pal;
 
 // Used by CPU to quickly transform 1x1 pixels into 2x1 pixels.
 static u_short double_pixels[256];
@@ -437,42 +385,6 @@ static void UpdateBitplanePointers(void) {
   }
 }
 
-static void ChangePalette(const u_short *pal) {
-  register short i asm("d6");
-  register short j asm("d7");
-
-  // unrolling this loop gives worse performance for some reason
-  // increment `pal` on every power of 2, essentially setting
-  // 4 consecutive colors from `pal` to 1, 2, 4 and 8 colors respectively
-  for (i = 1; i < COLORS;) {
-    short next_i = i + i;
-    CopInsT *ins = &palptr[i];
-    for (j = i; j < next_i; j++)
-      CopInsSet16(ins++, *pal);
-    i = next_i;
-    pal++;
-  }
-}
-
-static void CyclePalette(PalStateT *pal) {
-  u_short *end = (u_short *)(pal->dynamic) + 1024 - 4;
-
-  ChangePalette(pal->cur);
-
-  if (pal->phase)
-    pal->cur -= 4;
-  else
-    pal->cur += 4;
-
-  if (pal->cur >= end || pal->cur <= pal->dynamic) {
-    pal->phase ^= 1;
-    if (pal->phase)
-      pal->cur -= 4;
-    else
-      pal->cur += 4;
-  }
-}
-
 static void GameOfLife(void *boards) {
   ClearIRQ(INTF_BLIT);
   if (phase < current_game->num_phases) {
@@ -523,17 +435,8 @@ static void SharedPreInit(void) {
     PixelDouble = MemAlloc(PixelDoubleSize, MEMF_PUBLIC);
     MakePixelDoublingCode(boards[0]);
 
-    pal.dynamic = MemAlloc(4 * 256 * sizeof(u_short), MEMF_PUBLIC);
-    for (i = 0; i < 256; i++) {
-      u_char h = TrackValueGet(&GOLPaletteH, i);
-      u_char s = TrackValueGet(&GOLPaletteS, i);
-      u_char v = TrackValueGet(&GOLPaletteV, i);
-      pal.dynamic[4 * i] = HsvToRgb(h, s, v / 8);
-      pal.dynamic[4 * i + 1] = HsvToRgb(h, s, v / 4);
-      pal.dynamic[4 * i + 2] = HsvToRgb(h, s, v / 2);
-      pal.dynamic[4 * i + 3] = HsvToRgb(h, s, v);
-    }
-    pal.cur = pal.dynamic;
+    pingpong = MemAlloc(sizeof(ColorPingPongT), MEMF_PUBLIC);
+    MakeColorPingPong(pingpong);
 
     allocated = true;
   }
@@ -645,7 +548,7 @@ static void Kill(void) {
       DeleteBitmap(prev_states[i]);
 
     MemFree(PixelDouble);
-    MemFree(pal.dynamic);
+    MemFree(pingpong);
   }
 
   DeleteCopList(cp);
@@ -672,7 +575,7 @@ static void GolStep(void) {
   if (wireworld) {
     SpriteCyclePal(&palptr[16], rot, 3);
   } else {
-    CyclePalette(&pal);
+    ColorPingPongStep(pingpong);
   }
 
   stepCount++;
