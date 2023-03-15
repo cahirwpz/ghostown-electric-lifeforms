@@ -56,10 +56,10 @@ static GreetsT greetsData[3];
 
 static int mTableIdx = 0;
 static int mTable[] = {
-  0x22ba87eb, 0x95211585,
-  0x9801ea78, 0x8e47f432,
-  0x8c3b3199, 0x497d7457,
-  0x74a7beec, 0xb2818113
+  0x74a7beec, 0xb2818113,
+  0x4ffa0d80, 0x23743a06,
+  0x273f164b, 0x9ffa9d90,
+  0x011bad37, 0x7a6433ee
 };
 
 static int fastrand_a = 0, fastrand_b = 0;
