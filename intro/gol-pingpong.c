@@ -30,19 +30,20 @@ static void ColorPingPongStep(CopInsT *palptr, ColorPingPongT *pp) {
 }
 
 static void MakeColorPingPong(ColorPingPongT *pp) {
+  u_short *pal = (u_short *)pp->palette;
   short i;
-
-  for (i = 0; i < 256; i++) {
-    u_char h = TrackValueGet(&GOLPaletteH, i);
-    u_char s = TrackValueGet(&GOLPaletteS, i);
-    u_char v = TrackValueGet(&GOLPaletteV, i);
-
-    pp->palette[i][0] = HsvToRgb(h, s, v / 8);
-    pp->palette[i][1] = HsvToRgb(h, s, v / 4);
-    pp->palette[i][2] = HsvToRgb(h, s, v / 2);
-    pp->palette[i][3] = HsvToRgb(h, s, v);
-  }
 
   pp->cur = 0;
   pp->dir = 1;
+
+  for (i = 0; i < 256; i++) {
+    short h = TrackValueGet(&GOLPaletteH, i);
+    short s = TrackValueGet(&GOLPaletteS, i);
+    short v = TrackValueGet(&GOLPaletteV, i);
+
+    *pal++ = HsvToRgb(h, s, v / 8);
+    *pal++ = HsvToRgb(h, s, v / 4);
+    *pal++ = HsvToRgb(h, s, v / 2);
+    *pal++ = HsvToRgb(h, s, v);
+  }
 }
