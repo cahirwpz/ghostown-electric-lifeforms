@@ -265,8 +265,9 @@ static void MakeCopperList(CopListT *cp) {
   }
 
   palptr = CopSetColor(cp, 0, 0);
-  for (i = 1; i < COLORS; i++)
+  for (i = 1; i < 16; i++)
     CopSetColor(cp, i, 0);
+  CopLoadPal(cp, &wireworld_chip_pal, 16);
 
   for (i = 1; i <= DISP_HEIGHT; i += 2) {
     // vertical pixel doubling
