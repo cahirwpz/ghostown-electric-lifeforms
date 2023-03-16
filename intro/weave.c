@@ -469,36 +469,50 @@ static void ControlBars(StateBarT *bars) {
 
 static void ControlStripes(void) {
   if (frameFromStart <= 224) {
+    static __code short phase = 0;
+
     short t = frameFromStart - 64;
 
-    if (t == 0) {
+    if (t >= 0 && phase == 0) {
       CopySpriteTiles(0);
       ZeroSpriteTiles(1);
       ZeroSpriteTiles(2);
       ZeroSpriteTiles(3);
       ZeroSpriteTiles(4);
-    } else if (t == 33) {
+      phase++;
+    } else if (t >= 33 && phase == 1) {
       CopySpriteTiles(1);
-    } else if (t == 65) {
+      phase++;
+    } else if (t >= 65 && phase == 2) {
       CopySpriteTiles(2);
-    } else if (t == 97) {
+      phase++;
+    } else if (t >= 97 && phase == 3) {
       CopySpriteTiles(3);
-    } else if (t == 129) {
+      phase++;
+    } else if (t >= 129 && phase == 4) {
       CopySpriteTiles(4);
+      phase++;
     }
   } else if (frameTillEnd <= 224) {
+    static __code short phase = 0;
+
     short t = 224 - frameTillEnd;
 
-    if (t == 1) {
+    if (t >= 1 && phase == 0) {
       ZeroSpriteTiles(0);
-    } else if (t == 33) {
+      phase++;
+    } else if (t >= 33 && phase == 1) {
       ZeroSpriteTiles(1);
-    } else if (t == 65) {
+      phase++;
+    } else if (t >= 65 && phase == 2) {
       ZeroSpriteTiles(2);
-    } else if (t == 97) {
+      phase++;
+    } else if (t >= 97 && phase == 3) {
       ZeroSpriteTiles(3);
-    } else if (t == 129) {
+      phase++;
+    } else if (t >= 129 && phase == 4) {
       ZeroSpriteTiles(4);
+      phase++;
     }
   }
 }
