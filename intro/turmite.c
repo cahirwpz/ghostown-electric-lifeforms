@@ -46,7 +46,6 @@ static u_int lookup[256][2];
 extern TrackT TurmiteBoard;
 extern TrackT TurmitePal;
 
-static short activeBoard = 1;
 static short lightLevel = 0;
 
 static u_short *turmite_credits_bpl[] = {
@@ -574,7 +573,6 @@ static void ResetTurmite(TurmiteT *t, u_short pos) {
 }
 
 static void ChooseTurmiteBoard(short i) {
-  activeBoard = i;
   BitmapClear(screen);
   LoadPalette(turmite_palettes[i], 0);
   memcpy(screen->planes[DEPTH - 1], turmite_credits_bpl[i],
