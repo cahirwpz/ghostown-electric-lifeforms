@@ -187,7 +187,7 @@ static void MakeArm(ArmQueueT *arms, ArmT *arm) {
   u_int arand = random();
 
   if (ArmVariant == 1) {
-    arm->pos_x = fx4i((arand & 255) + 64);
+    arm->pos_x = fx4i((arand & 255) + 32);
     if (arms->head % 2 == 0) {
       arm->pos_y = fx4i(DIAMETER);
     } else {
