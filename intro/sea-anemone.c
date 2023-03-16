@@ -14,7 +14,7 @@
 #define HEIGHT 256
 #define DEPTH 4
 
-#define GRADIENTL 41
+#define GRADIENTL 33
 
 #define DIAMETER 32
 #define NARMS 15 /* must be power of two minus one */
@@ -60,10 +60,12 @@ static const BitmapT *circles[DIAMETER / 2] = {
 };
 
 static short lightLevel = 0;
+static short gradientLevel = 15;
 
 extern TrackT SeaAnemoneVariant;
 extern TrackT SeaAnemonePal;
 extern TrackT SeaAnemonePalPulse;
+extern TrackT SeaAnemoneGradient;
 
 typedef const PaletteT *SeaAnemonePalT[4];
 
@@ -111,51 +113,45 @@ static const short blip_sequence[] = {
   3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 };
 
-short gradient[GRADIENTL*2] = {
-  0, 11,
-  15, 10,  // +15
-  16, 11,  // +1
-  25, 10,  // + 9
-  27, 11,  // + 2
-  32, 10,  // + 5
-  45, 11,  // + 7
-  46, 10,  // + 1
-  61, 9,   // + 15 
-  62, 10,
-  71, 9,
-  73, 10,
-  78, 9,
-  85, 10,
-  86, 9,
-  101, 8, // +15
-  102, 9,
-  111, 8,
-  113, 9,
-  118, 8,
-  126, 9,
-  127, 8,
-  142, 7, // +15
-  143, 8,
-  152, 7,
-  154, 8,
-  159, 7,
-  166, 8,
-  167, 7,
-  192, 6,
-  193, 7,
-  203, 6,
-  205, 7,
-  210, 6,
-  220, 7,
-  221, 6,
-  235, 5,
-  236, 6,
-  246, 5,
-  248, 6,
-  250, 5,
+short gradient[GRADIENTL * 2] = {
+  0, 1,
+  4, 4,
+  8, 8,
+  12, 12,
+  27, 13,
+  34, 12,
+  36, 13,
+  39, 12,
+  40, 11,
+  42, 12,
+  43, 11,
+  46, 10,
+  47, 11,
+  48, 10,
+  50, 11,
+  51, 10,
+  55, 9,
+  60, 8,
+  70, 7,
+  77, 6,
+  78, 7,
+  79, 6,
+  86, 5,
+  87, 6,
+  88, 5,
+  95, 4,
+  97, 5,
+  98, 4,
+  104, 3,
+  113, 2,
+  118, 1,
+  127, 1,
 };
 
-bool gradient_ascending = true;
+
+
+bool gradient_ascending = false;
+bool gradient_active = false;
 
 static inline int fastrand(void) {
   static int m[2] = { 0x3E50B28C, 0xD461A7F9 };
@@ -318,26 +314,53 @@ static int PaletteBlip(void) {
     LoadPalette((*active_pal)[blip_sequence[lightLevel]], 0);
     lightLevel--;
   }
+  if (gradientLevel > 0 && gradient_ascending) {
+    gradientLevel--;
+    if (gradientLevel == 0) {
+      gradientLevel = 15;
+      gradient_active = false;
+    }
+  }
+  if (gradientLevel <= 15 && !gradient_ascending) {
+    gradientLevel++;
+    if (gradientLevel > 15) {
+      gradient_ascending = true;
+      gradientLevel = 0;
+    }
+  }
+
   return 0;
 }
 
 INTSERVER(PulsatePaletteInterrupt, 0, (IntFuncT)PaletteBlip, NULL);
 
 static void MakeCopperList(CopListT *cp) {
-  short j;
+  short j, ee, aa;
   short *ptr = gradient;
-  short a = frameCount % 16;
-  if(a == 0) {
-   gradient_ascending = !gradient_ascending;
-  }
+  short *ptr1 = gradient + (GRADIENTL * 2);
   CopInit(cp);
   CopSetupBitplanes(cp, bplptr, screen, DEPTH);
+  if (gradient_active) {
   for(j=1;j<GRADIENTL;j++) {
     CopWaitSafe(cp, Y(*(ptr++)), 0);
-    if(gradient_ascending)
-      CopSetColor(cp, 0, ColorTransition(anemone_gradient.colors[*(ptr++)-3], 0x114, a));
+    if(!gradient_ascending)
+      CopSetColor(cp, 0, ColorTransition(anemone_gradient.colors[*(ptr++)], 0x001, gradientLevel));
     else
-      CopSetColor(cp, 0, ColorTransition(0x114, anemone_gradient.colors[*(ptr++)-3], a));
+      CopSetColor(cp, 0, ColorTransition(0x001, anemone_gradient.colors[*(ptr++)], gradientLevel));
+  }
+  ptr = gradient;
+  for(j=1;j<GRADIENTL;j++) {
+    ee = *(ptr1--);
+    ee = *(ptr1--);
+    aa = Y(HEIGHT/2 + *(ptr++));
+    CopWaitSafe(cp, aa, 0);
+    if(!gradient_ascending)
+      CopSetColor(cp, 0, ColorTransition(anemone_gradient.colors[ee], 0, gradientLevel));
+    else
+      CopSetColor(cp, 0, ColorTransition(0, anemone_gradient.colors[ee], gradientLevel));
+
+    *ptr = *ptr++;
+  }
   }
   CopEnd(cp);
 }
@@ -358,6 +381,7 @@ static void Init(void) {
   TrackInit(&SeaAnemoneVariant);
   TrackInit(&SeaAnemonePal);
   TrackInit(&SeaAnemonePalPulse);
+  TrackInit(&SeaAnemoneGradient);
   ArmsReset(&AnemoneArms);
 
   /* Moved from DrawCircle, since we use only one type of blit. */
@@ -493,7 +517,7 @@ PROFILE(SeaAnemone);
 static void Render(void) {
   short vShift = 0;
   int lineOffset = 0;
-  short val, valPal;
+  short val, valPal, valGradient;
 
   if ((val = TrackValueGet(&SeaAnemoneVariant, frameFromStart))) { 
     BitmapClear(screen);
@@ -509,6 +533,12 @@ static void Render(void) {
   // Set the light level (for palette modification)
   if ((valPal = TrackValueGet(&SeaAnemonePalPulse, frameFromStart)))
     lightLevel = valPal;
+
+  if ((valGradient = TrackValueGet(&SeaAnemoneGradient, frameFromStart))) {
+    gradientLevel = 0;
+    gradient_ascending = false;
+    gradient_active = true;
+  }
 
   ProfilerStart(SeaAnemone);
 
