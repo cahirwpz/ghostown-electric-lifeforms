@@ -8,6 +8,7 @@
 #include "fx.h"
 #include <strings.h>
 #include <system/memory.h>
+#include <color.h>
 
 #include "data/bar.c"
 #include "data/stripes.c"
@@ -33,36 +34,39 @@
 
 typedef struct StateBar {
   /* two halves of the screen: 4 bitplane pointers and bplcon1 */
+  CopListT *cp;
   CopInsT *bar[4];
+  /* pointers for palette modification instructions */
+  CopInsT *palette[4];
   short bar_y[4];
 } StateBarT;
 
-typedef struct State {
+typedef struct StateFull {
   StateBarT bars;
+  CopListT *cp;
   CopInsT *sprite;
   /* for each line five horizontal positions */
   u_short *stripes[HEIGHT];
-} StateT;
+} StateFullT;
 
 static int active = 1;
-static CopListT *cpFull[2];
-static CopListT *cpBars[2];
 static short sintab8[128 * 4];
-static StateT state[2];
+static StateFullT stateFull[2];
 static StateBarT stateBars[2];
 static SpriteT stripe[NSPRITES];
 
-/* These numbers must be odd due to optimizations. */
-static char StripePhase[STRIPES] = { 4, 24, 16, 8, 12 };
-static char StripePhaseIncr[STRIPES] = { 8, -10, 14, -6, 6 };
+/* These numbers must be even due to optimizations. */
+static char StripePhase[STRIPES] = { 4, 24, 16, 2, 10 };
+static char StripePhaseIncr[STRIPES] = { 10, -10, 4, -12, 8 };
 
 static inline void CopSpriteSetHP(CopListT *cp, short n) {
   CopMove16(cp, spr[n * 2 + 0].pos, 0);
   CopMove16(cp, spr[n * 2 + 1].pos, 0);
 }
 
-static void MakeCopperListFull(CopListT *cp, StateT *state) {
+static void MakeCopperListFull(StateFullT *state) {
   short b, y, i;
+  CopListT *cp = state->cp;
 
   CopInit(cp);
 
@@ -97,11 +101,8 @@ static void MakeCopperListFull(CopListT *cp, StateT *state) {
         CopMove32(cp, bplpt[i], NULL);
       CopMove16(cp, bplcon1, 0);
     } else if (my == 8) {
-      if (y & 64) {
-        CopLoadColorArray(cp, &bar_pal.colors[16], 16, 0);
-      } else {
-        CopLoadColorArray(cp, &bar_pal.colors[0], 16, 0);
-      }
+      state->bars.palette[b] =
+        CopLoadColorArray(cp, &bar_pal.colors[(y & 64) ? 16 : 0], 16, 0);
     } else if (my == 16) {
       /* Advance bitplane pointers to display consecutive lines. */
       CopMove16(cp, bpl1mod, bar_bplmod);
@@ -144,8 +145,9 @@ static void MakeCopperListFull(CopListT *cp, StateT *state) {
   CopEnd(cp);
 }
 
-static void MakeCopperListBars(CopListT *cp, StateBarT *bars) {
+static void MakeCopperListBars(StateBarT *bars) {
   short b, by, y, i;
+  CopListT *cp = bars->cp;
 
   for (b = 0; b < BARS; b++) {
     bars->bar[b] = NULL;
@@ -175,12 +177,7 @@ static void MakeCopperListBars(CopListT *cp, StateBarT *bars) {
       for (i = 0; i < DEPTH; i++)
         CopMove32(cp, bplpt[i], NULL);
       CopMove16(cp, bplcon1, 0);
-
-      if (b & 1) {
-        CopLoadColorArray(cp, &bar_pal.colors[16], 16, 0);
-      } else {
-        CopLoadColorArray(cp, &bar_pal.colors[0], 16, 0);
-      }
+      CopLoadColorArray(cp, &bar_pal.colors[(b & 1) ? 16 : 0], 16, 0);
     } else if (y == by) {
       /* Advance bitplane pointers to display consecutive lines. */
       CopMove16(cp, bpl1mod, bar_bplmod);
@@ -194,6 +191,31 @@ static void MakeCopperListBars(CopListT *cp, StateBarT *bars) {
   }
 
   CopEnd(cp);
+}
+
+static void UpdateBarColor(StateBarT *bars, short step) {
+  u_char *_colortab = colortab;
+  short i;
+
+  for (i = 0; i < BARS; i++) {
+    CopInsT *pal = bars->palette[i] + 1;
+    const u_short *col = &bar_pal.colors[(i & 1 ? 16 : 0) + 1];
+    short k;
+    
+    for (k = 1; k < 16; k++) {
+      u_short from = *col++;
+#if 0
+      u_short c = ColorTransition(from, 0xfff, step);
+#else
+      short r = (from & 0xf00) | 0x0f0 | step;
+      short g = ((from << 4) & 0xf00) | 0x0f0 | step;
+      short b = ((from << 8) & 0xf00) | 0x0f0 | step;
+      u_short c = (_colortab[r] << 4) | _colortab[g] | (_colortab[b] >> 4);
+#endif
+
+      CopInsSet16(pal++, c);
+    }
+  }
 }
 
 static void UpdateBarState(StateBarT *bars) {
@@ -229,7 +251,7 @@ static void UpdateBarState(StateBarT *bars) {
   }
 }
 
-static void UpdateSpriteState(StateT *state) {
+static void UpdateSpriteState(StateFullT *state) {
   CopInsT *ins = state->sprite;
   int t = frameCount * 2;
   int fu = t & 63;
@@ -242,7 +264,7 @@ static void UpdateSpriteState(StateT *state) {
 
 #define HPOFF(x) HP(x + 32)
 
-static void UpdateStripeState(StateT *state) {
+static void UpdateStripeState(StateFullT *state) {
   static const char offset[STRIPES] = {
     HPOFF(O0), HPOFF(O1), HPOFF(O2), HPOFF(O3), HPOFF(O4) };
   u_char *phasep = StripePhase;
@@ -355,36 +377,38 @@ static void Init(void) {
   for (i = 0; i < NSPRITES; i++)
     SpriteUpdatePos(&stripe[i], X(0), Y(0));
 
-  cpFull[0] = NewCopList(CP_FULL_SIZE);
-  cpFull[1] = NewCopList(CP_FULL_SIZE);
+  stateFull[0].cp = NewCopList(CP_FULL_SIZE);
+  stateFull[1].cp = NewCopList(CP_FULL_SIZE);
+  MakeCopperListFull(&stateFull[0]);
+  MakeCopperListFull(&stateFull[1]);
 
-  MakeCopperListFull(cpFull[0], &state[0]);
-  MakeCopperListFull(cpFull[1], &state[1]);
-
-  cpBars[0] = NewCopList(CP_BARS_SIZE);
-  cpBars[1] = NewCopList(CP_BARS_SIZE);
-  MakeCopperListBars(cpBars[0], &stateBars[0]);
-  MakeCopperListBars(cpBars[1], &stateBars[1]);
+  stateBars[0].cp = NewCopList(CP_BARS_SIZE);
+  stateBars[1].cp = NewCopList(CP_BARS_SIZE);
+  MakeCopperListBars(&stateBars[0]);
+  MakeCopperListBars(&stateBars[1]);
 
   UpdateBarState(&stateBars[0]);
-  UpdateSpriteState(&state[0]);
+  UpdateSpriteState(&stateFull[0]);
 
-  CopListActivate(cpBars[0]);
+  CopListActivate(stateBars[0].cp);
 
+#if 0
   Log("CopperListFull: %ld instructions left\n",
-      CP_FULL_SIZE - (cpFull[0]->curr - cpFull[0]->entry));
+      CP_FULL_SIZE - (stateFull[0].cp->curr - stateFull[0].cp->entry));
   Log("CopperListBars: %ld instructions left\n",
-      CP_BARS_SIZE - (cpBars[0]->curr - cpBars[0]->entry));
+      CP_BARS_SIZE - (stateBars[0].cp->curr - stateBars[0].cp->entry));
+#endif
+
   EnableDMA(DMAF_RASTER);
 }
 
 static void Kill(void) {
   ResetSprites();
   DisableDMA(DMAF_RASTER | DMAF_COPPER);
-  DeleteCopList(cpFull[0]);
-  DeleteCopList(cpFull[1]);
-  DeleteCopList(cpBars[0]);
-  DeleteCopList(cpBars[1]);
+  DeleteCopList(stateFull[0].cp);
+  DeleteCopList(stateFull[1].cp);
+  DeleteCopList(stateBars[0].cp);
+  DeleteCopList(stateBars[1].cp);
 }
 
 PROFILE(UpdateStripeState);
@@ -445,36 +469,50 @@ static void ControlBars(StateBarT *bars) {
 
 static void ControlStripes(void) {
   if (frameFromStart <= 224) {
+    static __code short phase = 0;
+
     short t = frameFromStart - 64;
 
-    if (t == 0) {
+    if (t >= 0 && phase == 0) {
       CopySpriteTiles(0);
       ZeroSpriteTiles(1);
       ZeroSpriteTiles(2);
       ZeroSpriteTiles(3);
       ZeroSpriteTiles(4);
-    } else if (t == 33) {
+      phase++;
+    } else if (t >= 33 && phase == 1) {
       CopySpriteTiles(1);
-    } else if (t == 65) {
+      phase++;
+    } else if (t >= 65 && phase == 2) {
       CopySpriteTiles(2);
-    } else if (t == 97) {
+      phase++;
+    } else if (t >= 97 && phase == 3) {
       CopySpriteTiles(3);
-    } else if (t == 129) {
+      phase++;
+    } else if (t >= 129 && phase == 4) {
       CopySpriteTiles(4);
+      phase++;
     }
   } else if (frameTillEnd <= 224) {
+    static __code short phase = 0;
+
     short t = 224 - frameTillEnd;
 
-    if (t == 1) {
+    if (t >= 1 && phase == 0) {
       ZeroSpriteTiles(0);
-    } else if (t == 33) {
+      phase++;
+    } else if (t >= 33 && phase == 1) {
       ZeroSpriteTiles(1);
-    } else if (t == 65) {
+      phase++;
+    } else if (t >= 65 && phase == 2) {
       ZeroSpriteTiles(2);
-    } else if (t == 97) {
+      phase++;
+    } else if (t >= 97 && phase == 3) {
       ZeroSpriteTiles(3);
-    } else if (t == 129) {
+      phase++;
+    } else if (t >= 129 && phase == 4) {
       ZeroSpriteTiles(4);
+      phase++;
     }
   }
 }
@@ -485,18 +523,21 @@ static void Render(void) {
 
     ResetSprites();
     ControlBars(bars);
-    MakeCopperListBars(cpBars[active], bars);
+    MakeCopperListBars(bars);
     UpdateBarState(bars);
-    CopListRun(cpBars[active]);
+    CopListRun(bars->cp);
   } else {
+    StateFullT *state = &stateFull[active];
+
     EnableDMA(DMAF_SPRITE);
     ControlStripes();
-    UpdateBarState(&state[active].bars);
-    UpdateSpriteState(&state[active]);
     ProfilerStart(UpdateStripeState);
-    UpdateStripeState(&state[active]);
+    UpdateBarColor(&state->bars, (frameCount >> 2) & 3);
+    UpdateBarState(&state->bars);
+    UpdateSpriteState(state);
+    UpdateStripeState(state);
     ProfilerStop(UpdateStripeState);
-    CopListRun(cpFull[active]);
+    CopListRun(state->cp);
   }
 
   WaitVBlank();

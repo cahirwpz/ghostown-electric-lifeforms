@@ -1,20 +1,38 @@
 from math import ceil, log
 from PIL import Image
+from collections import namedtuple
+from itertools import product
 import argparse
 
 # Converts image with electron positions to C file
-# electron head needs to have palette index 2
-# electron tail needs to have palette index 3
+# electron head needs to have palette index 3
+# electron tail needs to have palette index 5
 # background can have palette index 0 or 1
+
+HEAD_COLOR_IDX = 3
+TAIL_COLOR_IDX = 5
 
 header = "#include <gfx.h>\n\n\
 #ifndef ELECTRONS_T\n\
 #define ELECTRONS_T\n\
-typedef struct ElectronsT {\n\
-  Point2D* points;\n\
-  u_short count;\n\
-} ElectronsT;\n\
+typedef struct ElectronT {\n\
+  Point2D head;\n\
+  Point2D tail;\n\
+} ElectronT;\n\
+\n\
+typedef struct ElectronArrayT {\n\
+  const int num_electrons;\n\
+  const ElectronT points[0];\n\
+} ElectronArrayT;\n\
 #endif\n\n"
+
+Electron = namedtuple('Electron', ['head', 'tail'])
+
+
+def pixels_around(x, y):
+    for i in range(-1, 2):
+        for j in range(-1, 2):
+            yield x+i, y+j
 
 
 def get_positions(infile):
@@ -23,52 +41,46 @@ def get_positions(infile):
             raise SystemExit('Only palette images supported.')
 
         width, height = im.size
-        colors = im.getextrema()[1] + 1
-        depth = int(ceil(log(colors, 2)))
-
-        if depth != 2:
-            raise SystemExit('Image needs to have exactly 2-bit depth')
 
         px = im.load()
-        heads, tails = [], []
-        for x in range(width):
-            for y in range(height):
-                if px[x, y] == 2:
-                    heads.append((x, y))
-                elif px[x, y] == 3:
-                    tails.append((x, y))
+        electrons = []
+        for hx, hy in product(range(width), range(height)):
+            if px[hx, hy] == HEAD_COLOR_IDX:
+                for tx, ty in pixels_around(hx, hy):
+                    if px[tx, ty] == TAIL_COLOR_IDX:
+                        electrons.append(Electron((hx, hy), (tx, ty)))
+                        break
 
-        return heads, tails
+        return electrons
 
 
-def generate_array(points, name):
+def generate_array(electrons, name):
     res = ""
-    res += "static Point2D {}_points[{}] = {{\n".format(name, len(points))
-    for x, y in points:
-        res += "  (Point2D){{.x={}, .y={}}},\n".format(x, y)
-    res += "};\n\n"
-    res += "static ElectronsT {} = {{\n".format(name)
-    res += "  .points = {}_points,\n".format(name)
-    res += "  .count = {}\n".format(len(points))
+    res += "static const ElectronArrayT {} = {{\n".format(name)
+    res += "  .num_electrons = {},\n".format(len(electrons))
+    res += "  .points = {\n"
+    for head, tail in electrons:
+        hx, hy = head
+        tx, ty = tail
+        res += "    {{ .head = {{ .x = {}, .y = {} }},".format(hx, hy)
+        res += ".tail = {{ .x = {}, .y = {} }} }},\n".format(tx, ty)
+    res += "  }\n"
     res += "};\n\n"
     return res
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(
-        description="Converts 1-bit PNG with electron positions to C file."
+        description="Converts 2-bit PNG with electron positions to C file."
     )
     parser.add_argument("infile", help="Input PNG file")
     parser.add_argument("outfile", help="Output C file")
-    parser.add_argument("--heads", default="heads",
-                        help="Name of the heads array")
-    parser.add_argument("--tails", default="tails",
-                        help="Name of the tails array")
+    parser.add_argument("--name", default="electrons",
+                        help="Name of the array with electron coordinates")
     args = parser.parse_args()
 
-    heads, tails = get_positions(args.infile)
+    electrons = get_positions(args.infile)
 
     with open(args.outfile, "w") as out:
         out.write(header)
-        out.write(generate_array(heads, args.heads))
-        out.write(generate_array(tails, args.tails))
+        out.write(generate_array(electrons, args.name))
