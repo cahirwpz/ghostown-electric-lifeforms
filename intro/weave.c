@@ -177,12 +177,7 @@ static void MakeCopperListBars(StateBarT *bars) {
       for (i = 0; i < DEPTH; i++)
         CopMove32(cp, bplpt[i], NULL);
       CopMove16(cp, bplcon1, 0);
-
-      if (b & 1) {
-        CopLoadColorArray(cp, &bar_pal.colors[16], 16, 0);
-      } else {
-        CopLoadColorArray(cp, &bar_pal.colors[0], 16, 0);
-      }
+      CopLoadColorArray(cp, &bar_pal.colors[(b & 1) ? 16 : 0], 16, 0);
     } else if (y == by) {
       /* Advance bitplane pointers to display consecutive lines. */
       CopMove16(cp, bpl1mod, bar_bplmod);
@@ -198,22 +193,28 @@ static void MakeCopperListBars(StateBarT *bars) {
   CopEnd(cp);
 }
 
-static void UpdateBarColor(StateBarT *bars) {
-  short a = frameCount % 5;
+static void UpdateBarColor(StateBarT *bars, short step) {
+  u_char *_colortab = colortab;
   short i;
 
   for (i = 0; i < BARS; i++) {
-    CopInsT *pal = bars->palette[i];
-    const u_short *col;
+    CopInsT *pal = bars->palette[i] + 1;
+    const u_short *col = &bar_pal.colors[(i & 1 ? 16 : 0) + 1];
     short k;
-
-    if (!pal)
-      continue;
-
-    col = &bar_pal.colors[i & 1 ? 16 : 0];
     
-    for (k = 1; k < 16; k++)
-      CopInsSet16(&pal[k], ColorTransition(col[k], 0xfff, a));
+    for (k = 1; k < 16; k++) {
+      u_short from = *col++;
+#if 0
+      u_short c = ColorTransition(from, 0xfff, step);
+#else
+      short r = (from & 0xf00) | 0x0f0 | step;
+      short g = ((from << 4) & 0xf00) | 0x0f0 | step;
+      short b = ((from << 8) & 0xf00) | 0x0f0 | step;
+      u_short c = (_colortab[r] << 4) | _colortab[g] | (_colortab[b] >> 4);
+#endif
+
+      CopInsSet16(pal++, c);
+    }
   }
 }
 
@@ -516,10 +517,10 @@ static void Render(void) {
 
     EnableDMA(DMAF_SPRITE);
     ControlStripes();
-    UpdateBarColor(&state->bars);
+    ProfilerStart(UpdateStripeState);
+    UpdateBarColor(&state->bars, (frameCount >> 2) & 3);
     UpdateBarState(&state->bars);
     UpdateSpriteState(state);
-    ProfilerStart(UpdateStripeState);
     UpdateStripeState(state);
     ProfilerStop(UpdateStripeState);
     CopListRun(state->cp);
