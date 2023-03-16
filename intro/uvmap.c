@@ -18,8 +18,8 @@ static u_short active = 0;
 static CopListT *cp;
 static CopInsT *bplptr[DEPTH];
 
-#include "data/texture-16-1.c"
-#include "data/texture-16-2.c"
+#include "data/uvgut-inside.c"
+#include "data/uvgut-outside.c"
 #include "data/gradient.c"
 #include "data/uvgut/map-u.c"
 #include "data/uvgut/map-v.c"
@@ -131,13 +131,13 @@ static void Load(void) {
   MakeUVMapRenderCode(uvmap);
   MemFree(uvmap);
 
-  texFstHi = MemAlloc(texture_1.width * texture_1.height * 4, MEMF_PUBLIC);
-  texFstLo = MemAlloc(texture_1.width * texture_1.height * 4, MEMF_PUBLIC);
-  PixmapToTexture(&texture_1, texFstHi, texFstLo);
+  texFstHi = MemAlloc(texture_out.width * texture_out.height * 4, MEMF_PUBLIC);
+  texFstLo = MemAlloc(texture_out.width * texture_out.height * 4, MEMF_PUBLIC);
+  PixmapToTexture(&texture_out, texFstHi, texFstLo);
 
-  texSndHi = MemAlloc(texture_2.width * texture_2.height * 4, MEMF_PUBLIC);
-  texSndLo = MemAlloc(texture_2.width * texture_2.height * 4, MEMF_PUBLIC);
-  PixmapToTexture(&texture_2, texSndHi, texSndLo);
+  texSndHi = MemAlloc(texture_in.width * texture_in.height * 4, MEMF_PUBLIC);
+  texSndLo = MemAlloc(texture_in.width * texture_in.height * 4, MEMF_PUBLIC);
+  PixmapToTexture(&texture_in, texSndHi, texSndLo);
 }
 
 static struct {
@@ -338,8 +338,8 @@ static void Kill(void) {
 
 PROFILE(UVMap);
 
-#define TW texture_1_width
-#define TH texture_1_height
+#define TW texture_in_width
+#define TH texture_in_height
 
 static void Render(void) {
   int size = TW * TH;
