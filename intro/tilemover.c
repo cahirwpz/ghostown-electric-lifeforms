@@ -3,6 +3,7 @@
 #include <copper.h>
 #include <stdlib.h>
 #include <system/memory.h>
+#include <system/interrupt.h>
 #include <fx.h>
 #include <sync.h>
 
@@ -21,7 +22,7 @@
 #define S_HEIGHT 224
 #define DEPTH 4
 #define COLORS 16
-#define NFLOWFIELDS 5
+#define NFLOWFIELDS 8
 
 #define MARGIN (2 * TILESIZE)
 #define WIDTH (S_WIDTH + MARGIN * 2)
@@ -37,9 +38,9 @@
 
 static BitmapT *screen;
 static int active = 0;
+static short prev_active = 0;
 static CopListT *cp;
 static CopInsT *bplptr[DEPTH + 1];
-static CopInsT *palptr[COLORS];
 
 /* 1 bit version of logo for blitting */
 static BitmapT *logo_blit;
@@ -49,10 +50,38 @@ static BitmapT *logo_blit;
 static short tiles[NFLOWFIELDS][NTILES];
 
 #include "data/tilemover-pal.c"
+#include "data/tilemover-bg-pal.c"
+#include "data/tilemover-windmills.c"
+#include "data/tilemover-wave.c"
+#include "data/tilemover-drops.c"
+#include "data/tilemover-block.c"
+
+#include "data/sea-anemone-pal1.c"
+#include "data/sea-anemone-pal2.c"
+#include "data/sea-anemone-pal3.c"
+
+typedef const PaletteT *TilemoverPalT[8];
+
+static TilemoverPalT tilemover_palettes = {
+  NULL,
+  &tilemover_pal,    // static - blue
+  &tilemover_pal,    // kitchen sink - blue
+  &tilemover_pal,    // soundwave - blue
+  &sea_anemone_pal2, // windmills - red
+  &sea_anemone_pal3, // rolling tube - green
+  &sea_anemone_pal2, // funky soundwave - red
+  &tilemover_pal,    // static - blue
+};
+
+static short lightLevel = 0;
+static const short blip_sequence[] = {
+  0, 0, 1, 2, 3, 4, 5, 5, 5, 4, 3, 2, 1
+};
 
 extern const BitmapT ghostown_logo;
 extern TrackT TileMoverNumber;
 extern TrackT TileMoverBlit;
+extern TrackT TileMoverBgBlip;
 
 /* fx, tx, fy, ty are arguments in pi-space (pi = 0x800, as in fx.h) */
 static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
@@ -100,37 +129,53 @@ static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
       short vy = 0;
       int mag =
         isqrt((int)px_real * (int)px_real + (int)py_real * (int)py_real);
-      int mag_sin = div16((int)(mag << 16), TWO_PI) >> 4;
+      //int mag_sin = div16((int)(mag << 16), TWO_PI) >> 4;
 
       switch (field_idx) {
-        case 0:
-          /* SIN_PI/3, SIN_PI, -SIN_PI/3, SIN_PI/12 */
-          vx = SIN(mag_sin) >> 8;
-          vy = (COS(mag_sin) >> 8) - (py_real >> 9);
-          break;
+        // STATIC
         case 1:
+          vx = 0;
+          vy = 0;
+          break;
+        // KITCHEN SINK
+        case 2:
+          /* {-PI/4, PI/4, -PI, PI} */
+          vx = py >> 10;
+          vy = px >> 10;
+          break;
+        // SOUND WAVE
+        case 3:
           /* -SIN_PI/2, SIN_PI/2, 0, SIN_PI/2 */
           vx = min(py_real, normfx(px_real * py_real)) >> 9;
           vy = mag >> 9;
           break;
-        case 2:
+        // WINDMILLS
+        case 4:
           /*
            * -SIN_PI/3, SIN_PI/3, -SIN_PI/3, SIN_PI/3
            * this is also good with range:
            * SIN_PI/12, SIN_PI/4, -SIN_PI/12, SIN_PI/24
            */
-          vx = (SIN(py * 6) / 2) >> 9;
-          vy = (SIN(px * 6) / 2) >> 9;
+          vx = SIN(py * 6) >> 10;
+          vy = SIN(px * 6) >> 10;
           break;
-        case 3:
-          /* -2 * SIN_PI, 2 * SIN_PI, -SIN_PI, SIN_PI */
-          vx = (SIN(py) / 2) >> 9;
-          vy = 0;
+        // ROLLING TUBE
+        case 5:
+          /* {-PI / 4, PI / 4, -PI, PI} */
+          vx = SIN(px) >> 10;
+          vy = COS(px) >> 15;
           break;
-        case 4:
-          /* -SIN_PI / 4, SIN_PI / 4, -SIN_PI, SIN_PI */
-          vx = (COS(px) / 2 + 127) >> 8;
-          vy = (px_real + 127) >> 8;
+        // FUNKY SOUND WAVE
+        case 6:
+          /* {-2*SIN_PI, 2*SIN_PI, -SIN_PI, SIN_PI} */
+          vx = px >> 9;
+          vy = COS(px + 127) >> 9;
+          break;
+        // SLOW KITCHEN SINK
+        case 7:
+          /* {-PI/4, PI/4, -PI, PI} */
+          vx = py >> 11;
+          vy = px >> 11;
           break;
         default:
       }
@@ -146,11 +191,14 @@ static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
 }
 
 static short ranges[NFLOWFIELDS][4] = {
-  {SIN_PI/3,  SIN_PI,   -SIN_PI/3, SIN_PI/12},
-  {-SIN_PI/2, SIN_PI/2, 0,         SIN_PI/2},
-  {-SIN_PI/3, SIN_PI/3, -SIN_PI/3, SIN_PI/3},
-  {-2*SIN_PI, 2*SIN_PI, -SIN_PI,   SIN_PI},
-  {-SIN_PI/4, SIN_PI/4, -SIN_PI,   SIN_PI},
+  {0, 0, 0, 0},                               // unused
+  {0, 0, 0, 0},                               // static
+  {-PI/4, PI/4, -PI, PI},                     // kitchen sink
+  {-SIN_PI/2, SIN_PI/2, 0, SIN_PI/2},         // sound wave
+  {-SIN_PI/3, SIN_PI/3, -SIN_PI/3, SIN_PI/3}, // windmills
+  {-PI/4, PI/4, -PI, PI},                     // rolling tube
+  {-2*SIN_PI, 2*SIN_PI, -SIN_PI, SIN_PI},     // funky soundwave
+  {-PI/4, PI/4, -PI, PI},                     // slow kitchen sink
 };
 
 static void BlitSimple(void *sourceA, void *sourceB, void *sourceC,
@@ -174,12 +222,11 @@ static void BlitSimple(void *sourceA, void *sourceB, void *sourceC,
   custom->bltsize = bltsize;
 }
 
-static void BlitGhostown(void) {
+static void BlitBitmap(short x, short y, BitmapT blit) {
   short i;
   short j = active;
-  BlitterCopySetup(screen, MARGIN + (S_WIDTH - logo_blit->width) / 2,
-                   MARGIN + (S_HEIGHT - logo_blit->height) / 2, logo_blit);
-  // monkeypatch minterms to perform screen = screen | logo_blit
+  BlitterCopySetup(screen, MARGIN + x, MARGIN + y, &blit);
+  /* monkeypatch minterms to perform screen1 = screen1 | blit */
   custom->bltcon0 = (SRCB | SRCC | DEST) | (ABC | ANBC | ABNC);
 
   for (i = DEPTH - 1; i >= 0; i--) {
@@ -190,19 +237,31 @@ static void BlitGhostown(void) {
   }
 }
 
+static void UpdateBitplanePointers(void) {
+  int offset = (MARGIN + WIDTH * MARGIN) / 8;
+  short i;
+  short j = active;
+
+  for (i = DEPTH - 1; i >= 0; i--) {
+    CopInsSet32(bplptr[i], screen->planes[j] + offset);
+    j--;
+    if (j < 0)
+      j += DEPTH + 1;
+  }
+}
+
 static void Load(void) {
   short i;
+
   for (i = 0; i < NFLOWFIELDS; i++)
     CalculateTiles(tiles[i], ranges[i], i);
 
   EnableDMA(DMAF_BLITTER);
-
-  // bitmap width aligned to word
+  /* bitmap width aligned to word */
   logo_blit = NewBitmap(ghostown_logo.width, ghostown_logo.height, 1);
   BlitSimple(ghostown_logo.planes[0], ghostown_logo.planes[1],
              ghostown_logo.planes[2], logo_blit,
-             ABC | ANBC | ABNC | ANBNC | NABC | NANBC | NABNC);
-
+             ABC | ANBC | ABNC | ANBNC | NABC | NANBC | NABNC); 
   WaitBlitter();
   DisableDMA(DMAF_BLITTER);
 }
@@ -211,48 +270,54 @@ static void UnLoad(void) {
   DeleteBitmap(logo_blit);
 }
 
+static int BgBlip(void) {
+  if (lightLevel) {
+    SetColor(0, tilemover_bg_pal.colors[blip_sequence[lightLevel]]);
+    lightLevel--;
+  }
+  return 0;
+}
+
+INTSERVER(BlipBackgroundInterrupt, 0, (IntFuncT)BgBlip, NULL);
+
+extern void KillLogo(void);
+
 static void Init(void) {
-  u_short i;
-  u_short *color = tilemover_pal.colors;
-
-  TrackInit(&TileMoverNumber);
-  TrackInit(&TileMoverBlit);
-
-  screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1);
-
+  screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1);  
+  EnableDMA(DMAF_BLITTER);
+  BlitBitmap(S_WIDTH/2 - 96 - 6, S_HEIGHT/2 - 66, *logo_blit); 
+  WaitBlitter();
+  DisableDMA(DMAF_BLITTER);
   SetupPlayfield(MODE_LORES, DEPTH, X(MARGIN), Y((256 - S_HEIGHT) / 2),
                  S_WIDTH, S_HEIGHT);
   LoadPalette(&tilemover_pal, 0);
+
+  KillLogo();
+
+  TrackInit(&TileMoverNumber);
+  TrackInit(&TileMoverBlit);
+  TrackInit(&TileMoverBgBlip);
 
   cp = NewCopList(100);
   CopInit(cp);
   CopSetupBitplanes(cp, bplptr, screen, DEPTH);
   CopMove16(cp, bpl1mod, (WIDTH - S_WIDTH) / 8);
   CopMove16(cp, bpl2mod, (WIDTH - S_WIDTH) / 8);
-  for (i = 0; i < COLORS; i++)
-    palptr[i] = CopSetColor(cp, i, *color++);
   CopEnd(cp);
-
+ 
   CopListActivate(cp);
+  
+  UpdateBitplanePointers();
   EnableDMA(DMAF_RASTER | DMAF_BLITTER | DMAF_BLITHOG);
+
+  AddIntServer(INTB_VERTB, BlipBackgroundInterrupt);
 }
 
 static void Kill(void) {
+  RemIntServer(INTB_VERTB, BlipBackgroundInterrupt);
   DisableDMA(DMAF_COPPER | DMAF_RASTER | DMAF_BLITTER | DMAF_BLITHOG);
   DeleteBitmap(screen);
   DeleteCopList(cp);
-}
-
-static void DrawSeed(u_char *bpl) {
-  short y = HEIGHT / 2 - TILESIZE / 2;
-  short x = WIDTH / 2 - TILESIZE / 2;
-  int offset = (y * WIDTH + x) / 8;
-  short n = 8 - 1;
-
-  do {
-    bpl[offset] = random();
-    offset += WIDTH / 8;
-  } while (--n >= 0);
 }
 
 #define BLTMOD (WIDTH / 8 - TILESIZE / 8 - 2)
@@ -324,15 +389,30 @@ static void MoveTiles(void *src asm("a2"), void *dst asm("a3"),
   } while (--m != -1);
 }
 
-static void UpdateBitplanePointers(void) {
-  int offset = (MARGIN + WIDTH * MARGIN) / 8;
+static void BlitShape(short val) {
   short i;
-  short j = active;
-  for (i = DEPTH - 1; i >= 0; i--) {
-    CopInsSet32(bplptr[i], screen->planes[j] + offset);
-    j--;
-    if (j < 0)
-      j += DEPTH + 1;
+
+  switch (val) {
+    case 2: /* Noise for kitchen sink */
+      BlitBitmap(170, 1, tilemover_block);
+      break;
+
+    case 3: /* Pseudo soundwave */
+      BlitBitmap(10, 170, tilemover_wave);
+      break;
+
+    case 4: /* Windmills */
+      for (i = 0; i < 6; i++)
+        BlitBitmap(1 + (random() & 230), 1 + (random() & 170),
+                   tilemover_windmills);
+      break;
+
+    case 5: /* Tube with stardrops */
+      for (i = 0; i < 3; i++)
+        BlitBitmap(165 + (random() & 10), random() & 170, tilemover_drops);
+      for (i = 0; i < 3; i++)
+        BlitBitmap(105 + (random() & 9), random() & 100, tilemover_drops);
+      break;
   }
 }
 
@@ -340,23 +420,21 @@ PROFILE(TileMover);
 
 static void Render(void) {
   short current_ff = TrackValueGet(&TileMoverNumber, frameCount);
-
-#if 0
-  {
-    short i;
-    // replace with some interpolated palette?
-    short *color = tilemover_pal.colors;
-    for (i = 0; i < COLORS; i++)
-      CopInsSet16(palptr[i], *color++);
+  short current_blip = TrackValueGet(&TileMoverBgBlip, frameCount);
+  short val;
+  
+  if (current_ff != prev_active) {
+    prev_active = current_ff;
+    LoadPalette(tilemover_palettes[current_ff], 0);
   }
-#endif
 
-  if (TrackValueGet(&TileMoverBlit, frameCount))
-    BlitGhostown();
+  if (current_blip)
+    lightLevel = current_blip;
+
+  if ((val = TrackValueGet(&TileMoverBlit, frameCount)))
+    BlitShape(val);
 
   ProfilerStart(TileMover);
-  if ((random() & 15) == 0)
-    DrawSeed(screen->planes[active]);
   {
     short xshift = random() & (TILESIZE - 1);
     short yshift = random() & (TILESIZE - 1);

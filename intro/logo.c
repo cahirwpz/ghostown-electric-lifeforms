@@ -56,9 +56,8 @@ static void Init(void) {
   EnableDMA(DMAF_RASTER);
 }
 
-static void Kill(void) {
-  DisableDMA(DMAF_COPPER | DMAF_RASTER);
-
+void KillLogo(void) {
+  DisableDMA(DMAF_RASTER);
   DeleteCopList(cp);
 
   DeleteBitmap(screen);
@@ -86,4 +85,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(Logo, NULL, NULL, Init, Kill, Render);
+EFFECT(Logo, NULL, NULL, Init, NULL, Render);
