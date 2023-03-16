@@ -36,9 +36,9 @@
 #define TWO_PI 25736
 #define PI 12868
 
-static BitmapT *screen;
-static int active = 0;
-static short prev_active = 0;
+static __code BitmapT *screen;
+static __code int active = 0;
+static __code short prev_active = 0;
 static CopListT *cp;
 static CopInsT *bplptr[DEPTH + 1];
 
@@ -73,7 +73,7 @@ static TilemoverPalT tilemover_palettes = {
   &tilemover_pal,    // static - blue
 };
 
-static short lightLevel = 0;
+static __code short lightLevel = 0;
 static const short blip_sequence[] = {
   0, 0, 1, 2, 3, 4, 5, 5, 5, 4, 3, 2, 1
 };
@@ -222,10 +222,10 @@ static void BlitSimple(void *sourceA, void *sourceB, void *sourceC,
   custom->bltsize = bltsize;
 }
 
-static void BlitBitmap(short x, short y, BitmapT blit) {
+static void BlitBitmap(short x, short y, const BitmapT *blit) {
   short i;
   short j = active;
-  BlitterCopySetup(screen, MARGIN + x, MARGIN + y, &blit);
+  BlitterCopySetup(screen, MARGIN + x, MARGIN + y, blit);
   /* monkeypatch minterms to perform screen1 = screen1 | blit */
   custom->bltcon0 = (SRCB | SRCC | DEST) | (ABC | ANBC | ABNC);
 
@@ -285,7 +285,7 @@ extern void KillLogo(void);
 static void Init(void) {
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1);  
   EnableDMA(DMAF_BLITTER);
-  BlitBitmap(S_WIDTH/2 - 96 - 6, S_HEIGHT/2 - 66, *logo_blit); 
+  BlitBitmap(S_WIDTH / 2 - 96 - 6, S_HEIGHT / 2 - 66, logo_blit);
   WaitBlitter();
   DisableDMA(DMAF_BLITTER);
   SetupPlayfield(MODE_LORES, DEPTH, X(MARGIN), Y((256 - S_HEIGHT) / 2),
@@ -394,24 +394,24 @@ static void BlitShape(short val) {
 
   switch (val) {
     case 2: /* Noise for kitchen sink */
-      BlitBitmap(170, 1, tilemover_block);
+      BlitBitmap(170, 1, &tilemover_block);
       break;
 
     case 3: /* Pseudo soundwave */
-      BlitBitmap(10, 170, tilemover_wave);
+      BlitBitmap(10, 170, &tilemover_wave);
       break;
 
     case 4: /* Windmills */
       for (i = 0; i < 6; i++)
         BlitBitmap(1 + (random() & 230), 1 + (random() & 170),
-                   tilemover_windmills);
+                   &tilemover_windmills);
       break;
 
     case 5: /* Tube with stardrops */
       for (i = 0; i < 3; i++)
-        BlitBitmap(165 + (random() & 10), random() & 170, tilemover_drops);
+        BlitBitmap(165 + (random() & 10), random() & 170, &tilemover_drops);
       for (i = 0; i < 3; i++)
-        BlitBitmap(105 + (random() & 9), random() & 100, tilemover_drops);
+        BlitBitmap(105 + (random() & 9), random() & 100, &tilemover_drops);
       break;
   }
 }

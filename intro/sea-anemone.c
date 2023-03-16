@@ -53,7 +53,7 @@ static const BitmapT *circles[DIAMETER / 2] = {
   &circle16
 };
 
-static short lightLevel = 0;
+static __code short lightLevel = 0;
 
 extern TrackT SeaAnemoneVariant;
 extern TrackT SeaAnemonePal;
@@ -61,42 +61,42 @@ extern TrackT SeaAnemonePalPulse;
 
 typedef const PaletteT *SeaAnemonePalT[4];
 
-static SeaAnemonePalT sea_anemone_palettes = {
+static const SeaAnemonePalT sea_anemone_palettes = {
   NULL, 
   &anemone_pal_1,
   &anemone_pal_2,
   &anemone_pal_3,
 };
 
-static SeaAnemonePalT anemone1_pal = {
+static const SeaAnemonePalT anemone1_pal = {
   NULL,
   &anemone_pal_1_light,
   &anemone_pal_1,
   &anemone_pal_1_dark,
 };
 
-static SeaAnemonePalT anemone2_pal = {
+static const SeaAnemonePalT anemone2_pal = {
   NULL,
   &anemone_pal_2_light,
   &anemone_pal_2,
   &anemone_pal_2_dark,
 };
 
-static SeaAnemonePalT anemone3_pal = {
+static const SeaAnemonePalT anemone3_pal = {
   NULL,
   &anemone_pal_3_light,
   &anemone_pal_3,
   &anemone_pal_3_dark,
 };
 
-static SeaAnemonePalT *sea_anemone_pal[4] = {
+static const SeaAnemonePalT *sea_anemone_pal[4] = {
   NULL,
   &anemone1_pal,
   &anemone2_pal,
   &anemone3_pal,
 };
 
-static SeaAnemonePalT *active_pal = &anemone1_pal;
+static const SeaAnemonePalT *active_pal = &anemone1_pal;
 
 static const short blip_sequence[] = {
   0,
@@ -187,7 +187,7 @@ static void MakeArm(ArmQueueT *arms, ArmT *arm) {
   u_int arand = random();
 
   if (ArmVariant == 1) {
-    arm->pos_x = fx4i((arand & 255) + 64);
+    arm->pos_x = fx4i((arand & 255) + 32);
     if (arms->head % 2 == 0) {
       arm->pos_y = fx4i(DIAMETER);
     } else {
