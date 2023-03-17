@@ -111,6 +111,7 @@ PNG2C.anemone-pal-2-light := --palette anemone_pal_2_light,16
 PNG2C.anemone-pal-3 := --palette anemone_pal_3,16
 PNG2C.anemone-pal-3-dark := --palette anemone_pal_3_dark,16
 PNG2C.anemone-pal-3-light := --palette anemone_pal_3_light,16
+PNG2C.anemone-gradient := --palette anemone_gradient,16
 
 PNG2C.tilemover-windmills := --bitmap tilemover_windmills,32x32x1
 PNG2C.tilemover-wave := --bitmap tilemover_wave,192x64x1

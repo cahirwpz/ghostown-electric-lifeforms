@@ -59,8 +59,12 @@ static const BitmapT *circles[DIAMETER / 2] = {
   &circle16
 };
 
+<<<<<<< HEAD
+static short lightLevel = 0;
+static short gradientLevel = 15;
+=======
 static __code short lightLevel = 0;
-static __code short gradientLevel = 0;
+>>>>>>> master
 
 extern TrackT SeaAnemoneVariant;
 extern TrackT SeaAnemonePal;
@@ -114,38 +118,38 @@ static const short blip_sequence[] = {
 };
 
 short gradient[GRADIENTL * 2] = {
-  0, 15,
-  4, 12,
+  0, 1,
+  4, 4,
   8, 8,
-  12, 4,
-  27, 3,
-  34, 4,
-  36, 3,
-  39, 4,
-  40, 5,
-  42, 4,
-  43, 5,
-  46, 6,
-  47, 5,
-  48, 6,
-  50, 5,
-  51, 6,
-  55, 7,
+  12, 12,
+  27, 13,
+  34, 12,
+  36, 13,
+  39, 12,
+  40, 11,
+  42, 12,
+  43, 11,
+  46, 10,
+  47, 11,
+  48, 10,
+  50, 11,
+  51, 10,
+  55, 9,
   60, 8,
-  70, 9,
-  77, 10,
-  78, 9,
-  79, 10,
-  86, 11,
-  87, 10,
-  88, 11,
-  95, 12,
-  97, 11,
-  98, 12,
-  104, 13,
-  113, 14,
-  118, 15,
-  127, 15,
+  70, 7,
+  77, 6,
+  78, 7,
+  79, 6,
+  86, 5,
+  87, 6,
+  88, 5,
+  95, 4,
+  97, 5,
+  98, 4,
+  104, 3,
+  113, 2,
+  118, 1,
+  127, 1,
 };
 
 
@@ -317,13 +321,15 @@ static int PaletteBlip(void) {
   if (gradientLevel > 0 && gradient_ascending) {
     gradientLevel--;
     if (gradientLevel == 0) {
-        gradient_ascending = false;
+      gradientLevel = 15;
+      gradient_active = false;
     }
   }
   if (gradientLevel <= 15 && !gradient_ascending) {
     gradientLevel++;
     if (gradientLevel > 15) {
-      gradient_active = false;
+      gradient_ascending = true;
+      gradientLevel = 0;
     }
   }
 
@@ -533,8 +539,8 @@ static void Render(void) {
     lightLevel = valPal;
 
   if ((valGradient = TrackValueGet(&SeaAnemoneGradient, frameFromStart))) {
-    gradientLevel = valGradient;
-    gradient_ascending = true;
+    gradientLevel = 0;
+    gradient_ascending = false;
     gradient_active = true;
   }
 
