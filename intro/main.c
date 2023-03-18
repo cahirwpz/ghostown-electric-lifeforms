@@ -90,9 +90,10 @@ static void RunEffects(void) {
         break;
       EffectInit(AllEffects[curr]);
       ShowMemStats();
+      Log("[Effect] Transition to %s took %d frames!\n",
+          AllEffects[curr]->name, ReadFrameCounter() - lastFrameCount);
+      lastFrameCount = ReadFrameCounter() - 1;
     }
-
-    lastFrameCount = ReadFrameCounter() - 1;
 
     {
       EffectT *effect = AllEffects[curr];
