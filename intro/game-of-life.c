@@ -127,18 +127,18 @@ static BitmapT *prev_states[PREV_STATES_DEPTH];
 
 // states_head % PREV_STATES_DEPTH points to the newest (currently being
 // pixel-doubled, not displayed yet) game state in prev_states
-static short states_head = 0;
+static __code short states_head = 0;
 
 // phase (0-8) of blitter calculations
-static short phase = 0;
+static __code volatile short phase = 0;
 
 // like frameCount, but counts game of life generations (sim steps)
-static short stepCount = 0;
+static __code short stepCount = 0;
 
 // are we running wireworld?
-static bool wireworld = false;
+static __code bool wireworld = false;
 
-static short prev_states_depth = PREV_STATES_DEPTH;
+static __code short prev_states_depth = PREV_STATES_DEPTH;
 
 #include "gol-cycling.c"
 #include "gol-doubling.c"
@@ -218,29 +218,6 @@ static void BlitFunc(const BitmapT *sourceA, const BitmapT *sourceB,
   custom->bltsize = BLTSIZE;
 }
 
-// This is a bit hacky way to reuse the current interface for blitter phases
-// to do something after the last blit has been completed. For technical
-// reasons wireworld implementation requires 2 separate games to be ran
-// in alternating fashion, and the switch between them must be done precisely
-// when the board for a game finishes being calculated or things will break
-// in ways undebuggable by single-stepping the game state
-static void WireworldSwitch(__unused const BitmapT *sourceA,
-                            __unused const BitmapT *sourceB,
-                            __unused const BitmapT *sourceC,
-                            __unused const BitmapT *target,
-                            __unused u_short minterms) {
-  // which wireworld game (0-1) phase are we on
-  static short wireworld_step = 0;
-
-  current_board = boards[wireworld_step];
-  current_game = &wireworlds[wireworld_step];
-  wireworld_step ^= 1;
-
-  // set pixels on correct board
-  SpawnElectrons(cur_electrons,
-                 boards[wireworld_step ^ 1], boards[wireworld_step]);
-}
-
 static void MakeCopperList(CopListT *cp) {
   short i;
 
@@ -257,10 +234,10 @@ static void MakeCopperList(CopListT *cp) {
     SpriteUpdatePos(spr,
                     X(DISP_WIDTH / 2 + (i / 2) * 16 - 32),
                     Y(DISP_HEIGHT / 2 - spr->height / 2));
-    if (TrackValueGet(&WireworldBg, frameCount) == 1) {
+    if (wireworld && TrackValueGet(&WireworldBg, frameCount) == 1) {
       CopInsSetSprite(sprptr[i], spr);
     } else {
-      CopInsSetSprite(sprptr[i], NULL);
+      CopInsSet32(sprptr[i], NullSprData);
     }
   }
 
@@ -297,18 +274,24 @@ static void UpdateBitplanePointers(void) {
     cur = prev_states[last];
     CopInsSet32(bplptr[i], cur->planes[0]);
   }
+  states_head++;
+  if (states_head >= prev_states_depth)
+    states_head -= prev_states_depth;
 }
 
 static void GameOfLife(void *boards) {
-  ClearIRQ(INTF_BLIT);
   if (phase < current_game->num_phases) {
     const BlitterPhaseT *p = &current_game->phases[phase];
     p->blitfunc(*(const BitmapT **)(boards + p->srca),
                 *(const BitmapT **)(boards + p->srcb),
                 *(const BitmapT **)(boards + p->srcc),
                 *(const BitmapT **)(boards + p->dst), p->minterm);
+    // Phase has to be incremented only when the blit starts!
+    phase++;
+  } else {
+    // When the last blit finishes reset phase counter.
+    phase = 0;
   }
-  phase++;
 }
 
 static short scene_count = 0;
@@ -388,6 +371,8 @@ static void SharedPostInit(void) {
   custom->bltcmod = 0;
   custom->bltdmod = 0;
 
+  phase = 0;
+
   SetIntVector(INTB_BLIT, (IntHandlerT)GameOfLife, boards);
   EnableINT(INTF_BLIT);
 }
@@ -445,6 +430,11 @@ static void InitGameOfLife(void) {
 
 static void Kill(void) {
   short i;
+
+  while (phase > 0)
+    continue;
+
+  ResetSprites();
   DisableDMA(DMAF_RASTER | DMAF_BLITTER | DMAF_SPRITE | DMAF_COPPER);
   DisableINT(INTF_BLIT);
   ResetIntVector(INTB_BLIT);
@@ -478,13 +468,27 @@ static void GolStep(void) {
   ProfilerStart(GOLStep);
   if (!wireworld)
     current_game = &games[TrackValueGet(&GOLGame, frameCount)];
-  WaitBlitter();
+  while (phase > 0)
+    continue;
+  if (wireworld) {
+    // For technical reasons wireworld implementation requires 2 separate games to
+    // be ran in alternating fashion, and the switch between them must be done
+    // precisely when the board for a game finishes being calculated or things will
+    // break in ways undebuggable by single-stepping the game state
+
+    // which wireworld game (0-1) phase are we on
+    static __code short wireworld_step = 0;
+
+    current_board = boards[wireworld_step];
+    current_game = &wireworlds[wireworld_step];
+    wireworld_step ^= 1;
+
+    // set pixels on correct board
+    SpawnElectrons(cur_electrons,
+                   boards[wireworld_step ^ 1], boards[wireworld_step]);
+  }
   PixelDouble(src, dst, double_pixels);
   UpdateBitplanePointers();
-  states_head++;
-  if (states_head >= prev_states_depth)
-    states_head -= prev_states_depth;
-  phase = 0;
   GameOfLife(boards);
   if (wireworld) {
     ColorCyclingStep(&palptr[16], wireworld_chip_cycling, &wireworld_chip_pal);
