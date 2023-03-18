@@ -27,6 +27,8 @@ static BitmapT *screen;
 #include "data/pal-gold-light.c"
 
 #include "data/pal-blue.c"
+#include "data/pal-blue-dark.c"
+#include "data/pal-blue-light.c"
 
 #include "data/pal-red.c"
 #include "data/pal-red-dark.c"
@@ -110,9 +112,9 @@ static const SeaAnemonePalT anemone1_pal = {
 
 static const SeaAnemonePalT anemone2_pal = {
   NULL,
+  &pal_blue_light,
   &pal_blue,
-  &pal_blue,
-  &pal_blue,
+  &pal_blue_dark,
 };
 
 static const SeaAnemonePalT anemone3_pal = {

@@ -112,6 +112,10 @@ PNG2C.pal-gold := --palette pal_gold,16
 PNG2C.pal-gold-dark := --palette pal_gold_dark,16
 PNG2C.pal-gold-light := --palette pal_gold_light,16
 
+PNG2C.pal-blue := --palette pal_blue,16
+PNG2C.pal-blue-dark := --palette pal_blue_dark,16
+PNG2C.pal-blue-light := --palette pal_blue_light,16
+
 PNG2C.pal-green := --palette pal_green,16
 PNG2C.pal-green-dark := --palette pal_green_dark,16
 PNG2C.pal-green-light := --palette pal_green_light,16
