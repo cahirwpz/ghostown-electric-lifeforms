@@ -3,6 +3,7 @@
 #include <copper.h>
 #include <color.h>
 #include <sync.h>
+#include <types.h>
 #include <system/memory.h>
 
 #define WIDTH 320
@@ -57,10 +58,16 @@ static void Init(void) {
 }
 
 void KillLogo(void) {
-  DisableDMA(DMAF_RASTER);
-  DeleteCopList(cp);
+  static __code bool enabled = true;
 
-  DeleteBitmap(screen);
+  if (enabled) {
+    DisableDMA(DMAF_RASTER);
+    DeleteCopList(cp);
+
+    DeleteBitmap(screen);
+  } else {
+    enabled = true;
+  }
 }
 
 static void Render(void) {
@@ -85,4 +92,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(Logo, NULL, NULL, Init, NULL, Render);
+EFFECT(Logo, NULL, NULL, Init, KillLogo, Render);
