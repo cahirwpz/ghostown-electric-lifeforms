@@ -1,6 +1,7 @@
 #include <SDL.h>
 #include <SDL_image.h>
 #include <math.h>
+#include <stdbool.h>
 
 #define TEST 0
 
@@ -13,7 +14,7 @@ static const int HEIGHT = 100;
 #endif
 static const int TEXSIZE = 64;
 
-static const int MAX_STEPS = 100;
+static const int MAX_STEPS = 1000;
 static const float MAX_DIST = 100.0;
 static const float SURF_DIST = 0.01;
 
@@ -21,6 +22,7 @@ static float iTime;
 static SDL_Surface *iChannel0;
 static SDL_Surface *iChannel1;
 
+static bool mapDone = false;
 static uint8_t umap[WIDTH * HEIGHT];
 static uint8_t vmap[WIDTH * HEIGHT];
 static uint8_t omap[WIDTH * HEIGHT];
@@ -200,7 +202,15 @@ float PipeOuterDist(vec3 p, float r) {
 }
 
 void PerFrame(void) {
-  iTime = SDL_GetTicks() / 1000.0;
+  static float iTimeStart;
+  static bool iTimeFirst = true;
+
+  if (iTimeFirst) {
+    iTimeStart = SDL_GetTicks() / 1000.0f;
+    iTimeFirst = false;
+  }
+
+  iTime = SDL_GetTicks() / 1000.0 - iTimeStart;
 }
 
 typedef struct hit {
@@ -231,12 +241,14 @@ hit RayMarch(vec3 ro, vec3 rd) {
     // distance to the scene
     h = GetDist(p);
     if (h.dist < SURF_DIST)
-      break;
+      return (hit){dO, h.obj};
     dO += h.dist;
     // prevent ray from escaping the scene
     if (dO > MAX_DIST)
       return (hit){INFINITY, -1};
   }
+
+  SDL_Log("Too many steps!\n");
 
   return (hit){dO, h.obj}; 
 }
@@ -292,9 +304,11 @@ void Render(SDL_Surface *canvas) {
 
       int pos = y * WIDTH + x;
 
-      umap[pos] = texpos(tuv.x, TEXSIZE);
-      vmap[pos] = texpos(tuv.y, TEXSIZE);
-      omap[pos] = h.obj * 2;
+      if (!mapDone) {
+        umap[pos] = texpos(tuv.x, TEXSIZE);
+        vmap[pos] = texpos(tuv.y, TEXSIZE);
+        omap[pos] = h.obj * 2;
+      }
 
       buffer[pos] = col;
     }
@@ -303,6 +317,8 @@ void Render(SDL_Surface *canvas) {
   uint32_t end = SDL_GetTicks();
 
   SDL_Log("Render took %dms\n", end - start);
+
+  mapDone = true;
 }
 
 SDL_Surface *LoadTexture(const char *path) {
