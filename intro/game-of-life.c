@@ -234,10 +234,10 @@ static void MakeCopperList(CopListT *cp) {
     SpriteUpdatePos(spr,
                     X(DISP_WIDTH / 2 + (i / 2) * 16 - 32),
                     Y(DISP_HEIGHT / 2 - spr->height / 2));
-    if (TrackValueGet(&WireworldBg, frameCount) == 1) {
+    if (wireworld && TrackValueGet(&WireworldBg, frameCount) == 1) {
       CopInsSetSprite(sprptr[i], spr);
     } else {
-      CopInsSetSprite(sprptr[i], NULL);
+      CopInsSet32(sprptr[i], NullSprData);
     }
   }
 
@@ -431,6 +431,7 @@ static void Kill(void) {
   while (phase > 0)
     continue;
 
+  ResetSprites();
   DisableDMA(DMAF_RASTER | DMAF_BLITTER | DMAF_SPRITE | DMAF_COPPER);
   DisableINT(INTF_BLIT);
   ResetIntVector(INTB_BLIT);
