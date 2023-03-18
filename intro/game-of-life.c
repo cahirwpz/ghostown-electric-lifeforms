@@ -279,7 +279,7 @@ static void UpdateBitplanePointers(void) {
     states_head -= prev_states_depth;
 }
 
-static void BlitGameOfLife(void* boards, short phase) {
+static void BlitGameOfLife(void *boards, short phase) {
   const BlitterPhaseT *p = &current_game->phases[phase];
   p->blitfunc(*(const BitmapT **)(boards + p->srca),
               *(const BitmapT **)(boards + p->srcb),
@@ -288,7 +288,8 @@ static void BlitGameOfLife(void* boards, short phase) {
 }
 
 static void GameOfLife(void *boards) {
-  if ((phase < current_game->num_phases - 1))
+  // run all blits except the last one
+  if (phase < current_game->num_phases - 1)
     BlitGameOfLife(boards, phase);
   // always increment phase (used for detecting when we finish blits)
   phase++;
@@ -490,11 +491,13 @@ static void GolStep(void) {
   // run PixelDouble in parallel
   PixelDouble(src, dst, double_pixels);
   // wait for all blits except the last to finish
-  while (phase < current_game->num_phases);
+  while (phase < current_game->num_phases)
+    continue;
   // run the last blit
   BlitGameOfLife(boards, current_game->num_phases - 1);
   // wait for the last blit to finish
-  while (phase < current_game->num_phases + 1);
+  while (phase <= current_game->num_phases)
+    continue;
   // reset phase counter
   phase = 0;
   // ----- PIXELDOUBLE-BLITTER SYNCHRONIZATION -----
