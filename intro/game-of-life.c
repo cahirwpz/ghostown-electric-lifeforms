@@ -468,7 +468,8 @@ static void GolStep(void) {
   ProfilerStart(GOLStep);
   if (!wireworld)
     current_game = &games[TrackValueGet(&GOLGame, frameCount)];
-  while (phase > 0);
+  while (phase > 0)
+    continue;
   if (wireworld) {
     // For technical reasons wireworld implementation requires 2 separate games to
     // be ran in alternating fashion, and the switch between them must be done
