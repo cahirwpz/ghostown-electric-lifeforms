@@ -13,18 +13,22 @@ _ExtSamples:
         section '.text', code
         xdef _AK_Generate
         xdef _AK_Progress
+        xdef _AK_ProgressLen
 
 _AK_Generate:
         movem.l d2-d7/a2-a6,-(sp)
         lea     _Samples,a0
         lea     _ExtSamples,a2
-        lea     _AK_Progress,a3
+        lea     _AK_Progress(pc),a3
         bsr     AK_Generate
         movem.l (sp)+,d2-d7/a2-a6
         rts
 
 _AK_Progress:
         ds.l    1
+
+_AK_ProgressLen:
+        dc.l    AK_FINE_PROGRESS_LEN
 
 ;----------------------------------------------------------------------------
 ;

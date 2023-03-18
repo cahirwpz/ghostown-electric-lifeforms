@@ -33,12 +33,6 @@ static void BlitFunc(const BitmapT *sourceA, const BitmapT *sourceB,
                      const BitmapT *sourceC, const BitmapT *target,
                      u_short minterms);
 
-static void WireworldSwitch(__unused const BitmapT *sourceA,
-                            __unused const BitmapT *sourceB,
-                            __unused const BitmapT *sourceC,
-                            __unused const BitmapT *target,
-                            __unused u_short minterms);
-
 #define PHASE(sa, sb, sc, d, mt, bf)                                           \
   (BlitterPhaseT) {                                                            \
     .blitfunc = bf, .minterm = mt, .srca = sa * sizeof(void *),                \
@@ -165,7 +159,7 @@ static const GameDefinitionT games[] = {
 // the circuit, and remove pixels which were lit one and two generations ago
 static const GameDefinitionT wireworlds[] = {
   {
-    .num_phases = 11,
+    .num_phases = 10,
     .phases = (BlitterPhaseT[]){
       // 0 = state from one generation ago
       // 1 = state from two generations ago
@@ -181,11 +175,9 @@ static const GameDefinitionT wireworlds[] = {
       PHASE(6, 5, 8, 9, NANBNC | NANBC | NABC | ANBNC | ABNC | ABC, BlitFunc),
       PHASE(11, 9, 0, 10, ABNC, BlitFunc),
       PHASE(1, 10, 10, 1, NABC, BlitFunc),
-      PHASE(0, 0, 0, 0, 0x0, WireworldSwitch),
-      // PHASE(10, 10, 10, 0, ABC, BlitFunc),
     }
   }, {
-    .num_phases = 11,
+    .num_phases = 10,
     .phases = (BlitterPhaseT[]){
       // 1 = state from one generation ago
       // 0 = state from two generations ago
@@ -201,7 +193,6 @@ static const GameDefinitionT wireworlds[] = {
       PHASE(6, 5, 8, 9, NANBNC | NANBC | NABC | ANBNC | ABNC | ABC, BlitFunc),
       PHASE(11, 9, 1, 10, ABNC, BlitFunc),
       PHASE(0, 10, 10, 0, NABC, BlitFunc),
-      PHASE(0, 0, 0, 0, 0x0, WireworldSwitch),
     }
   }
 };
