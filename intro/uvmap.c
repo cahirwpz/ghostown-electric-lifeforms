@@ -23,7 +23,6 @@ static CopInsT *bplptr[DEPTH];
 #include "data/gradient.c"
 #include "data/uvgut/map-u.c"
 #include "data/uvgut/map-v.c"
-#include "data/uvgut/map-o.c"
 
 #define UVMapRenderSize ((5 + WIDTH * HEIGHT / 32 * (8 * 8 + 2)) * 2)
 void (*UVMapRender)(u_short *chunkyEnd asm("a0"),
@@ -71,7 +70,7 @@ static void ScrambleUVMap(u_short *uvmap) {
   u_char *v = vmap;
   short i;
 
-#define MAKEUV() (((*v++) << 7) | ((*u++) << 1))
+#define MAKEUV() (((*v++) << 7) | (*u++))
 
   for (i = 0; i < WIDTH * HEIGHT; i += 8) {
     uvmap[i + 0] = MAKEUV();
@@ -90,28 +89,38 @@ static void ScrambleUVMap(u_short *uvmap) {
 static void MakeUVMapRenderCode(u_short *uvmap) {
   u_short *code = (void *)UVMapRender;
   u_short *data = uvmap + WIDTH * HEIGHT;
-  u_char *obj = omap + WIDTH * HEIGHT;
 
   /* The map is pre-scrambled to avoid one c2p pass:
    * [a b c d e f g h] => [a b e f c d g h] */
   short n = WIDTH * HEIGHT / 32;
 
+  register short m1 asm("d5") = 1;
+  register short m2 asm("d6") = -2;
+
   *code++ = 0x48e7; *code++ = 0x3f00; /* movem.l d2-d7,-(sp) */
+  data -= 4;
 
   while (n--) {
-    short m;
+    short m, w, o;
 
     for (m = 0x0e00; m >= 0; m -= 0x0200) {
-      obj -= 4;
-      data -= 4;
-      *code++ = (0x3029 | m) + obj[0];  /* 3029 xxxx | move.w xxxx(a1),d0 */
-      *code++ = data[0];
-      *code++ = (0x806a | m) + obj[1];  /* 806a yyyy | or.w   yyyy(a2),d0 */
-      *code++ = data[1];
-      *code++ = (0x1029 | m) + obj[2];  /* 1029 wwww | move.b wwww(a1),d0 */
-      *code++ = data[2];
-      *code++ = (0x802a | m) + obj[3];  /* 802a zzzz | or.b   zzzz(a2),d0 */
-      *code++ = data[3];
+      /* 3029 xxxx | move.w xxxx(a1),d0 */
+      w = *data++; o = w & m1;
+      *code++ = (0x3029 | m) + (o + o);
+      *code++ = w & m2;
+      /* 806a yyyy | or.w   yyyy(a2),d0 */
+      w = *data++; o = w & m1;
+      *code++ = (0x806a | m) + (o + o);
+      *code++ = w & m2;
+      /* 1029 wwww | move.b wwww(a1),d0 */
+      w = *data++; o = w & m1;
+      *code++ = (0x1029 | m) + (o + o);
+      *code++ = w & m2;
+      /* 802a zzzz | or.b   zzzz(a2),d0 */
+      w = *data++; o = w & m1;
+      *code++ = (0x802a | m) + (o + o);
+      *code++ = w & m2;
+      data -= 8;
     }
 
     *code++ = 0x48a0; *code++ = 0xff00; /* d0-d7,-(a0) */
