@@ -279,19 +279,19 @@ static void UpdateBitplanePointers(void) {
     states_head -= prev_states_depth;
 }
 
+static __code volatile short last = 0;
+
 static void GameOfLife(void *boards) {
-  if (phase < current_game->num_phases) {
+  if ((phase < current_game->num_phases - 1) || last) {
     const BlitterPhaseT *p = &current_game->phases[phase];
     p->blitfunc(*(const BitmapT **)(boards + p->srca),
                 *(const BitmapT **)(boards + p->srcb),
                 *(const BitmapT **)(boards + p->srcc),
                 *(const BitmapT **)(boards + p->dst), p->minterm);
     // Phase has to be incremented only when the blit starts!
-    phase++;
-  } else {
-    // When the last blit finishes reset phase counter.
-    phase = 0;
+    last = 0;
   }
+  phase++;
 }
 
 static short scene_count = 0;
@@ -486,9 +486,20 @@ static void GolStep(void) {
     SpawnElectrons(cur_electrons,
                    boards[wireworld_step ^ 1], boards[wireworld_step]);
   }
-  PixelDouble(src, dst, double_pixels);
-  UpdateBitplanePointers();
+  
+  // run all blits except the last
+  last = 0;
   GameOfLife(boards);
+  PixelDouble(src, dst, double_pixels);
+  // run the last blit
+  while (phase < current_game->num_phases);
+  last = 1;
+  phase = current_game->num_phases - 1;
+  GameOfLife(boards);
+  while (phase < current_game->num_phases + 1);
+  phase = 0;
+  UpdateBitplanePointers();
+
   if (wireworld) {
     ColorCyclingStep(&palptr[16], wireworld_chip_cycling, &wireworld_chip_pal);
   } else {
