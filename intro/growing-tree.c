@@ -302,7 +302,7 @@ static bool SplitBranch(BranchT *parent, BranchT **lastp) {
 }
 
 void GrowingTree(BranchT *branches, BranchT **lastp) {
-  u_short *fruit = nrPal ? _fruit_2_bpl : _fruit_1_bpl;
+  u_short *fruit = nrPal ? _fruit_1_bpl : _fruit_2_bpl;
   BranchT *b;
 
   for (b = *lastp - 1; b >= branches; b--) {
