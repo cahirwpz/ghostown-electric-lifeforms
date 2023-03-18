@@ -491,7 +491,9 @@ static void GolStep(void) {
   UpdateBitplanePointers();
   GameOfLife(boards);
   if (wireworld) {
-    ColorCyclingStep(&palptr[16], wireworld_chip_cycling, &wireworld_chip_pal);
+    const short cycling_len =
+      sizeof(wireworld_chip_cycling)/sizeof(wireworld_chip_cycling[0]);
+    ColorCyclingStep(&palptr[16], wireworld_chip_cycling, cycling_len, &wireworld_chip_pal);
   } else {
     ColorPingPongStep(palptr, pingpong);
   }
