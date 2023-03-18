@@ -58,7 +58,7 @@ static void Init(void) {
 }
 
 void KillLogo(void) {
-  static __code bool enabled = true;
+  static __code bool enabled = false;
 
   if (enabled) {
     DisableDMA(DMAF_RASTER);
