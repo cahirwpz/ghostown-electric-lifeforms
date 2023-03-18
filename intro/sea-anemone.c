@@ -16,8 +16,8 @@
 #define DIAMETER 32
 #define NARMS 15 /* must be power of two minus one */
 
-static CopListT *cp0;
-static CopListT *cp1;
+static __code short active = 0;
+static __code CopListT *cp[2];
 static CopInsT *bplptr[DEPTH];
 static BitmapT *screen;
 
@@ -143,8 +143,8 @@ static __code short lightLevel = 0;
 
 // For the background gradient
 static __code short gradientLevel = 0;
-bool gradientAscending = false;
-bool gradientActive = false;
+static __code bool gradientAscending = false;
+static __code bool gradientActive = false;
 
 static inline int fastrand(void) {
   static int m[2] = { 0x3E50B28C, 0xD461A7F9 };
@@ -328,19 +328,21 @@ static int PaletteBlip(void) {
 INTSERVER(PulsatePaletteInterrupt, 0, (IntFuncT)PaletteBlip, NULL);
 
 static void MakeCopperList(CopListT *cp) {
-  short i;
-  short *ptr = gradient;
   CopInit(cp);
   CopSetupBitplanes(cp, bplptr, screen, DEPTH);
 
   if (gradientActive) {
-    for(i=1;i<GRADIENTL;i++) {
-      CopWaitSafe(cp, Y(*(ptr++)), 0);
-        CopSetColor(cp, 0, 
-          ColorTransition(
-            0x001,
-            anemone_gradient_pal.colors[*(ptr++)], 
-            gradientLevel));
+    short *ptr = gradient;
+    const short *to = anemone_gradient_pal.colors;
+    short i;
+
+    for (i = 1; i < GRADIENTL; i++) {
+      short y = *ptr++;
+      short ci = *ptr++;
+      short from = 0x001;
+
+      CopWaitSafe(cp, Y(y), 0);
+      CopSetColor(cp, 0, ColorTransition(from, to[ci], gradientLevel));
     }
   }
 
@@ -353,10 +355,10 @@ static void Init(void) {
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
   LoadPalette(&pal_gold, 0);
 
-  cp0 = NewCopList(200);
-  cp1 = NewCopList(200);
-  MakeCopperList(cp0);
-  CopListActivate(cp0);
+  cp[0] = NewCopList(200);
+  cp[1] = NewCopList(200);
+  MakeCopperList(cp[0]);
+  CopListActivate(cp[0]);
 
   EnableDMA(DMAF_RASTER | DMAF_BLITTER | DMAF_BLITHOG);
 
@@ -380,16 +382,16 @@ static void Kill(void) {
   RemIntServer(INTB_VERTB, PulsatePaletteInterrupt);
   DisableDMA(DMAF_COPPER | DMAF_BLITTER | DMAF_RASTER | DMAF_BLITHOG);
 
-  DeleteCopList(cp0);
-  DeleteCopList(cp1);
+  DeleteCopList(cp[0]);
+  DeleteCopList(cp[1]);
   DeleteBitmap(screen);
 }
 
 #define screen_bytesPerRow (WIDTH / 8)
 
-static void DrawShape(const BitmapT *shape, short x, short y, short c,
-                       int vShift)
-{
+static __code int vShift = 0;
+
+static void DrawShape(const BitmapT *shape, short x, short y, short c) {
   u_short dstmod = screen_bytesPerRow - shape->bytesPerRow;
   u_short bltshift = rorw(x & 15, 4);
   u_short bltsize = (shape->height << 6) | (shape->bytesPerRow >> 1);
@@ -441,7 +443,7 @@ static void DrawShape(const BitmapT *shape, short x, short y, short c,
   }
 }
 
-static void SeaAnemone(ArmQueueT *arms, int vShift) {
+static void SeaAnemone(ArmQueueT *arms, const ArmShapeT shapes) {
   static ArmT arm;
 
   MakeArm(arms, &arm);
@@ -481,7 +483,7 @@ static void SeaAnemone(ArmQueueT *arms, int vShift) {
         if ((x < 0) || (y < 0) || (x >= WIDTH - d) || (y >= HEIGHT - d))
           continue;
         if (r < 16)
-          DrawShape((*active_shape)[r - 1], x, y, 16 - r, vShift);
+          DrawShape(shapes[r - 1], x, y, 16 - r);
       }
       if (curr == last)
         break;
@@ -497,7 +499,6 @@ static void SeaAnemone(ArmQueueT *arms, int vShift) {
 PROFILE(SeaAnemone);
 
 static void Render(void) {
-  short vShift = 0;
   int lineOffset = 0;
   short val, valPal, valGradient;
 
@@ -524,24 +525,25 @@ static void Render(void) {
 
   ProfilerStart(SeaAnemone);
 
-  MakeCopperList(cp1);
+  active ^= 1;
+
+  MakeCopperList(cp[active]);
   // Scroll the screen vertically
   if (ArmVariant == 4) {
+    short i;
+
     vShift = frameCount % (HEIGHT * 3);
     lineOffset = vShift * screen_bytesPerRow;
 
-    CopInsSet32(bplptr[0], screen->planes[0] + lineOffset);
-    CopInsSet32(bplptr[1], screen->planes[1] + lineOffset);
-    CopInsSet32(bplptr[2], screen->planes[2] + lineOffset);
-    CopInsSet32(bplptr[3], screen->planes[3] + lineOffset);
+    for (i = 0; i < DEPTH; i++)
+      CopInsSet32(bplptr[i], screen->planes[i] + lineOffset);
   }
 
-  SeaAnemone(&AnemoneArms, vShift);
-  CopListRun(cp1); 
+  SeaAnemone(&AnemoneArms, *active_shape);
+  CopListRun(cp[active]); 
   ProfilerStop(SeaAnemone);
 
   TaskWaitVBlank();
-  swapr(cp0, cp1);
 }
 
 EFFECT(SeaAnemone, NULL, NULL, Init, Kill, Render);

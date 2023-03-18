@@ -41,7 +41,7 @@ CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
 	data/grass-[1-2].c \
 	data/uvgut-{in,out}side.c data/gradient.c data/gradient.png \
 	data/tilemover-*.c data/chip.c \
-    data/pal-gold*.c data/pal-green*.c \
+	data/pal-gold*.c data/pal-green*.c \
 	data/pal-red*.c data/pal-blue*.c\
 
 SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
