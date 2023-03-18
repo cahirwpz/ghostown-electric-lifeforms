@@ -279,18 +279,18 @@ static void UpdateBitplanePointers(void) {
     states_head -= prev_states_depth;
 }
 
-static __code volatile short last = 0;
+static void BlitGameOfLife(void* boards, short phase) {
+  const BlitterPhaseT *p = &current_game->phases[phase];
+  p->blitfunc(*(const BitmapT **)(boards + p->srca),
+              *(const BitmapT **)(boards + p->srcb),
+              *(const BitmapT **)(boards + p->srcc),
+              *(const BitmapT **)(boards + p->dst), p->minterm);
+}
 
 static void GameOfLife(void *boards) {
-  if ((phase < current_game->num_phases - 1) || last) {
-    const BlitterPhaseT *p = &current_game->phases[phase];
-    p->blitfunc(*(const BitmapT **)(boards + p->srca),
-                *(const BitmapT **)(boards + p->srcb),
-                *(const BitmapT **)(boards + p->srcc),
-                *(const BitmapT **)(boards + p->dst), p->minterm);
-    // Phase has to be incremented only when the blit starts!
-    last = 0;
-  }
+  if ((phase < current_game->num_phases - 1))
+    BlitGameOfLife(boards, phase);
+  // always increment phase (used for detecting when we finish blits)
   phase++;
 }
 
@@ -468,7 +468,6 @@ static void GolStep(void) {
   ProfilerStart(GOLStep);
   if (!wireworld)
     current_game = &games[TrackValueGet(&GOLGame, frameCount)];
-  while (phase > 0);
   if (wireworld) {
     // For technical reasons wireworld implementation requires 2 separate games to
     // be ran in alternating fashion, and the switch between them must be done
@@ -487,19 +486,22 @@ static void GolStep(void) {
                    boards[wireworld_step ^ 1], boards[wireworld_step]);
   }
   
+  // ----- PIXELDOUBLE-BLITTER SYNCHRONIZATION -----
   // run all blits except the last
-  last = 0;
   GameOfLife(boards);
+  // run PixelDouble in parallel
   PixelDouble(src, dst, double_pixels);
-  // run the last blit
+  // wait for all blits except the last to finish
   while (phase < current_game->num_phases);
-  last = 1;
-  phase = current_game->num_phases - 1;
-  GameOfLife(boards);
+  // run the last blit
+  BlitGameOfLife(boards, current_game->num_phases - 1);
+  // wait for the last blit to finish
   while (phase < current_game->num_phases + 1);
+  // reset phase counter
   phase = 0;
-  UpdateBitplanePointers();
+  // ----- PIXELDOUBLE-BLITTER SYNCHRONIZATION -----
 
+  UpdateBitplanePointers();
   if (wireworld) {
     ColorCyclingStep(&palptr[16], wireworld_chip_cycling, &wireworld_chip_pal);
   } else {
