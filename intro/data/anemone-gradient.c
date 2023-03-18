@@ -1,6 +1,6 @@
 #define GRADIENTL 66
 
-short gradient[GRADIENTL * 2] = {
+static short gradient[GRADIENTL * 2] = {
   0, 15,
   4, 12,
   8, 8,
