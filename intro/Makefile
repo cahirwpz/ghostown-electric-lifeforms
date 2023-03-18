@@ -2,7 +2,7 @@ TOPDIR := $(realpath ..)
 
 DELTA := 0
 VQ := 0
-KLANG := 1
+KLANG := 0
 
 MODULE := JazzCat-DerKlang
 
