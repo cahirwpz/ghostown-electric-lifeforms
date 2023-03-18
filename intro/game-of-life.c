@@ -274,6 +274,9 @@ static void UpdateBitplanePointers(void) {
     cur = prev_states[last];
     CopInsSet32(bplptr[i], cur->planes[0]);
   }
+  states_head++;
+  if (states_head >= prev_states_depth)
+    states_head -= prev_states_depth;
 }
 
 static void GameOfLife(void *boards) {
@@ -485,9 +488,6 @@ static void GolStep(void) {
   }
   PixelDouble(src, dst, double_pixels);
   UpdateBitplanePointers();
-  states_head++;
-  if (states_head >= prev_states_depth)
-    states_head -= prev_states_depth;
   GameOfLife(boards);
   if (wireworld) {
     ColorCyclingStep(&palptr[16], wireworld_chip_cycling, &wireworld_chip_pal);
