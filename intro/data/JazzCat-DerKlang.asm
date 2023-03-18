@@ -9,6 +9,7 @@ _Samples:
 
 _ExtSamples:
         incbin  'data/JazzCat-DerKlang.raw'
+        ds.b 280
 
         section '.text', code
         xdef _AK_Generate

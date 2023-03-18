@@ -73,7 +73,7 @@ void Loader(BootDataT *bd) {
   CallFuncList(&__INIT_LIST__);
 
   {
-    int retval = main();
+    __unused int retval = main();
     Log("[Loader] main() returned %d.\n", retval);
   }
 

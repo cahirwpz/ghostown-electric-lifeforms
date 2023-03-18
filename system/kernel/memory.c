@@ -119,7 +119,7 @@ static inline WordT *BtPrev(WordT *bt) {
   return (void *)bt - BtSize(ft);
 }
 
-static const char *MemoryName(u_int attributes) {
+__unused static const char *MemoryName(u_int attributes) {
   if (attributes & MEMF_CHIP)
     return "chip";
   if (attributes & MEMF_FAST)
@@ -380,7 +380,7 @@ static void ArenaCheck(ArenaT *ar, int verbose) {
 
   for (; bt < ar->end; prev = bt, bt = BtNext(bt)) {
     int flag = !!BtGetPrevFree(bt);
-    int is_last = !!BtGetIsLast(bt);
+    __unused int is_last = !!BtGetIsLast(bt);
     Msg("$%08lx: [%c%c:%ld] %c\n", (uintptr_t)bt, "FU"[BtUsed(bt)], " P"[flag],
         BtSize(bt), " *"[is_last]);
     if (BtFree(bt)) {
