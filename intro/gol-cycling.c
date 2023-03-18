@@ -28,7 +28,7 @@ static ColorCyclingT wireworld_chip_cycling[] = {
   }
 };
 
-static void ColorCyclingStep(CopInsT *ins, ColorCyclingT *rot,
+static void ColorCyclingStep(CopInsT *ins, ColorCyclingT *rots,
                              const PaletteT *pal)
 {
   // From https://wiki.amigaos.net/wiki/ILBM_IFF_Interleaved_Bitmap#CRNG
@@ -43,13 +43,14 @@ static void ColorCyclingStep(CopInsT *ins, ColorCyclingT *rot,
 
   for (j = 0; j < 3; j++) {
     short i, n;
+    ColorCyclingT *rot = &rots[j];
 
     rot->step += 2 * rot->rate;
     if (rot->step < (1 << 14))
       continue;
 
     n = rot->head;
-    for (i = 0; i < rot->len; i++) {
+    for (i = rot->len; i >= 0; i--) {
       short cn = rot->indices[n];
       short ci = rot->indices[i];
       CopInsSet16(&ins[ci], pal->colors[cn]);
