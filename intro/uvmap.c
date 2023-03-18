@@ -343,7 +343,7 @@ PROFILE(UVMap);
 
 static void Render(void) {
   int size = TW * TH;
-  short fstOff = (frameCount * TW * 2) & (size - 1);
+  short fstOff = (frameCount * TW * 2 + frameCount / 2) & (size - 1);
   short sndOff = (-frameCount * TW * 2 + TH / 2 + (SIN(frameCount * 32) / 256)) & (size - 1);
 
   /* screen's bitplane #0 is used as a chunky buffer */
