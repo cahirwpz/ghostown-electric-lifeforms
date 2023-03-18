@@ -13,14 +13,14 @@
 #define COLUMNS (WIDTH / SIZE)
 #define LINES   (HEIGHT / SIZE)
 
-static short active = 0;
+static __code short active = 0;
 
 static CopListT *cp[2];
 static CopInsT *linebpl[2][HEIGHT];
 static BitmapT *scroll;
 
-static short last_line = -1;
-static char *line_start;
+static __code short last_line = -1;
+static __code char *line_start;
 
 extern uint8_t Text[];
 
@@ -46,9 +46,6 @@ static CopListT *MakeCopperList(short n) {
 static void Init(void) {
   scroll = NewBitmap(WIDTH, HEIGHT + 16, 1);
 
-  EnableDMA(DMAF_BLITTER);
-  BitmapClear(scroll);
-
   line_start = Text;
 
   SetupPlayfield(MODE_HIRES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
@@ -59,11 +56,11 @@ static void Init(void) {
 
   CopListActivate(cp[active]);
 
-  EnableDMA(DMAF_RASTER);
+  EnableDMA(DMAF_RASTER|DMAF_BLITTER);
 }
 
 static void Kill(void) {
-  DisableDMA(DMAF_RASTER|DMAF_COPPER);
+  DisableDMA(DMAF_RASTER|DMAF_BLITTER|DMAF_COPPER);
 
   DeleteCopList(cp[0]);
   DeleteCopList(cp[1]);
