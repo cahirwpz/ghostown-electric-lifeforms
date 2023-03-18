@@ -55,17 +55,11 @@ typedef struct Greets {
 
 static GreetsT greetsData[3];
 
-static int mTableIdx = 0;
-static int mTable[] = {
-  0x74a7beec, 0xb2818113, // 1 
-  0x4ffa0d80, 0x23743a06, // 2
-  0x273f164b, 0x9ffa9d90, //3
-  0x011bad37, 0x7a6433ee, // 4
-};
+static int hashTableIdx = 0;
 
 static int fastrand_a = 0, fastrand_b = 0;
 static inline int fastrand(void) {
-  int *mAddr = &mTable[mTableIdx*2];
+  int *hashAddr = &hashTable[hashTableIdx*2];
 
 
   // https://www.atari-forum.com/viewtopic.php?p=188000#p188000
@@ -75,7 +69,7 @@ static inline int fastrand(void) {
                "add.l  %0,(%2)\n"
                "add.l  %1,-(%2)\n"
                : "=d" (fastrand_a), "=d" (fastrand_b)
-               : "a" (mAddr));
+               : "a" (hashAddr));
   
   return fastrand_a;
 }
@@ -112,10 +106,6 @@ static void setTreePalette(void) {
     CopInsSetSprite(sprptr[i], &grass[i]);
   nrPal ^= 1;
 }
-
-
-
-
 
 static int greetsIdx = 0;
 static void GreetsSetTrack(short idx, unsigned char *greetzData) {
@@ -450,7 +440,7 @@ static void Render(void) {
 
   if (lastBranch == branches) {
     MakeBranch(WIDTH / 2, HEIGHT - fruit_height / 2 - 1);
-    mTableIdx++; mTableIdx &= 3;
+    hashTableIdx++; hashTableIdx &= 3;
     fastrand_a = fastrand_b = 0;
     greetsIdx = 0;
     GreetsNextTrack();

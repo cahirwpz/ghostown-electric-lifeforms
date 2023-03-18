@@ -1,5 +1,12 @@
 //
 
+static int hashTable[] = {
+  0x74a7beec, 0xb2818113, // 1 
+  0x4ffa0d80, 0x23743a06, // 2
+  0x273f164b, 0x9ffa9d90, // 3
+  0x011bad37, 0x7a6433ee, // 4
+};
+
 // format:
 // start_pos_x, start_pos_y, [0..255], [0..255]
 // delay, [0..255]
@@ -11,7 +18,7 @@ static unsigned char grAltair[] = {
   10,10,
   1,
   5,5, 255,255,
-  128,128
+ 128,128
 };
 
 // APPENDIX
