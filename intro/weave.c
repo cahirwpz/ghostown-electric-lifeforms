@@ -204,13 +204,17 @@ static void UpdateBarColor(StateBarT *bars, short step) {
     
     for (k = 1; k < 16; k++) {
       u_short from = *col++;
+      u_short c;
 #if 0
-      u_short c = ColorTransition(from, 0xfff, step);
+      c = ColorTransition(from, 0xfff, step);
 #else
       short r = (from & 0xf00) | 0x0f0 | step;
       short g = ((from << 4) & 0xf00) | 0x0f0 | step;
       short b = ((from << 8) & 0xf00) | 0x0f0 | step;
-      u_short c = (_colortab[r] << 4) | _colortab[g] | (_colortab[b] >> 4);
+      r = _colortab[r];
+      g = _colortab[g];
+      b = _colortab[b];
+      c = (r << 4) | g | (b >> 4);
 #endif
 
       CopInsSet16(pal++, c);
