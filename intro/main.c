@@ -1,8 +1,12 @@
 #include <custom.h>
 #include <effect.h>
 #include <ptplayer.h>
+#include <color.h>
+#include <copper.h>
+#include <palette.h>
 #include <sync.h>
 #include <system/task.h>
+#include "intro.h"
 
 #define _SYSTEM
 #include <system/memory.h>
@@ -63,6 +67,48 @@ static void UnLoadEffects(EffectT **effects) {
   }
 }
 
+static void FadeBlack(PaletteT *pal, CopInsT *ins, short step) {
+  short n = pal->count;
+  char *c = (u_char *)pal->colors;
+
+  if (step < 0)
+    step = 0;
+  if (step > 15)
+    step = 15;
+
+  while (--n >= 0) {
+    short r = *c++;
+    short g = *c++;
+    short b = *c++;
+
+    r = (r & 0xf0) | step;
+    g = (g & 0xf0) | step;
+    b = (b & 0xf0) | step;
+
+    r = colortab[r];
+    g = colortab[g];
+    b = colortab[b];
+    
+    CopInsSet16(ins++, (r << 4) | g | (b >> 4));
+  }
+}
+
+void FadeIn(PaletteT *pal, CopInsT *ins) {
+  FadeBlack(pal, ins, frameFromStart);
+}
+
+void FadeOut(PaletteT *pal, CopInsT *ins) {
+  FadeBlack(pal, ins, frameTillEnd);
+}
+
+short UpdateFrameCount(void) {
+  short t = ReadFrameCounter();
+  frameCount = t;
+  frameFromStart = t - CurrKeyFrame(&EffectNumber);
+  frameTillEnd = NextKeyFrame(&EffectNumber) - t;
+  return t;
+}
+
 #define SYNCPOS(pos) (((((pos) & 0xff00) >> 2) | ((pos) & 0x3f)) * 6)
 
 static void RunEffects(void) {
@@ -97,10 +143,7 @@ static void RunEffects(void) {
 
     {
       EffectT *effect = AllEffects[curr];
-      short t = ReadFrameCounter();
-      frameCount = t;
-      frameFromStart = t - CurrKeyFrame(&EffectNumber);
-      frameTillEnd = NextKeyFrame(&EffectNumber) - t;
+      short t = UpdateFrameCount();
       if (effect->Render)
         effect->Render();
       lastFrameCount = t;
