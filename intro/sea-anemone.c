@@ -14,8 +14,6 @@
 #define HEIGHT 256
 #define DEPTH 4
 
-#define GRADIENTL 33
-
 #define DIAMETER 32
 #define NARMS 15 /* must be power of two minus one */
 
@@ -24,23 +22,25 @@ static CopListT *cp1;
 static CopInsT *bplptr[DEPTH];
 static BitmapT *screen;
 
-#include "data/anemone-pal-1.c"
-#include "data/anemone-pal-1-dark.c"
-#include "data/anemone-pal-1-light.c"
+#include "data/pal-gold.c"
+#include "data/pal-gold-dark.c"
+#include "data/pal-gold-light.c"
 
-#include "data/anemone-pal-2.c"
-#include "data/anemone-pal-2-dark.c"
-#include "data/anemone-pal-2-light.c"
+#include "data/pal-blue.c"
 
-#include "data/anemone-pal-3.c"
-#include "data/anemone-pal-3-dark.c"
-#include "data/anemone-pal-3-light.c"
+#include "data/pal-red.c"
+#include "data/pal-red-dark.c"
+#include "data/pal-red-light.c"
 
+#include "data/anemone-gradient-pal.c"
 #include "data/anemone-gradient.c"
 
 #include "data/circles.c"
+#include "data/squares.c"
 
-static const BitmapT *circles[DIAMETER / 2] = {
+typedef const BitmapT *ArmShapeT[DIAMETER / 2]; 
+
+static const ArmShapeT circles = {
   &circle1,
   &circle2,
   &circle3,
@@ -59,8 +59,33 @@ static const BitmapT *circles[DIAMETER / 2] = {
   &circle16
 };
 
-static __code short lightLevel = 0;
-static __code short gradientLevel = 0;
+static const ArmShapeT squares = {
+  &square1,
+  &square2,
+  &square3,
+  &square4,
+  &square5,
+  &square6,
+  &square7,
+  &square8,
+  &square9,
+  &square10,
+  &square11,
+  &square12,
+  &square13,
+  &square14,
+  &square15,
+  &square16
+};
+
+static const ArmShapeT *shapes[4] = {
+  NULL,
+  &circles,
+  &squares,
+  &circles,
+};
+
+static const ArmShapeT *active_shape = &circles;
 
 extern TrackT SeaAnemoneVariant;
 extern TrackT SeaAnemonePal;
@@ -71,30 +96,30 @@ typedef const PaletteT *SeaAnemonePalT[4];
 
 static const SeaAnemonePalT sea_anemone_palettes = {
   NULL, 
-  &anemone_pal_1,
-  &anemone_pal_2,
-  &anemone_pal_3,
+  &pal_gold,
+  &pal_blue,
+  &pal_red,
 };
 
 static const SeaAnemonePalT anemone1_pal = {
   NULL,
-  &anemone_pal_1_light,
-  &anemone_pal_1,
-  &anemone_pal_1_dark,
+  &pal_gold_light,
+  &pal_gold,
+  &pal_gold_dark,
 };
 
 static const SeaAnemonePalT anemone2_pal = {
   NULL,
-  &anemone_pal_2_light,
-  &anemone_pal_2,
-  &anemone_pal_2_dark,
+  &pal_blue,
+  &pal_blue,
+  &pal_blue,
 };
 
 static const SeaAnemonePalT anemone3_pal = {
   NULL,
-  &anemone_pal_3_light,
-  &anemone_pal_3,
-  &anemone_pal_3_dark,
+  &pal_red_light,
+  &pal_red,
+  &pal_red_dark,
 };
 
 static const SeaAnemonePalT *sea_anemone_pal[4] = {
@@ -112,46 +137,13 @@ static const short blip_sequence[] = {
   2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
   3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 };
+// For static palette blips
+static __code short lightLevel = 0;
 
-short gradient[GRADIENTL * 2] = {
-  0, 15,
-  4, 12,
-  8, 8,
-  12, 4,
-  27, 3,
-  34, 4,
-  36, 3,
-  39, 4,
-  40, 5,
-  42, 4,
-  43, 5,
-  46, 6,
-  47, 5,
-  48, 6,
-  50, 5,
-  51, 6,
-  55, 7,
-  60, 8,
-  70, 9,
-  77, 10,
-  78, 9,
-  79, 10,
-  86, 11,
-  87, 10,
-  88, 11,
-  95, 12,
-  97, 11,
-  98, 12,
-  104, 13,
-  113, 14,
-  118, 15,
-  127, 15,
-};
-
-
-
-bool gradient_ascending = false;
-bool gradient_active = false;
+// For the background gradient
+static __code short gradientLevel = 0;
+bool gradientAscending = false;
+bool gradientActive = false;
 
 static inline int fastrand(void) {
   static int m[2] = { 0x3E50B28C, 0xD461A7F9 };
@@ -314,17 +306,19 @@ static int PaletteBlip(void) {
     LoadPalette((*active_pal)[blip_sequence[lightLevel]], 0);
     lightLevel--;
   }
-  if (gradientLevel > 0 && gradient_ascending) {
-    gradientLevel--;
-    if (gradientLevel == 0) {
-        gradient_ascending = false;
-    }
-  }
-  if (gradientLevel <= 15 && !gradient_ascending) {
-    gradientLevel++;
-    if (gradientLevel > 15) {
-      gradient_active = false;
-    }
+  
+  if (gradientActive) {
+    if (gradientLevel < 15 && gradientAscending) {
+      gradientLevel++;
+      if (gradientLevel == 15) {
+          gradientAscending = false;
+      }
+    } else if (gradientLevel > 0 && !gradientAscending) {
+      gradientLevel--;
+      if (gradientLevel == 0) {
+        gradientActive = false;
+      }
+    } 
   }
 
   return 0;
@@ -333,33 +327,22 @@ static int PaletteBlip(void) {
 INTSERVER(PulsatePaletteInterrupt, 0, (IntFuncT)PaletteBlip, NULL);
 
 static void MakeCopperList(CopListT *cp) {
-  short j, ee, aa;
+  short i;
   short *ptr = gradient;
-  short *ptr1 = gradient + (GRADIENTL * 2);
   CopInit(cp);
   CopSetupBitplanes(cp, bplptr, screen, DEPTH);
-  if (gradient_active) {
-  for(j=1;j<GRADIENTL;j++) {
-    CopWaitSafe(cp, Y(*(ptr++)), 0);
-    if(!gradient_ascending)
-      CopSetColor(cp, 0, ColorTransition(anemone_gradient.colors[*(ptr++)], 0x001, gradientLevel));
-    else
-      CopSetColor(cp, 0, ColorTransition(0x001, anemone_gradient.colors[*(ptr++)], gradientLevel));
-  }
-  ptr = gradient;
-  for(j=1;j<GRADIENTL;j++) {
-    ee = *(ptr1--);
-    ee = *(ptr1--);
-    aa = Y(HEIGHT/2 + *(ptr++));
-    CopWaitSafe(cp, aa, 0);
-    if(!gradient_ascending)
-      CopSetColor(cp, 0, ColorTransition(anemone_gradient.colors[ee], 0, gradientLevel));
-    else
-      CopSetColor(cp, 0, ColorTransition(0, anemone_gradient.colors[ee], gradientLevel));
 
-    *ptr = *ptr++;
+  if (gradientActive) {
+    for(i=1;i<GRADIENTL;i++) {
+      CopWaitSafe(cp, Y(*(ptr++)), 0);
+        CopSetColor(cp, 0, 
+          ColorTransition(
+            0x001,
+            anemone_gradient_pal.colors[*(ptr++)], 
+            gradientLevel));
+    }
   }
-  }
+
   CopEnd(cp);
 }
 
@@ -367,10 +350,10 @@ static void Init(void) {
   screen = NewBitmap(WIDTH, HEIGHT * 4, DEPTH);
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
-  LoadPalette(&anemone_pal_1, 0);
+  LoadPalette(&pal_gold, 0);
 
-  cp0 = NewCopList(140);
-  cp1 = NewCopList(140);
+  cp0 = NewCopList(200);
+  cp1 = NewCopList(200);
   MakeCopperList(cp0);
   CopListActivate(cp0);
 
@@ -396,20 +379,20 @@ static void Kill(void) {
   RemIntServer(INTB_VERTB, PulsatePaletteInterrupt);
   DisableDMA(DMAF_COPPER | DMAF_BLITTER | DMAF_RASTER | DMAF_BLITHOG);
 
-  DeleteBitmap(screen);
   DeleteCopList(cp0);
   DeleteCopList(cp1);
+  DeleteBitmap(screen);
 }
 
 #define screen_bytesPerRow (WIDTH / 8)
 
-static void DrawCircle(const BitmapT *circle, short x, short y, short c,
+static void DrawShape(const BitmapT *shape, short x, short y, short c,
                        int vShift)
 {
-  u_short dstmod = screen_bytesPerRow - circle->bytesPerRow;
+  u_short dstmod = screen_bytesPerRow - shape->bytesPerRow;
   u_short bltshift = rorw(x & 15, 4);
-  u_short bltsize = (circle->height << 6) | (circle->bytesPerRow >> 1);
-  void *srcbpt = circle->planes[0];
+  u_short bltsize = (shape->height << 6) | (shape->bytesPerRow >> 1);
+  void *srcbpt = shape->planes[0];
   void **dstbpts = screen->planes;
   int start;
 
@@ -497,7 +480,7 @@ static void SeaAnemone(ArmQueueT *arms, int vShift) {
         if ((x < 0) || (y < 0) || (x >= WIDTH - d) || (y >= HEIGHT - d))
           continue;
         if (r < 16)
-          DrawCircle(circles[r - 1], x, y, 16 - r, vShift);
+          DrawShape((*active_shape)[r - 1], x, y, 16 - r, vShift);
       }
       if (curr == last)
         break;
@@ -526,6 +509,7 @@ static void Render(void) {
   if ((val = TrackValueGet(&SeaAnemonePal, frameFromStart))) {
     LoadPalette(sea_anemone_palettes[val], 0);
     active_pal = sea_anemone_pal[val];
+    active_shape = shapes[val];
   }
 
   // Set the light level (for palette modification)
@@ -533,9 +517,8 @@ static void Render(void) {
     lightLevel = valPal;
 
   if ((valGradient = TrackValueGet(&SeaAnemoneGradient, frameFromStart))) {
-    gradientLevel = valGradient;
-    gradient_ascending = true;
-    gradient_active = true;
+    gradientAscending = true;
+    gradientActive = true;
   }
 
   ProfilerStart(SeaAnemone);

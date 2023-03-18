@@ -219,13 +219,10 @@ $0110 1
 @end
 
 @track SeaAnemoneGradient
-$0004 15 !event
-$000C 15 !event
-$0012 15 !event
-$001B 15 !event
-$0022 15 !event
-$0032 15 !event
-$0039 15 !event
+$0014 15 !event
+$001C 15 !event
+$0033 15 !event
+$003B 15 !event
 @end
 
 @track SeaAnemonePalPulse
