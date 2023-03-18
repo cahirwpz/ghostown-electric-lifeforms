@@ -350,6 +350,7 @@ static void SharedPreInit(void) {
 
   EnableDMA(DMAF_RASTER | DMAF_BLITTER | DMAF_SPRITE | DMAF_COPPER);
 
+  states_head = 0;
   current_board = boards[0];
   for (i = 0; i < PREV_STATES_DEPTH; i++) {
     BitmapClear(prev_states[i]);
@@ -430,9 +431,6 @@ static void InitGameOfLife(void) {
 
 static void Kill(void) {
   short i;
-
-  while (phase > 0)
-    continue;
 
   ResetSprites();
   DisableDMA(DMAF_RASTER | DMAF_BLITTER | DMAF_SPRITE | DMAF_COPPER);
