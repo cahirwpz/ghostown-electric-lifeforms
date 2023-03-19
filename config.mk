@@ -24,6 +24,8 @@ AMIGAOS := 1
 # 0 => Disable the profiler.
 PROFILER := 0
 
+MULTITASK := 0
+
 # [only when AMIGAOS=1] Amount of chip and fast (or public) memory 
 # (in kilobytes!) passed to our custom memory allocator.
 # To calculate total memory taken after an executable file
