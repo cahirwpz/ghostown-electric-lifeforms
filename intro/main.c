@@ -68,37 +68,33 @@ static void UnLoadEffects(EffectT **effects) {
 }
 
 static void FadeBlack(const PaletteT *pal, short step) {
+  const short *col = pal->colors;
+  volatile short *reg = custom->color;
   short n = pal->count;
-  char *c = (u_char *)pal->colors;
-  short i = 0;
   
   if (step < 0)
     step = 0;
   if (step > 15)
     step = 15;
 
-  while (i <= n) {
-    short r = *c++;
-    short g = *c++;
-    short b = *c++;
-   
-    r = (r & 0xf0) | step;
-    g = (g & 0xf0) | step;
-    b = (b & 0xf0) | step;
+  while (--n >= 0) {
+    short to = *col++;
+
+    short r = ((to >> 4) & 0xf0) | step;
+    short g = (to & 0xf0) | step;
+    short b = ((to << 4) & 0xf0) | step;
 
     r = colortab[r];
     g = colortab[g];
     b = colortab[b];
-
-    custom->color[i] = (r << 4) | g | (b >> 4);
-    Log("%d - %d \n", i, (r << 4) | g | (b >> 4));
-    i++;
+    
+    *reg++ = (r << 4) | g | (b >> 4);
   }
 }
 
 static void CopFadeBlack(const PaletteT *pal, CopInsT *ins, short step) {
+  const short *col = pal->colors;
   short n = pal->count;
-  char *c = (u_char *)pal->colors;
 
   if (step < 0)
     step = 0;
@@ -106,13 +102,11 @@ static void CopFadeBlack(const PaletteT *pal, CopInsT *ins, short step) {
     step = 15;
 
   while (--n >= 0) {
-    short r = *c++;
-    short g = *c++;
-    short b = *c++;
+    short to = *col++;
 
-    r = (r & 0xf0) | step;
-    g = (g & 0xf0) | step;
-    b = (b & 0xf0) | step;
+    short r = ((to >> 4) & 0xf0) | step;
+    short g = (to & 0xf0) | step;
+    short b = ((to << 4) & 0xf0) | step;
 
     r = colortab[r];
     g = colortab[g];
