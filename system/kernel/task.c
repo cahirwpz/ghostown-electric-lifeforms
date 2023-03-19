@@ -11,17 +11,6 @@ static TaskListT ReadyList = TAILQ_HEAD_INITIALIZER(ReadyList);
 static TaskListT WaitList = TAILQ_HEAD_INITIALIZER(WaitList);
 u_char NeedReschedule = 0;
 
-void IntrEnable(void) {
-  Assume(CurrentTask->intrNest > 0);
-  if (--CurrentTask->intrNest == 0)
-    CpuIntrEnable();
-}
-
-void IntrDisable(void) {
-  CpuIntrDisable();
-  CurrentTask->intrNest++;
-}
-
 void TaskInit(TaskT *tsk, const char *name, void *stkptr, u_int stksz) {
   bzero(tsk, sizeof(TaskT));
   strlcpy(tsk->name, name, MAX_TASK_NAME_SIZE);
@@ -51,7 +40,6 @@ void TaskInit(TaskT *tsk, const char *name, void *stkptr, u_int stksz) {
 #define PushWord(v)                                                            \
   { *--(u_short *)sp = (u_short)(v); }
 
-#if MULTITASK
 void TaskRun(TaskT *tsk, u_char prio, void (*fn)(void *), void *arg) {
   void *sp = tsk->stkUpper;
 
@@ -225,9 +213,3 @@ void TaskSwitch(TaskT *curtsk) {
   Debug("Switching to '%s', prio: %d.", curtsk->name, curtsk->prio);
   CurrentTask = curtsk;
 }
-#else
-void TaskSwitch(TaskT *curtsk) {
-  (void)curtsk;
-  HALT();
-}
-#endif

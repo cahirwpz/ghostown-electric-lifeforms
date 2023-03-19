@@ -69,7 +69,9 @@ void Loader(BootDataT *bd) {
   /* Lower interrupt priority level to nominal. */
   SetIPL(IPL_NONE);
 
+#if MULTITASK
   TaskInit(CurrentTask, "main", bd->bd_stkbot, bd->bd_stksz);
+#endif
   CallFuncList(&__INIT_LIST__);
 
   {

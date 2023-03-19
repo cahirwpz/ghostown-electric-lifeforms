@@ -32,12 +32,13 @@ SOURCES := \
 	kernel/interrupt.c \
 	kernel/intr-entry.S \
 	kernel/memory.c \
-	kernel/task.c \
 	kernel/trap-entry.S \
 	kernel/trap.c 
 
 ifeq ($(MULTITASK), 1)
-SOURCES += kernel/mutex.c
+SOURCES += \
+	   kernel/mutex.c \
+	   kernel/task.c
 endif
 
 CFLAGS.amigaos = -Wno-strict-prototypes
