@@ -130,8 +130,28 @@ static void MakeUVMapRenderCode(u_short *uvmap) {
   *code++ = 0x4e75; /* rts */
 }
 
+static void DeltaDecode(uint8_t *data) {
+  uint8_t *left = data;
+  uint8_t *curr = data + 1;
+  short x, y;
+
+  for (x = 1; x < WIDTH; x++) {
+    *curr++ += *left++;
+  }
+
+  for (y = 1; y < HEIGHT; y++) {
+    *curr++ += curr[-WIDTH];
+    left++;
+    for (x = 1; x < WIDTH; x++)
+      *curr++ += *left++;
+  }
+}
+
 static void Load(void) {
   short *uvmap;
+
+  DeltaDecode(umap);
+  DeltaDecode(vmap);
 
   uvmap = MemAlloc(WIDTH * HEIGHT * sizeof(short), MEMF_PUBLIC);
   ScrambleUVMap(uvmap);
