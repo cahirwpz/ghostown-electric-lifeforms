@@ -488,7 +488,6 @@ void MemCheck(int verbose) {
   for (ar = FirstArena; ar != NULL; ar = ar->succ)
     ArenaCheck(ar, verbose);
 }
-#endif
 
 u_int MemAvail(u_int attributes) {
   ArenaT *ar;
@@ -498,3 +497,4 @@ u_int MemAvail(u_int attributes) {
       avail += ar->totalFree;
   return avail;
 }
+#endif
