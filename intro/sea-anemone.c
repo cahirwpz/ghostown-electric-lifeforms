@@ -310,7 +310,10 @@ static void ArmMove(ArmT *arm, short angle) {
 static int PaletteBlip(void) {
   short valPal, valGradient;
   UpdateFrameCount();
-  
+
+  if (frameFromStart < 16)
+    FadeIn(&pal_blue, frameFromStart);
+
   if ((valPal = TrackValueGet(&SeaAnemonePalPulse, frameFromStart)))
     LoadPalette((*active_pal)[blip_sequence[valPal]], 0);
   

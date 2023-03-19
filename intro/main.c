@@ -67,7 +67,36 @@ static void UnLoadEffects(EffectT **effects) {
   }
 }
 
-static void FadeBlack(PaletteT *pal, CopInsT *ins, short step) {
+static void FadeBlack(const PaletteT *pal, short step) {
+  short n = pal->count;
+  char *c = (u_char *)pal->colors;
+  short i = 0;
+  
+  if (step < 0)
+    step = 0;
+  if (step > 15)
+    step = 15;
+
+  while (i <= n) {
+    short r = *c++;
+    short g = *c++;
+    short b = *c++;
+   
+    r = (r & 0xf0) | step;
+    g = (g & 0xf0) | step;
+    b = (b & 0xf0) | step;
+
+    r = colortab[r];
+    g = colortab[g];
+    b = colortab[b];
+
+    custom->color[i] = (r << 4) | g | (b >> 4);
+    Log("%d - %d \n", i, (r << 4) | g | (b >> 4));
+    i++;
+  }
+}
+
+static void CopFadeBlack(const PaletteT *pal, CopInsT *ins, short step) {
   short n = pal->count;
   char *c = (u_char *)pal->colors;
 
@@ -93,12 +122,20 @@ static void FadeBlack(PaletteT *pal, CopInsT *ins, short step) {
   }
 }
 
-void FadeIn(PaletteT *pal, CopInsT *ins) {
-  FadeBlack(pal, ins, frameFromStart);
+void CopFadeIn(const PaletteT *pal, CopInsT *ins) {
+  CopFadeBlack(pal, ins, frameFromStart);
 }
 
-void FadeOut(PaletteT *pal, CopInsT *ins) {
-  FadeBlack(pal, ins, frameTillEnd);
+void CopFadeOut(const PaletteT *pal, CopInsT *ins) {
+  CopFadeBlack(pal, ins, frameTillEnd);
+}
+
+void FadeIn(const PaletteT *pal, short step) {
+  FadeBlack(pal, step);
+}
+
+void FadeOut(const PaletteT *pal, short step) {
+  FadeBlack(pal, step);
 }
 
 short UpdateFrameCount(void) {
@@ -113,7 +150,7 @@ short UpdateFrameCount(void) {
 
 static void RunEffects(void) {
   /* Set the beginning of intro. Useful for effect synchronization! */
-  short pos = 0;
+  short pos = 0x800;
 
   frameCount = SYNCPOS(pos);
   SetFrameCounter(frameCount);

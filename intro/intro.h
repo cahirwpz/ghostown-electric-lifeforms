@@ -6,8 +6,11 @@
 #include <sync.h>
 #include <effect.h>
 
-void FadeIn(PaletteT *pal, CopInsT *ins);
-void FadeOut(PaletteT *pal, CopInsT *ins);
+void FadeIn(const PaletteT *pal, short step);
+void FadeOut(const PaletteT *pal, short step);
+
+void CopFadeIn(const PaletteT *pal, CopInsT *ins);
+void CopFadeOut(const PaletteT *pal, CopInsT *ins);
 
 short UpdateFrameCount(void);
 
