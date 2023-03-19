@@ -85,6 +85,7 @@ void EffectUnLoad(EffectT *effect) {
   SendEffectStatus(effect);
 }
 
+#if 0
 void EffectRun(EffectT *effect) {
   SetFrameCounter(0);
 
@@ -99,3 +100,4 @@ void EffectRun(EffectT *effect) {
     lastFrameCount = t;
   } while (!exitLoop);
 }
+#endif
