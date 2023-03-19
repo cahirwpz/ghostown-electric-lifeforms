@@ -22,7 +22,7 @@ AMIGAOS := 1
 #      lines measured between calls to ProfilerStart / ProfilerStop.
 #      The measurement is reported every 50 frames (i.e. once a second).
 # 0 => Disable the profiler.
-PROFILER := 1
+PROFILER := 0
 
 # [only when AMIGAOS=1] Amount of chip and fast (or public) memory 
 # (in kilobytes!) passed to our custom memory allocator.
