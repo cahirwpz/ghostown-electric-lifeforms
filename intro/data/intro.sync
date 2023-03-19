@@ -218,37 +218,42 @@ $0100 3
 $0110 1
 @end
 
+@track SeaAnemoneFadeOut
+$000E 15 !trigger
+$001E 15 !trigger
+$002E 15 !trigger
+$003E 15 !trigger
+$010E 15 !trigger
+$011E 15 !trigger
+@end
+
+@track SeaAnemoneFadeIn
+$0010 15 !trigger
+$0020 15 !trigger
+$0030 15 !trigger
+$0100 15 !trigger
+$0110 15 !trigger
+@end
+
 @track SeaAnemoneGradient
-$0014 33 !trigger
-$001C 33 !trigger
-$0033 33 !trigger
-$003B 33 !trigger
+$0013 33 !trigger
+$0019 33 !trigger
+$0032 33 !trigger
+$0037 33 !trigger
 @end
 
 @track SeaAnemonePalPulse
 $0005 30 !trigger
 $000A 30 !trigger
-$000E 30 !trigger
-$0010 30 !trigger
 $0015 30 !trigger
 $001A 30 !trigger
-$001E 30 !trigger
-$0020 30 !trigger
 $0025 30 !trigger
 $002A 30 !trigger
-$002E 30 !trigger
-$0030 30 !trigger
 $0035 30 !trigger
 $003A 30 !trigger
-$003E 30 !trigger
-$0100 30 !trigger
 $0105 30 !trigger
 $010A 30 !trigger
-$010E 30 !trigger
-$0110 30 !trigger
 $0115 30 !trigger
-$011A 30 !trigger
-$011E 30 !trigger
 $0120 30 !trigger
 $0125 30 !trigger
 $012A 30 !trigger

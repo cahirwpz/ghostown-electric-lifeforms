@@ -124,11 +124,7 @@ void CopFadeOut(const PaletteT *pal, CopInsT *ins) {
   CopFadeBlack(pal, ins, frameTillEnd);
 }
 
-void FadeIn(const PaletteT *pal, short step) {
-  FadeBlack(pal, step);
-}
-
-void FadeOut(const PaletteT *pal, short step) {
+void Fade(const PaletteT *pal, short step) {
   FadeBlack(pal, step);
 }
 
@@ -144,7 +140,7 @@ short UpdateFrameCount(void) {
 
 static void RunEffects(void) {
   /* Set the beginning of intro. Useful for effect synchronization! */
-  short pos = 0x800;
+  short pos = 0;
 
   frameCount = SYNCPOS(pos);
   SetFrameCounter(frameCount);

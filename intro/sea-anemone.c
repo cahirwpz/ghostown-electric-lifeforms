@@ -93,6 +93,8 @@ extern TrackT SeaAnemoneVariant;
 extern TrackT SeaAnemonePal;
 extern TrackT SeaAnemonePalPulse;
 extern TrackT SeaAnemoneGradient;
+extern TrackT SeaAnemoneFadeOut;
+extern TrackT SeaAnemoneFadeIn;
 
 typedef const PaletteT *SeaAnemonePalT[4];
 
@@ -132,7 +134,6 @@ static const SeaAnemonePalT *sea_anemone_pal[4] = {
 };
 
 static const SeaAnemonePalT *active_pal = &anemone1_pal;
-
 static const short blip_sequence[] = {
   0,
   2, 1, 1, 1, 1, 1, 1, 1, 1, 1,
@@ -150,6 +151,7 @@ static const short gradient_envelope[] = {
 
 // For the background gradient
 static __code short gradientLevel = 0;
+static __code short activePalIndex = 1;
 
 static inline int fastrand(void) {
   static int m[2] = { 0x3E50B28C, 0xD461A7F9 };
@@ -308,17 +310,33 @@ static void ArmMove(ArmT *arm, short angle) {
 }
 
 static int PaletteBlip(void) {
-  short valPal, valGradient;
+  short val;
   UpdateFrameCount();
 
-  if (frameFromStart < 16)
-    FadeIn(&pal_blue, frameFromStart);
+  if ((val = TrackValueGet(&SeaAnemoneVariant, frameFromStart))) { 
+    BitmapClear(screen);
+    ArmsReset(&AnemoneArms);
+    ArmVariant = val;
+  }
 
-  if ((valPal = TrackValueGet(&SeaAnemonePalPulse, frameFromStart)))
-    LoadPalette((*active_pal)[blip_sequence[valPal]], 0);
+  if ((val = TrackValueGet(&SeaAnemonePal, frameFromStart))) {
+    activePalIndex = val;
+    active_pal = sea_anemone_pal[val];
+    active_shape = shapes[val];
+  }
+
+  if ((val = TrackValueGet(&SeaAnemonePalPulse, frameFromStart)))
+    LoadPalette((*active_pal)[blip_sequence[val]], 0);
   
-  if ((valGradient = TrackValueGet(&SeaAnemoneGradient, frameFromStart)))
-    gradientLevel = gradient_envelope[valGradient];
+  if ((val = TrackValueGet(&SeaAnemoneGradient, frameFromStart)))
+    gradientLevel = gradient_envelope[val];
+
+  if ((val = TrackValueGet(&SeaAnemoneFadeOut, frameFromStart))) 
+    Fade(sea_anemone_palettes[activePalIndex], val);
+
+  if ((val = TrackValueGet(&SeaAnemoneFadeIn, frameFromStart))) 
+    Fade(sea_anemone_palettes[activePalIndex], 16 - val);
+
 
   return 0;
 }
@@ -364,6 +382,9 @@ static void Init(void) {
   TrackInit(&SeaAnemonePal);
   TrackInit(&SeaAnemonePalPulse);
   TrackInit(&SeaAnemoneGradient);
+  TrackInit(&SeaAnemoneFadeOut);
+  TrackInit(&SeaAnemoneFadeIn);
+  
   ArmsReset(&AnemoneArms);
 
   /* Moved from DrawCircle, since we use only one type of blit. */
@@ -498,21 +519,6 @@ PROFILE(SeaAnemone);
 
 static void Render(void) {
   int lineOffset = 0;
-  short val;
-
-  if ((val = TrackValueGet(&SeaAnemoneVariant, frameFromStart))) { 
-    BitmapClear(screen);
-    ArmsReset(&AnemoneArms);
-    ArmVariant = val;
-  }
-
-  if ((val = TrackValueGet(&SeaAnemonePal, frameFromStart))) {
-    LoadPalette(sea_anemone_palettes[val], 0);
-    active_pal = sea_anemone_pal[val];
-    active_shape = shapes[val];
-  }
-
-  // Set the light level (for palette modification)
 
   ProfilerStart(SeaAnemone);
 
