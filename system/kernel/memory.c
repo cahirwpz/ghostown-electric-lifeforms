@@ -364,6 +364,7 @@ static void *ArenaMemResize(ArenaT *ar, void *old_ptr, u_int size) {
   return new_ptr;
 }
 
+#if MEMDEBUG
 #define Msg(...) if (verbose) Log(__VA_ARGS__)
 
 static void ArenaCheck(ArenaT *ar, int verbose) {
@@ -410,6 +411,7 @@ static void ArenaCheck(ArenaT *ar, int verbose) {
 
   MutexUnlock(&MemMtx);
 }
+#endif
 
 static ArenaT *ArenaOf(void *ptr) {
   ArenaT *ar;
@@ -480,11 +482,13 @@ void *MemResize(void *old_ptr, u_int size) {
   return NULL;
 }
 
+#if MEMDEBUG
 void MemCheck(int verbose) {
   ArenaT *ar;
   for (ar = FirstArena; ar != NULL; ar = ar->succ)
     ArenaCheck(ar, verbose);
 }
+#endif
 
 u_int MemAvail(u_int attributes) {
   ArenaT *ar;
