@@ -29,7 +29,7 @@ static ColorCyclingT wireworld_chip_cycling[] = {
 };
 
 static void ColorCyclingStep(CopInsT *ins, ColorCyclingT *rots,
-                             const PaletteT *pal)
+                             short len, const PaletteT *pal)
 {
   // From https://wiki.amigaos.net/wiki/ILBM_IFF_Interleaved_Bitmap#CRNG
   // "The field rate determines the speed at which the colors will step when
@@ -37,15 +37,13 @@ static void ColorCyclingStep(CopInsT *ins, ColorCyclingT *rots,
   // second is represented as 2^14 = 16384. Slower rates can be obtained
   // by linear scaling: for 30 steps/second, rate = 8192; for 1 step/second,
   // rate = 16384/60 ~273."
-  // frameCount - lastFrameCount gives wrong frame delta so just trust me
-  // on this one (this function gets called every 2 frames in this effect)
   short j;
 
-  for (j = 0; j < 3; j++) {
+  for (j = 0; j < len; j++) {
     short i, n;
     ColorCyclingT *rot = &rots[j];
 
-    rot->step += 2 * rot->rate;
+    rot->step += (frameCount - lastFrameCount) * rot->rate;
     if (rot->step < (1 << 14))
       continue;
 

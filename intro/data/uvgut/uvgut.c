@@ -25,7 +25,6 @@ static SDL_Surface *iChannel1;
 static bool mapDone = false;
 static uint8_t umap[WIDTH * HEIGHT];
 static uint8_t vmap[WIDTH * HEIGHT];
-static uint8_t omap[WIDTH * HEIGHT];
 
 typedef struct vec3 {
   float x, y, z, w;
@@ -305,9 +304,8 @@ void Render(SDL_Surface *canvas) {
       int pos = y * WIDTH + x;
 
       if (!mapDone) {
-        umap[pos] = texpos(tuv.x, TEXSIZE);
+        umap[pos] = (texpos(tuv.x, TEXSIZE) << 1) | h.obj;
         vmap[pos] = texpos(tuv.y, TEXSIZE);
-        omap[pos] = h.obj * 2;
       }
 
       buffer[pos] = col;
@@ -339,20 +337,40 @@ SDL_Surface *LoadTexture(const char *path) {
   return native;
 }
 
+void DeltaEncoder(uint8_t *out, uint8_t *data, int width, int height) {
+  *out++ = data[0];
+  for (int x = 1; x < width; x++)
+    *out++ = data[x] - data[x - 1];
+
+  for (int y = 1; y < height; y++) {
+    int row = y * width;
+
+    *out++ = data[row] - data[row - width];
+    for (int x = 1; x < width; x++)
+      *out++ = data[row + x] - data[row + x - 1];
+  }
+}
+
 void SaveMap(const char *path, const char *name, uint8_t *map) {
   FILE *f = fopen(path, "wb");
+  uint8_t *output = malloc(WIDTH * HEIGHT);
+
+  DeltaEncoder(output, map, WIDTH, HEIGHT);
 
   fprintf(f, "static u_char %s[%d] = {\n", name, WIDTH * HEIGHT);
   for (int y = 0; y < HEIGHT; y++) {
     fprintf(f, "  ");
     for (int x = 0; x < WIDTH; x++) {
-      fprintf(f, "%d, ", map[y * WIDTH + x]);
+      int c = output[y * WIDTH + x];
+      fprintf(f, "%d, ", c);
     }
     fprintf(f, "\n");
   }
   fprintf(f, "};\n");
 
   fclose(f);
+
+  free(output);
 }
 
 int main(void) {
@@ -403,7 +421,6 @@ int main(void) {
 #if !TEST
   SaveMap("map-u.c", "umap", umap);
   SaveMap("map-v.c", "vmap", vmap);
-  SaveMap("map-o.c", "omap", omap);
 #endif
 
   return 0;

@@ -1,8 +1,15 @@
 #ifndef __INTRO_H__
 #define __INTRO_H__
 
-#include <effect.h>
+#include <palette.h>
+#include <copper.h>
 #include <sync.h>
+#include <effect.h>
+
+void FadeIn(PaletteT *pal, CopInsT *ins);
+void FadeOut(PaletteT *pal, CopInsT *ins);
+
+short UpdateFrameCount(void);
 
 static inline short FromCurrKeyFrame(TrackT *track) {
   return frameCount - CurrKeyFrame(track);
