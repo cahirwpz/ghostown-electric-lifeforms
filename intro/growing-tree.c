@@ -120,7 +120,13 @@ static void GreetsNextTrack(void) {
   GreetsSetTrack(1, greetsSet1[greetsIdx]);
   GreetsSetTrack(2, greetsSet2[greetsIdx]);
   greetsIdx++;
+
+  hashTableIdx++; hashTableIdx &= 3;
+  fastrand_a = fastrand_b = 0;
+  greetsIdx = 0; // TODO: remove it
+
 }
+
 
 static void Init(void) {
   short i;
@@ -329,7 +335,7 @@ static bool SplitBranch(BranchT *parent, BranchT **lastp) {
   return false;
 }
 
-static void DrawGreetigs(short nr) {
+static void DrawGreetings(short nr) {
   unsigned char x1, x2, y1, y2;
 
   if (greetsData[nr].currentDataPos == NULL) {
@@ -365,6 +371,13 @@ static void DrawGreetigs(short nr) {
     greetsData[nr].x + x2, greetsData[nr].y + y2
   );
 }
+
+static void handleDrawingGreets(void) {
+  DrawGreetings(0);
+  DrawGreetings(1);
+  DrawGreetings(2);
+}
+
 
 void GrowingTree(BranchT *branches, BranchT **lastp) {
   u_short *fruit = nrPal ? _fruit_2_bpl : _fruit_1_bpl;
@@ -431,26 +444,26 @@ static void Render(void) {
   if (waitFrame > 0) {
     if (frameCount - waitFrame < 100) {
       TaskWaitVBlank();
+      handleDrawingGreets();
       return;
     }
+
     waitFrame = 0;
     BitmapClear(screen);
     setTreePalette();
+
+    GreetsNextTrack();
   }
 
   if (lastBranch == branches) {
     MakeBranch(WIDTH / 2, HEIGHT - fruit_height / 2 - 1);
-    hashTableIdx++; hashTableIdx &= 3;
-    fastrand_a = fastrand_b = 0;
-    greetsIdx = 0;
-    GreetsNextTrack();
   }
 
   ProfilerStart(GrowTree);
   GrowingTree(branches, &lastBranch);
-  DrawGreetigs(0);
-  DrawGreetigs(1);
-  DrawGreetigs(2);
+
+  handleDrawingGreets();
+
   ProfilerStop(GrowTree);
 
   if (lastBranch == branches) {

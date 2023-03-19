@@ -10,7 +10,7 @@ static int hashTable[] = {
 // format:
 // start_pos_x, start_pos_y, [0..255], [0..255]
 // delay, [0..255]
-// data ... to 255,255 - end of line
+// data [x1, y1, [[x1/2, y1/2], x2, y2] to 255,255 - end of line
 // data ... to 255,255, 128, 128 - end of logo
 
 // ALTAIR
