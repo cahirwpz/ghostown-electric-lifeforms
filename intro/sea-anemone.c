@@ -2,6 +2,7 @@
 #include <blitter.h>
 #include <copper.h>
 #include <color.h>
+#include <intro.h>
 #include <fx.h>
 #include <gfx.h>
 #include <line.h>
@@ -138,13 +139,17 @@ static const short blip_sequence[] = {
   2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
   3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 };
-// For static palette blips
-static __code short lightLevel = 0;
+
+static const short gradient_envelope[] = {
+  0,
+  0, 1, 2, 3, 4, 5, 6, 7, 8,
+  9, 10, 11, 12, 13, 14, 15,
+  15, 14, 13, 12, 11, 10, 9,
+  8, 7, 6, 5, 4, 3, 2, 1, 0,
+};
 
 // For the background gradient
 static __code short gradientLevel = 0;
-static __code bool gradientAscending = false;
-static __code bool gradientActive = false;
 
 static inline int fastrand(void) {
   static int m[2] = { 0x3E50B28C, 0xD461A7F9 };
@@ -303,24 +308,14 @@ static void ArmMove(ArmT *arm, short angle) {
 }
 
 static int PaletteBlip(void) {
-  if (lightLevel) {
-    LoadPalette((*active_pal)[blip_sequence[lightLevel]], 0);
-    lightLevel--;
-  }
+  short valPal, valGradient;
+  UpdateFrameCount();
   
-  if (gradientActive) {
-    if (gradientLevel < 15 && gradientAscending) {
-      gradientLevel++;
-      if (gradientLevel == 15) {
-          gradientAscending = false;
-      }
-    } else if (gradientLevel > 0 && !gradientAscending) {
-      gradientLevel--;
-      if (gradientLevel == 0) {
-        gradientActive = false;
-      }
-    } 
-  }
+  if ((valPal = TrackValueGet(&SeaAnemonePalPulse, frameFromStart)))
+    LoadPalette((*active_pal)[blip_sequence[valPal]], 0);
+  
+  if ((valGradient = TrackValueGet(&SeaAnemoneGradient, frameFromStart)))
+    gradientLevel = gradient_envelope[valGradient];
 
   return 0;
 }
@@ -331,7 +326,7 @@ static void MakeCopperList(CopListT *cp) {
   CopInit(cp);
   CopSetupBitplanes(cp, bplptr, screen, DEPTH);
 
-  if (gradientActive) {
+  if (gradientLevel) {
     short *ptr = gradient;
     const short *to = anemone_gradient_pal.colors;
     short i;
@@ -500,7 +495,7 @@ PROFILE(SeaAnemone);
 
 static void Render(void) {
   int lineOffset = 0;
-  short val, valPal, valGradient;
+  short val;
 
   if ((val = TrackValueGet(&SeaAnemoneVariant, frameFromStart))) { 
     BitmapClear(screen);
@@ -515,13 +510,6 @@ static void Render(void) {
   }
 
   // Set the light level (for palette modification)
-  if ((valPal = TrackValueGet(&SeaAnemonePalPulse, frameFromStart)))
-    lightLevel = valPal;
-
-  if ((valGradient = TrackValueGet(&SeaAnemoneGradient, frameFromStart))) {
-    gradientAscending = true;
-    gradientActive = true;
-  }
 
   ProfilerStart(SeaAnemone);
 
