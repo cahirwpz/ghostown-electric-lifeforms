@@ -51,6 +51,7 @@ void TaskInit(TaskT *tsk, const char *name, void *stkptr, u_int stksz) {
 #define PushWord(v)                                                            \
   { *--(u_short *)sp = (u_short)(v); }
 
+#if MULTITASK
 void TaskRun(TaskT *tsk, u_char prio, void (*fn)(void *), void *arg) {
   void *sp = tsk->stkUpper;
 
@@ -224,3 +225,9 @@ void TaskSwitch(TaskT *curtsk) {
   Debug("Switching to '%s', prio: %d.", curtsk->name, curtsk->prio);
   CurrentTask = curtsk;
 }
+#else
+void TaskSwitch(TaskT *curtsk) {
+  (void)curtsk;
+  HALT();
+}
+#endif
