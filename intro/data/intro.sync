@@ -266,32 +266,29 @@ $0020 2
 $0100 3
 @end
 
+@track TurmiteFadeIn
+$0000 15 !trigger
+$0020 15 !trigger
+$0100 15 !trigger
+@end
+
+@track TurmiteFadeOut
+$001E 15 !trigger
+$003E 15 !trigger
+@end
+
 @track TurmitePal
-$0005 10 !event
-$000A 10 !event
-$000E 10 !event
-$0010 10 !event
-$0015 10 !event
-$001A 10 !event
-$001E 10 !event
-$0020 10 !event
-$0025 10 !event
-$002A 10 !event
-$002E 10 !event
-$0030 10 !event
-$0035 10 !event
-$003A 10 !event
-$003E 10 !event
-$0100 10 !event
-$0105 10 !event
-$010A 10 !event
-$010E 10 !event
-$0110 10 !event
-$0115 10 !event
-$011A 10 !event
-$011E 10 !event
-$0120 10 !event
-$0125 10 !event
-$012A 10 !event
-$012E 10 !event
+$000A 10 !trigger
+$0015 10 !trigger
+$002A 10 !trigger
+$002E 10 !trigger
+$010E 10 !trigger
+$0110 10 !trigger
+$0115 10 !trigger
+$011A 10 !trigger
+$011E 10 !trigger
+$0120 10 !trigger
+$0125 10 !trigger
+$012A 10 !trigger
+$012E 10 !trigger
 @end
