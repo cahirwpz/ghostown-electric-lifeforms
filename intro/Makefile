@@ -71,6 +71,7 @@ ELECTRONS2C.wireworld-vitruvian := --name vitruvian_electrons
 PNG2C.wireworld-vitruvian := --bitmap wireworld_vitruvian,160x128x1,+limit_depth
 PNG2C.chip := --sprite wireworld_chip,64,4,+attached --palette wireworld_chip_pal,16
 PNG2C.wireworld-pcb-pal := --pixmap wireworld_pcb_pal,4x32x12
+PNG2C.loader := --bitmap loader,64x64x1 --palette loader_pal,2
 
 PNG2C.circles := \
 	--bitmap circle1,3x3x1,extract_at=0x0 \
