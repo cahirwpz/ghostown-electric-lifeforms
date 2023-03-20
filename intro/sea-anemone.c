@@ -309,39 +309,24 @@ static void ArmMove(ArmT *arm, short angle) {
   arm->diameter--;
 }
 
-static int PaletteBlip(void) {
+static int ForEachFrame(void) {
   short val;
+
   UpdateFrameCount();
-
-  if ((val = TrackValueGet(&SeaAnemoneVariant, frameFromStart))) { 
-    BitmapClear(screen);
-    ArmsReset(&AnemoneArms);
-    ArmVariant = val;
-  }
-
-  if ((val = TrackValueGet(&SeaAnemonePal, frameFromStart))) {
-    activePalIndex = val;
-    active_pal = sea_anemone_pal[val];
-    active_shape = shapes[val];
-  }
 
   if ((val = TrackValueGet(&SeaAnemonePalPulse, frameFromStart)))
     LoadPalette((*active_pal)[blip_sequence[val]], 0);
   
-  if ((val = TrackValueGet(&SeaAnemoneGradient, frameFromStart)))
-    gradientLevel = gradient_envelope[val];
-
   if ((val = TrackValueGet(&SeaAnemoneFadeOut, frameFromStart))) 
-    Fade(sea_anemone_palettes[activePalIndex], val);
+    FadeBlack(sea_anemone_palettes[activePalIndex], 0, val);
 
   if ((val = TrackValueGet(&SeaAnemoneFadeIn, frameFromStart))) 
-    Fade(sea_anemone_palettes[activePalIndex], 16 - val);
-
+    FadeBlack(sea_anemone_palettes[activePalIndex], 0, 16 - val);
 
   return 0;
 }
 
-INTSERVER(PulsatePaletteInterrupt, 0, (IntFuncT)PaletteBlip, NULL);
+INTSERVER(ForEachFrameInterrupt, 0, (IntFuncT)ForEachFrame, NULL);
 
 static void MakeCopperList(CopListT *cp) {
   CopInit(cp);
@@ -394,11 +379,11 @@ static void Init(void) {
     custom->bltafwm = -1;
   }
 
-  AddIntServer(INTB_VERTB, PulsatePaletteInterrupt);
+  AddIntServer(INTB_VERTB, ForEachFrameInterrupt);
 }
 
 static void Kill(void) {
-  RemIntServer(INTB_VERTB, PulsatePaletteInterrupt);
+  RemIntServer(INTB_VERTB, ForEachFrameInterrupt);
   DisableDMA(DMAF_COPPER | DMAF_BLITTER | DMAF_RASTER | DMAF_BLITHOG);
 
   DeleteCopList(cp[0]);
@@ -519,6 +504,23 @@ PROFILE(SeaAnemone);
 
 static void Render(void) {
   int lineOffset = 0;
+  short val;
+
+  if ((val = TrackValueGet(&SeaAnemoneVariant, frameFromStart))) { 
+    BitmapClear(screen);
+    ArmsReset(&AnemoneArms);
+    ArmVariant = val;
+  }
+
+  if ((val = TrackValueGet(&SeaAnemonePal, frameFromStart))) {
+    activePalIndex = val;
+    active_pal = sea_anemone_pal[val];
+    active_shape = shapes[val];
+  }
+
+  if ((val = TrackValueGet(&SeaAnemoneGradient, frameFromStart))) {
+    gradientLevel = gradient_envelope[val];
+  }
 
   ProfilerStart(SeaAnemone);
 

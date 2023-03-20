@@ -67,9 +67,9 @@ static void UnLoadEffects(EffectT **effects) {
   }
 }
 
-static void FadeBlack(const PaletteT *pal, short step) {
+void FadeBlack(const PaletteT *pal, u_int start, short step) {
+  volatile short *reg = &custom->color[start];
   const short *col = pal->colors;
-  volatile short *reg = custom->color;
   short n = pal->count;
   
   if (step < 0)
@@ -90,42 +90,6 @@ static void FadeBlack(const PaletteT *pal, short step) {
     
     *reg++ = (r << 4) | g | (b >> 4);
   }
-}
-
-static void CopFadeBlack(const PaletteT *pal, CopInsT *ins, short step) {
-  const short *col = pal->colors;
-  short n = pal->count;
-
-  if (step < 0)
-    step = 0;
-  if (step > 15)
-    step = 15;
-
-  while (--n >= 0) {
-    short to = *col++;
-
-    short r = ((to >> 4) & 0xf0) | step;
-    short g = (to & 0xf0) | step;
-    short b = ((to << 4) & 0xf0) | step;
-
-    r = colortab[r];
-    g = colortab[g];
-    b = colortab[b];
-    
-    CopInsSet16(ins++, (r << 4) | g | (b >> 4));
-  }
-}
-
-void CopFadeIn(const PaletteT *pal, CopInsT *ins) {
-  CopFadeBlack(pal, ins, frameFromStart);
-}
-
-void CopFadeOut(const PaletteT *pal, CopInsT *ins) {
-  CopFadeBlack(pal, ins, frameTillEnd);
-}
-
-void Fade(const PaletteT *pal, short step) {
-  FadeBlack(pal, step);
 }
 
 short UpdateFrameCount(void) {
