@@ -217,64 +217,64 @@ static TurmiteT Irregular = {
 #endif
 
 static TurmiteT SquarePattern = {
-  .pos = POS(60,60),
+  .pos = POS(60, 60),
   .dir = 0,
   .state = 0,
   .rules = {
     {
-      RULE(1 ,1 ,1),
-      RULE(1 ,1 ,0)
+      RULE(1, 1 ,1),
+      RULE(1, 1 ,0)
     },
     {
-      RULE(0 ,1 ,0),
-      RULE(1 ,0 ,1)
+      RULE(0, 1, 0),
+      RULE(1, 0, 1)
     },
   }
 };
 
 static TurmiteT SquarePattern2 = {
-  .pos = POS(160,160),
+  .pos = POS(160, 160),
   .dir = 0,
   .state = 0,
   .rules = {
     {
-      RULE(1 ,1 ,1),
-      RULE(1 ,0 ,0)
+      RULE(1, 1, 1),
+      RULE(1, 0, 0)
     },
     {
-      RULE(1 ,0 ,0),
-      RULE(0 ,0 ,1)
+      RULE(1, 0, 0),
+      RULE(0, 0, 1)
     },
   }
 };
 
 static TurmiteT AroundLetters = {
-  .pos = POS(60,60),
+  .pos = POS(60, 60),
   .dir = 0,
   .state = 0,
   .rules = {
     {
-      RULE(0 ,1 ,1),
-      RULE(1 ,1 ,1)
+      RULE(0, 1, 1),
+      RULE(1, 1, 1)
     },
     {
-      RULE(0 ,-1 ,2),
-      RULE(0 ,-1 ,0)
+      RULE(0, -1, 2),
+      RULE(0, -1, 0)
     },
     {
-      RULE(1 ,1 ,2),
-      RULE(1 ,-1 ,0)
+      RULE(1, +1, 2),
+      RULE(1, -1, 0)
     }
   }
 };
 
 static TurmiteT AroundLetters2 = {
-  .pos = POS(160,160),
+  .pos = POS(160, 160),
   .dir = 0,
   .state = 0,
   .rules = {
     {
-      RULE(1 ,-1 ,1),
+      RULE(1, -1, 1),
       RULE(0, -1, 0),
     }, 
     {
@@ -285,33 +285,33 @@ static TurmiteT AroundLetters2 = {
 };
 
 static TurmiteT Spiral = {
-  .pos = POS(60,60),
+  .pos = POS(60, 60),
   .dir = 0,
   .state = 0,
   .rules = {
     {
-      RULE(1 ,1 ,1),
-      RULE(0 ,1 ,1)
+      RULE(1, 1, 1),
+      RULE(0, 1, 1)
     },
     {
-      RULE(1 ,0 ,0),
-      RULE(1 ,0 ,1)
+      RULE(1, 0, 0),
+      RULE(1, 0, 1)
     },
   }
 };
 
 static TurmiteT Spiral2 = {
-  .pos = POS(160,160),
+  .pos = POS(160, 160),
   .dir = 0,
   .state = 0,
   .rules = {
     {
-      RULE(1 ,1 ,0),
-      RULE(1 ,1 ,1)
+      RULE(1, 1, 0),
+      RULE(1, 1, 1)
     },
     {
-      RULE(0 ,0 ,0),
-      RULE(0 ,0 ,1)
+      RULE(0, 0, 0),
+      RULE(0, 0, 1)
     },
   }
 };
@@ -587,7 +587,7 @@ static void ChooseTurmiteBoard(short i) {
   active_pal = turmite_pal[i];
 }
 
-static int PaletteBlip(void) {
+static int ForEachFrame(void) {
   short val;
 
   UpdateFrameCount();
@@ -604,7 +604,7 @@ static int PaletteBlip(void) {
   return 0;
 }
 
-INTSERVER(BlipPaletteInterrupt, 0, (IntFuncT)PaletteBlip, NULL);
+INTSERVER(ForEachFrameInterrupt, 0, (IntFuncT)ForEachFrame, NULL);
 
 static void Init(void) {
   board = MemAlloc(WIDTH * HEIGHT, MEMF_PUBLIC|MEMF_CLEAR);
@@ -632,11 +632,11 @@ static void Init(void) {
 
   EnableDMA(DMAF_RASTER);
 
-  AddIntServer(INTB_VERTB, BlipPaletteInterrupt);
+  AddIntServer(INTB_VERTB, ForEachFrameInterrupt);
 }
 
 static void Kill(void) {
-  RemIntServer(INTB_VERTB, BlipPaletteInterrupt);
+  RemIntServer(INTB_VERTB, ForEachFrameInterrupt);
   DisableDMA(DMAF_RASTER|DMAF_COPPER);
   DeleteCopList(cp);
   DeleteBitmap(screen);
