@@ -1,6 +1,8 @@
 #include <effect.h>
 #include <blitter.h>
 #include <copper.h>
+#include <color.h>
+#include <intro.h>
 #include <fx.h>
 #include <gfx.h>
 #include <line.h>
@@ -15,25 +17,32 @@
 #define DIAMETER 32
 #define NARMS 15 /* must be power of two minus one */
 
-static CopListT *cp;
+static __code short active = 0;
+static __code CopListT *cp[2];
 static CopInsT *bplptr[DEPTH];
 static BitmapT *screen;
 
-#include "data/anemone-pal-1.c"
-#include "data/anemone-pal-1-dark.c"
-#include "data/anemone-pal-1-light.c"
+#include "data/pal-gold.c"
+#include "data/pal-gold-dark.c"
+#include "data/pal-gold-light.c"
 
-#include "data/anemone-pal-2.c"
-#include "data/anemone-pal-2-dark.c"
-#include "data/anemone-pal-2-light.c"
+#include "data/pal-blue.c"
+#include "data/pal-blue-dark.c"
+#include "data/pal-blue-light.c"
 
-#include "data/anemone-pal-3.c"
-#include "data/anemone-pal-3-dark.c"
-#include "data/anemone-pal-3-light.c"
+#include "data/pal-red.c"
+#include "data/pal-red-dark.c"
+#include "data/pal-red-light.c"
+
+#include "data/anemone-gradient-pal.c"
+#include "data/anemone-gradient.c"
 
 #include "data/circles.c"
+#include "data/squares.c"
 
-static const BitmapT *circles[DIAMETER / 2] = {
+typedef const BitmapT *ArmShapeT[DIAMETER / 2]; 
+
+static const ArmShapeT circles = {
   &circle1,
   &circle2,
   &circle3,
@@ -52,40 +61,69 @@ static const BitmapT *circles[DIAMETER / 2] = {
   &circle16
 };
 
-static __code short lightLevel = 0;
+static const ArmShapeT squares = {
+  &square1,
+  &square2,
+  &square3,
+  &square4,
+  &square5,
+  &square6,
+  &square7,
+  &square8,
+  &square9,
+  &square10,
+  &square11,
+  &square12,
+  &square13,
+  &square14,
+  &square15,
+  &square16
+};
+
+static const ArmShapeT *shapes[4] = {
+  NULL,
+  &circles,
+  &squares,
+  &circles,
+};
+
+static const ArmShapeT *active_shape = &circles;
 
 extern TrackT SeaAnemoneVariant;
 extern TrackT SeaAnemonePal;
 extern TrackT SeaAnemonePalPulse;
+extern TrackT SeaAnemoneGradient;
+extern TrackT SeaAnemoneFadeOut;
+extern TrackT SeaAnemoneFadeIn;
 
 typedef const PaletteT *SeaAnemonePalT[4];
 
 static const SeaAnemonePalT sea_anemone_palettes = {
   NULL, 
-  &anemone_pal_1,
-  &anemone_pal_2,
-  &anemone_pal_3,
+  &pal_gold,
+  &pal_blue,
+  &pal_red,
 };
 
 static const SeaAnemonePalT anemone1_pal = {
   NULL,
-  &anemone_pal_1_light,
-  &anemone_pal_1,
-  &anemone_pal_1_dark,
+  &pal_gold_light,
+  &pal_gold,
+  &pal_gold_dark,
 };
 
 static const SeaAnemonePalT anemone2_pal = {
   NULL,
-  &anemone_pal_2_light,
-  &anemone_pal_2,
-  &anemone_pal_2_dark,
+  &pal_blue_light,
+  &pal_blue,
+  &pal_blue_dark,
 };
 
 static const SeaAnemonePalT anemone3_pal = {
   NULL,
-  &anemone_pal_3_light,
-  &anemone_pal_3,
-  &anemone_pal_3_dark,
+  &pal_red_light,
+  &pal_red,
+  &pal_red_dark,
 };
 
 static const SeaAnemonePalT *sea_anemone_pal[4] = {
@@ -96,13 +134,24 @@ static const SeaAnemonePalT *sea_anemone_pal[4] = {
 };
 
 static const SeaAnemonePalT *active_pal = &anemone1_pal;
-
 static const short blip_sequence[] = {
   0,
   2, 1, 1, 1, 1, 1, 1, 1, 1, 1,
   2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
   3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
 };
+
+static const short gradient_envelope[] = {
+  0,
+  0, 1, 2, 3, 4, 5, 6, 7, 8,
+  9, 10, 11, 12, 13, 14, 15,
+  15, 14, 13, 12, 11, 10, 9,
+  8, 7, 6, 5, 4, 3, 2, 1, 0,
+};
+
+// For the background gradient
+static __code short gradientLevel = 0;
+static __code short activePalIndex = 1;
 
 static inline int fastrand(void) {
   static int m[2] = { 0x3E50B28C, 0xD461A7F9 };
@@ -260,33 +309,67 @@ static void ArmMove(ArmT *arm, short angle) {
   arm->diameter--;
 }
 
-static int PaletteBlip(void) {
-  if (lightLevel) {
-    LoadPalette((*active_pal)[blip_sequence[lightLevel]], 0);
-    lightLevel--;
-  }
+static int ForEachFrame(void) {
+  short val;
+
+  UpdateFrameCount();
+
+  if ((val = TrackValueGet(&SeaAnemonePalPulse, frameFromStart)))
+    LoadPalette((*active_pal)[blip_sequence[val]], 0);
+  
+  if ((val = TrackValueGet(&SeaAnemoneFadeOut, frameFromStart))) 
+    FadeBlack(sea_anemone_palettes[activePalIndex], 0, val);
+
+  if ((val = TrackValueGet(&SeaAnemoneFadeIn, frameFromStart))) 
+    FadeBlack(sea_anemone_palettes[activePalIndex], 0, 16 - val);
+
   return 0;
 }
 
-INTSERVER(PulsatePaletteInterrupt, 0, (IntFuncT)PaletteBlip, NULL);
+INTSERVER(ForEachFrameInterrupt, 0, (IntFuncT)ForEachFrame, NULL);
+
+static void MakeCopperList(CopListT *cp) {
+  CopInit(cp);
+  CopSetupBitplanes(cp, bplptr, screen, DEPTH);
+
+  if (gradientLevel) {
+    short *ptr = gradient;
+    const short *to = anemone_gradient_pal.colors;
+    short i;
+
+    for (i = 1; i < GRADIENTL; i++) {
+      short y = *ptr++;
+      short ci = *ptr++;
+      short from = 0x001;
+
+      CopWaitSafe(cp, Y(y), 0);
+      CopSetColor(cp, 0, ColorTransition(from, to[ci], gradientLevel));
+    }
+  }
+
+  CopEnd(cp);
+}
 
 static void Init(void) {
   screen = NewBitmap(WIDTH, HEIGHT * 4, DEPTH);
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
-  LoadPalette(&anemone_pal_1, 0);
+  LoadPalette(&pal_gold, 0);
 
-  cp = NewCopList(50);
-  CopInit(cp);
-  CopSetupBitplanes(cp, bplptr, screen, DEPTH);
-  CopEnd(cp);
-  CopListActivate(cp);
+  cp[0] = NewCopList(200);
+  cp[1] = NewCopList(200);
+  MakeCopperList(cp[0]);
+  CopListActivate(cp[0]);
 
   EnableDMA(DMAF_RASTER | DMAF_BLITTER | DMAF_BLITHOG);
 
   TrackInit(&SeaAnemoneVariant);
   TrackInit(&SeaAnemonePal);
   TrackInit(&SeaAnemonePalPulse);
+  TrackInit(&SeaAnemoneGradient);
+  TrackInit(&SeaAnemoneFadeOut);
+  TrackInit(&SeaAnemoneFadeIn);
+  
   ArmsReset(&AnemoneArms);
 
   /* Moved from DrawCircle, since we use only one type of blit. */
@@ -296,26 +379,27 @@ static void Init(void) {
     custom->bltafwm = -1;
   }
 
-  AddIntServer(INTB_VERTB, PulsatePaletteInterrupt);
+  AddIntServer(INTB_VERTB, ForEachFrameInterrupt);
 }
 
 static void Kill(void) {
-  RemIntServer(INTB_VERTB, PulsatePaletteInterrupt);
+  RemIntServer(INTB_VERTB, ForEachFrameInterrupt);
   DisableDMA(DMAF_COPPER | DMAF_BLITTER | DMAF_RASTER | DMAF_BLITHOG);
 
+  DeleteCopList(cp[0]);
+  DeleteCopList(cp[1]);
   DeleteBitmap(screen);
-  DeleteCopList(cp);
 }
 
 #define screen_bytesPerRow (WIDTH / 8)
 
-static void DrawCircle(const BitmapT *circle, short x, short y, short c,
-                       int vShift)
-{
-  u_short dstmod = screen_bytesPerRow - circle->bytesPerRow;
+static __code int vShift = 0;
+
+static void DrawShape(const BitmapT *shape, short x, short y, short c) {
+  u_short dstmod = screen_bytesPerRow - shape->bytesPerRow;
   u_short bltshift = rorw(x & 15, 4);
-  u_short bltsize = (circle->height << 6) | (circle->bytesPerRow >> 1);
-  void *srcbpt = circle->planes[0];
+  u_short bltsize = (shape->height << 6) | (shape->bytesPerRow >> 1);
+  void *srcbpt = shape->planes[0];
   void **dstbpts = screen->planes;
   int start;
 
@@ -363,7 +447,7 @@ static void DrawCircle(const BitmapT *circle, short x, short y, short c,
   }
 }
 
-static void SeaAnemone(ArmQueueT *arms, int vShift) {
+static void SeaAnemone(ArmQueueT *arms, const ArmShapeT shapes) {
   static ArmT arm;
 
   MakeArm(arms, &arm);
@@ -403,7 +487,7 @@ static void SeaAnemone(ArmQueueT *arms, int vShift) {
         if ((x < 0) || (y < 0) || (x >= WIDTH - d) || (y >= HEIGHT - d))
           continue;
         if (r < 16)
-          DrawCircle(circles[r - 1], x, y, 16 - r, vShift);
+          DrawShape(shapes[r - 1], x, y, 16 - r);
       }
       if (curr == last)
         break;
@@ -419,9 +503,8 @@ static void SeaAnemone(ArmQueueT *arms, int vShift) {
 PROFILE(SeaAnemone);
 
 static void Render(void) {
-  short vShift = 0;
   int lineOffset = 0;
-  short val, valPal;
+  short val;
 
   if ((val = TrackValueGet(&SeaAnemoneVariant, frameFromStart))) { 
     BitmapClear(screen);
@@ -430,29 +513,33 @@ static void Render(void) {
   }
 
   if ((val = TrackValueGet(&SeaAnemonePal, frameFromStart))) {
-    LoadPalette(sea_anemone_palettes[val], 0);
+    activePalIndex = val;
     active_pal = sea_anemone_pal[val];
+    active_shape = shapes[val];
   }
 
-  // Set the light level (for palette modification)
-  if ((valPal = TrackValueGet(&SeaAnemonePalPulse, frameFromStart)))
-    lightLevel = valPal;
+  if ((val = TrackValueGet(&SeaAnemoneGradient, frameFromStart))) {
+    gradientLevel = gradient_envelope[val];
+  }
 
   ProfilerStart(SeaAnemone);
 
+  active ^= 1;
+
+  MakeCopperList(cp[active]);
   // Scroll the screen vertically
   if (ArmVariant == 4) {
+    short i;
+
     vShift = frameCount % (HEIGHT * 3);
     lineOffset = vShift * screen_bytesPerRow;
 
-    CopInsSet32(bplptr[0], screen->planes[0] + lineOffset);
-    CopInsSet32(bplptr[1], screen->planes[1] + lineOffset);
-    CopInsSet32(bplptr[2], screen->planes[2] + lineOffset);
-    CopInsSet32(bplptr[3], screen->planes[3] + lineOffset);
+    for (i = 0; i < DEPTH; i++)
+      CopInsSet32(bplptr[i], screen->planes[i] + lineOffset);
   }
 
-  SeaAnemone(&AnemoneArms, vShift);
-
+  SeaAnemone(&AnemoneArms, *active_shape);
+  CopListRun(cp[active]); 
   ProfilerStop(SeaAnemone);
 
   TaskWaitVBlank();

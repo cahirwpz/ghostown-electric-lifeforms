@@ -49,28 +49,27 @@ static BitmapT *logo_blit;
  * to the beginning of a bitplane */
 static short tiles[NFLOWFIELDS][NTILES];
 
-#include "data/tilemover-pal.c"
 #include "data/tilemover-bg-pal.c"
 #include "data/tilemover-windmills.c"
 #include "data/tilemover-wave.c"
 #include "data/tilemover-drops.c"
 #include "data/tilemover-block.c"
 
-#include "data/sea-anemone-pal1.c"
-#include "data/sea-anemone-pal2.c"
-#include "data/sea-anemone-pal3.c"
+#include "data/pal-blue.c"
+#include "data/pal-green.c"
+#include "data/pal-red.c"
 
 typedef const PaletteT *TilemoverPalT[8];
 
 static TilemoverPalT tilemover_palettes = {
   NULL,
-  &tilemover_pal,    // static - blue
-  &tilemover_pal,    // kitchen sink - blue
-  &tilemover_pal,    // soundwave - blue
-  &sea_anemone_pal2, // windmills - red
-  &sea_anemone_pal3, // rolling tube - green
-  &sea_anemone_pal2, // funky soundwave - red
-  &tilemover_pal,    // static - blue
+  &pal_blue,    // static
+  &pal_blue,    // kitchen sink
+  &pal_blue,    // soundwave
+  &pal_red,     // windmills 
+  &pal_green,   // rolling tube
+  &pal_red,     // funky soundwave
+  &pal_blue,    // static
 };
 
 static __code short lightLevel = 0;
@@ -290,7 +289,7 @@ static void Init(void) {
   DisableDMA(DMAF_BLITTER);
   SetupPlayfield(MODE_LORES, DEPTH, X(MARGIN), Y((256 - S_HEIGHT) / 2),
                  S_WIDTH, S_HEIGHT);
-  LoadPalette(&tilemover_pal, 0);
+  LoadPalette(&pal_blue, 0);
 
   KillLogo();
 
