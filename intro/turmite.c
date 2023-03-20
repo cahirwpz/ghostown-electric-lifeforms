@@ -5,6 +5,7 @@
 #include "blitter.h"
 #include "bitmap.h"
 #include "sprite.h"
+#include "intro.h"
 #include "fx.h"
 #include <sync.h>
 #include <system/memory.h>
@@ -45,8 +46,8 @@ static u_int lookup[256][2];
 
 extern TrackT TurmiteBoard;
 extern TrackT TurmitePal;
-
-static short lightLevel = 0;
+extern TrackT TurmiteFadeIn;
+extern TrackT TurmiteFadeOut;
 
 static u_short *turmite_credits_bpl[] = {
   NULL,
@@ -93,6 +94,7 @@ static TurmitePalT *turmite_pal[4] = {
 };
 
 static TurmitePalT *active_pal = &turmite1_pal;
+static short active_pal_index = 1;
 
 static const short blip_sequence[] = {
   0, 2, 1, 1, 1, 2, 2, 2, 3, 3, 3
@@ -574,7 +576,7 @@ static void ResetTurmite(TurmiteT *t, u_short pos) {
 
 static void ChooseTurmiteBoard(short i) {
   BitmapClear(screen);
-  LoadPalette(turmite_palettes[i], 0);
+  active_pal_index = i;
   memcpy(screen->planes[DEPTH - 1], turmite_credits_bpl[i],
          turmite_credits_1_size);
   BitmapToBoard(turmite_credits_bpl[i], board);
@@ -586,10 +588,19 @@ static void ChooseTurmiteBoard(short i) {
 }
 
 static int PaletteBlip(void) {
-  if (lightLevel) {
-    LoadPalette((*active_pal)[blip_sequence[lightLevel]], 0);
-    lightLevel--;
-  }
+  short val;
+
+  UpdateFrameCount();
+
+  if ((val = TrackValueGet(&TurmitePal, frameFromStart)))
+    LoadPalette((*active_pal)[blip_sequence[val]], 0);
+
+  if ((val = TrackValueGet(&TurmiteFadeOut, frameFromStart))) 
+    FadeBlack(turmite_palettes[active_pal_index], 0, val);
+
+  if ((val = TrackValueGet(&TurmiteFadeIn, frameFromStart))) 
+    FadeBlack(turmite_palettes[active_pal_index], 0, 16 - val);
+
   return 0;
 }
 
@@ -607,6 +618,8 @@ static void Init(void) {
 
   TrackInit(&TurmiteBoard);
   TrackInit(&TurmitePal);
+  TrackInit(&TurmiteFadeIn);
+  TrackInit(&TurmiteFadeOut);
   
   EnableDMA(DMAF_BLITTER);
   ChooseTurmiteBoard(1);
@@ -633,9 +646,7 @@ static void Kill(void) {
 PROFILE(SimulateTurmite);
 
 static void Render(void) {
-  short val, valPal;
-  if ((valPal = TrackValueGet(&TurmitePal, frameFromStart)))
-    lightLevel = valPal;
+  short val;
 
   if ((val = TrackValueGet(&TurmiteBoard, frameFromStart)))
     ChooseTurmiteBoard(val);
