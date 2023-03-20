@@ -93,12 +93,12 @@
 #define RAND_SPAWN_MIN_DELAY 8
 #define NUM_SCENES 4
 
-#include "data/cell-gradient.c"
 #include "data/wireworld-vitruvian.c"
 #include "data/wireworld-vitruvian-electrons.c"
 #include "data/wireworld-fullscreen.c"
 #include "data/wireworld-fullscreen-electrons.c"
 #include "data/chip.c"
+#include "data/wireworld-pcb-pal.c"
 
 extern TrackT GOLPaletteH;
 extern TrackT GOLPaletteS;
@@ -220,6 +220,7 @@ static void BlitFunc(const BitmapT *sourceA, const BitmapT *sourceB,
 
 static void MakeCopperList(CopListT *cp) {
   short i;
+  short *color = wireworld_pcb_pal_pixels;
 
   CopInit(cp);
   // initially previous states are empty
@@ -248,6 +249,16 @@ static void MakeCopperList(CopListT *cp) {
 
   for (i = 1; i <= DISP_HEIGHT; i += 2) {
     // vertical pixel doubling
+    if (wireworld && (i - 1) % 8 == 0) {
+      CopSetColor(cp, 8, *color++);
+      CopSetColor(cp, 9, *color++);
+      CopSetColor(cp, 10, *color);
+      CopSetColor(cp, 11, *color++);
+      CopSetColor(cp, 12, *color);
+      CopSetColor(cp, 13, *color);
+      CopSetColor(cp, 14, *color);
+      CopSetColor(cp, 15, *color++);
+    } 
     CopMove16(cp, bpl1mod, -prev_states[0]->bytesPerRow);
     CopMove16(cp, bpl2mod, -prev_states[0]->bytesPerRow);
     CopWaitSafe(cp, Y(i), 0);
@@ -341,7 +352,7 @@ static void SharedPreInit(void) {
 
   SetupPlayfield(MODE_LORES, DISP_DEPTH, X(0), Y(0), DISP_WIDTH, DISP_HEIGHT);
 
-  cp = NewCopList(850);
+  cp = NewCopList(1820);
   MakeCopperList(cp);
   CopListActivate(cp);
 
