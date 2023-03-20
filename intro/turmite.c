@@ -10,17 +10,17 @@
 #include <system/memory.h>
 #include <system/interrupt.h>
 
-#include "data/turmite-pal-1.c"
-#include "data/turmite-pal-1-dark.c"
-#include "data/turmite-pal-1-light.c"
+#include "data/pal-gold.c"
+#include "data/pal-gold-dark.c"
+#include "data/pal-gold-light.c"
 
-#include "data/turmite-pal-2.c"
-#include "data/turmite-pal-2-dark.c"
-#include "data/turmite-pal-2-light.c"
+#include "data/pal-green.c"
+#include "data/pal-green-dark.c"
+#include "data/pal-green-light.c"
 
-#include "data/turmite-pal-3.c"
-#include "data/turmite-pal-3-dark.c"
-#include "data/turmite-pal-3-light.c"
+#include "data/pal-red.c"
+#include "data/pal-red-dark.c"
+#include "data/pal-red-light.c"
 
 #include "data/turmite-credits-1.c"
 #include "data/turmite-credits-2.c"
@@ -59,30 +59,30 @@ typedef const PaletteT *TurmitePalT[4];
 
 static TurmitePalT turmite_palettes = {
   NULL,
-  &turmite_pal_1,
-  &turmite_pal_2,
-  &turmite_pal_3,
+  &pal_gold,
+  &pal_green,
+  &pal_red,
 };
 
 static TurmitePalT turmite1_pal = {
   NULL,
-  &turmite_pal_1_light,
-  &turmite_pal_1,
-  &turmite_pal_1_dark,
+  &pal_gold_light,
+  &pal_gold,
+  &pal_gold_dark,
 };
 
 static TurmitePalT turmite2_pal = {
   NULL,
-  &turmite_pal_2_light,
-  &turmite_pal_2,
-  &turmite_pal_2_dark,
+  &pal_green_light,
+  &pal_green,
+  &pal_green_dark,
 };
 
 static TurmitePalT turmite3_pal = {
   NULL,
-  &turmite_pal_3_light,
-  &turmite_pal_3,
-  &turmite_pal_3_dark,
+  &pal_red_light,
+  &pal_red,
+  &pal_red_dark,
 };
 
 static TurmitePalT *turmite_pal[4] = {
@@ -603,7 +603,7 @@ static void Init(void) {
   SetupDisplayWindow(MODE_LORES, X(32), Y(0), WIDTH, HEIGHT);
   SetupBitplaneFetch(MODE_LORES, X(32), WIDTH);
   SetupMode(MODE_LORES, DEPTH);
-  LoadPalette(&turmite_pal_1, 0);
+  LoadPalette(&pal_gold, 0);
 
   TrackInit(&TurmiteBoard);
   TrackInit(&TurmitePal);
