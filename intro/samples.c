@@ -108,10 +108,10 @@ static void GenerateSamples(void *buf) {
   CopListT *cp = NewCopList(40);
 
   CpuLineSetup(screen, 0);
-  CpuLine(X1 - 2, Y1 - 2, X2 + 2, Y1 - 2);
-  CpuLine(X1 - 2, Y2 + 1, X2 + 2, Y2 + 1);
-  CpuLine(X1 - 2, Y1 - 2, X1 - 2, Y2 + 1);
-  CpuLine(X2 + 2, Y1 - 2, X2 + 2, Y2 + 1);
+  CpuLine(X1 - 1, Y1 - 2, X2 + 1, Y1 - 2);
+  CpuLine(X1 - 1, Y2 + 1, X2 + 1, Y2 + 1);
+  CpuLine(X1 - 2, Y1 - 1, X1 - 2, Y2 + 1);
+  CpuLine(X2 + 2, Y1 - 1, X2 + 2, Y2 + 1);
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
   LoadPalette(&loader_pal, 0);
