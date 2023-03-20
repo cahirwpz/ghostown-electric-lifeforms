@@ -1,8 +1,11 @@
 #include <intro.h>
 #include <debug.h>
 #include <copper.h>
+#include <blitter.h>
 #include <gfx.h>
 #include <line.h>
+
+#include "data/loader.c"
 
 #define _SYSTEM
 #include <system/memory.h>
@@ -80,14 +83,14 @@ extern u_int AK_Progress;
 extern u_int AK_ProgressLen;
 void AK_Generate(void *TmpBuf asm("a1"));
 
-#define X1 32
-#define Y1 120
-#define X2 288
-#define Y2 136
+#define X1 96
+#define Y1 (120 + 32)
+#define X2 224
+#define Y2 (136 + 24)
 
 static int ProgressBarUpdate(void) {
   static __code short x = 0;
-  short newX = div16(AK_Progress, AK_ProgressLen >> 8);
+  short newX = div16(AK_Progress, AK_ProgressLen >> 7);
   for (; x < newX; x++) {
     CpuLine(X1 + x, Y1, X1 + x, Y2);
   }
@@ -111,8 +114,13 @@ static void GenerateSamples(void *buf) {
   CpuLine(X2 + 2, Y1 - 2, X2 + 2, Y2 + 1);
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
-  SetColor(0, 0x000);
-  SetColor(1, 0xfff);
+  LoadPalette(&loader_pal, 0);
+
+  EnableDMA(DMAF_BLITTER);
+  BitmapCopy(screen, (WIDTH - loader_width) / 2, Y1 - loader_height - 16,
+             &loader);
+  WaitBlitter();
+  DisableDMA(DMAF_BLITTER);
 
   CopInit(cp);
   CopSetupBitplanes(cp, NULL, screen, DEPTH);
