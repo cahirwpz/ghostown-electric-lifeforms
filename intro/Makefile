@@ -29,7 +29,7 @@ CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
 	data/$(MODULE)-*.o data/$(MODULE).{smp,trk}* data/text-scroll-font.c \
 	data/intro.c data/electric-lifeforms-0[1-2].c \
 	data/fruit-*.c data/anemone-gradient-pal.c \
-	data/ghostown-logo-crop.c data/p46basedprng.c data/cell-gradient.c \
+	data/ghostown-logo-crop.c \
 	data/logo-electrons.c data/electric-lifeforms.c \
 	data/ghostown-logo-0[1-3].c \
 	data/wireworld-fullscreen.c \
@@ -40,9 +40,8 @@ CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
 	data/circles.c data/squares.c \
 	data/grass-[1-2].c \
 	data/uvgut-{in,out}side.c data/gradient.c data/gradient.png \
-	data/tilemover-*.c data/chip.c \
-	data/pal-gold*.c data/pal-green*.c \
-	data/pal-red*.c data/pal-blue*.c\
+	data/tilemover-*.c data/chip.c data/wireworld_pcb_pal.c \
+	data/pal-gold*.c data/pal-green*.c data/pal-red*.c data/pal-blue*.c
 
 SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   tilemover.c sea-anemone.c game-of-life.c vitruvian.c uvmap.c \
@@ -61,8 +60,7 @@ PNG2C.fruit-1 := --bitmap fruit_1,16x16x2,+onlydata --palette fruit_1_pal,4
 PNG2C.fruit-2 := --bitmap fruit_2,16x16x2,+onlydata --palette fruit_2_pal,4
 PNG2C.grass-1 := --sprite grass_1,32,8 --palette grass_1_pal,4
 PNG2C.grass-2 := --sprite grass_2,32,8 --palette grass_2_pal,4
-PNG2C.p46basedprng := --bitmap p46basedprng,156x75x1
-PNG2C.cell-gradient := --pixmap gradient,4x64x12
+PNG2C.tilemover-pal := --palette tilemover_pal,16
 PNG2C.ghostown-logo-crop := --bitmap ghostown_logo,192x131x3,+shared
 PNG2C.ghostown-logo-01 := --palette ghostown_logo_1_pal,8
 PNG2C.ghostown-logo-02 := --palette ghostown_logo_2_pal,8
@@ -72,6 +70,7 @@ PNG2C.wireworld-fullscreen := --bitmap wireworld_pcb,160x128x1,+limit_depth
 ELECTRONS2C.wireworld-vitruvian := --name vitruvian_electrons
 PNG2C.wireworld-vitruvian := --bitmap wireworld_vitruvian,160x128x1,+limit_depth
 PNG2C.chip := --sprite wireworld_chip,64,4,+attached --palette wireworld_chip_pal,16
+PNG2C.wireworld-pcb-pal := --pixmap wireworld_pcb_pal,4x32x12
 
 PNG2C.circles := \
 	--bitmap circle1,3x3x1,extract_at=0x0 \
