@@ -123,8 +123,9 @@ static void GreetsNextTrack(void) {
 
   hashTableIdx++; hashTableIdx &= 3;
   fastrand_a = fastrand_b = 0;
-  greetsIdx = 0; // TODO: remove it
-
+  if(greetsIdx == 2) {
+    greetsIdx = 0; // TODO: remove it
+  }
 }
 
 
