@@ -35,6 +35,8 @@ SOURCES := \
 	kernel/trap-entry.S \
 	kernel/trap.c 
 
+include $(TOPDIR)/config.mk
+
 ifeq ($(MULTITASK), 1)
 SOURCES += \
 	   kernel/mutex.c \
