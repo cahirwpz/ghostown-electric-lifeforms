@@ -3,6 +3,7 @@
 #include <copper.h>
 #include <fx.h>
 #include <pixmap.h>
+#include <sync.h>
 #include <system/interrupt.h>
 #include <system/memory.h>
 
@@ -10,6 +11,10 @@
 #define HEIGHT 100
 #define DEPTH 4
 #define FULLPIXEL 1
+
+extern TrackT UvmapTransition;
+extern TrackT UvmapSrcTexture;
+extern TrackT UvmapDstTexture;
 
 static u_short *texFstHi, *texFstLo;
 static u_short *texSndHi, *texSndLo;
@@ -43,26 +48,43 @@ static u_short PixelLo[16] = {
   0x2020, 0x2121, 0x2222, 0x2323, 0x3030, 0x3131, 0x3232, 0x3333, 
 };
 
-static void PixmapToTexture(const PixmapT *image,
-                            u_short *imageHi, u_short *imageLo) 
+#define TW texture_in_width
+#define TH texture_in_height
+
+static __code short lastStep = TH;
+
+static void CopyTexture(const u_char *data, u_short *hi0, u_short *lo0,
+                        short step)
 {
-  u_char *data = image->pixels;
-  short n = image->width * image->height;
-  /* Extra halves for cheap texture motion. */
-  u_short *hi0 = imageHi;
-  u_short *hi1 = imageHi + n;
-  u_short *lo0 = imageLo;
-  u_short *lo1 = imageLo + n;
+  register u_short *lo1 asm("a3");
+  register u_short *hi1 asm("a4");
+  short n;
+
+  if (lastStep <= step)
+    return;
+
+  {
+    int start = step * TW;
+    data += start;
+    hi0 += start;
+    lo0 += start;
+    hi1 = hi0 + TW * TH;
+    lo1 = lo0 + TW * TH;
+  }
+
+  n = (lastStep - step) * TW;
 
   while (--n >= 0) {
     int c = *data++;
-    u_short hi = PixelHi[c];
-    u_short lo = PixelLo[c];
+    short hi = PixelHi[c];
+    short lo = PixelLo[c];
     *hi0++ = hi;
     *hi1++ = hi;
     *lo0++ = lo;
     *lo1++ = lo;
   }
+
+  lastStep = step;
 }
 
 static void ScrambleUVMap(u_short *uvmap) {
@@ -150,6 +172,10 @@ static void DeltaDecode(uint8_t *data) {
 static void Load(void) {
   short *uvmap;
 
+  TrackInit(&UvmapTransition);
+  TrackInit(&UvmapSrcTexture);
+  TrackInit(&UvmapDstTexture);
+
   DeltaDecode(umap);
   DeltaDecode(vmap);
 
@@ -159,14 +185,6 @@ static void Load(void) {
   UVMapRender = MemAlloc(UVMapRenderSize, MEMF_PUBLIC);
   MakeUVMapRenderCode(uvmap);
   MemFree(uvmap);
-
-  texFstHi = MemAlloc(texture_out.width * texture_out.height * 4, MEMF_PUBLIC);
-  texFstLo = MemAlloc(texture_out.width * texture_out.height * 4, MEMF_PUBLIC);
-  PixmapToTexture(&texture_out, texFstHi, texFstLo);
-
-  texSndHi = MemAlloc(texture_in.width * texture_in.height * 4, MEMF_PUBLIC);
-  texSndLo = MemAlloc(texture_in.width * texture_in.height * 4, MEMF_PUBLIC);
-  PixmapToTexture(&texture_in, texSndHi, texSndLo);
 }
 
 static struct {
@@ -331,6 +349,15 @@ static void Init(void) {
   screen[0] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH);
   screen[1] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH);
 
+  texFstHi = MemAlloc(texture_out_width * texture_out_height * 4,
+                      MEMF_PUBLIC|MEMF_CLEAR);
+  texFstLo = MemAlloc(texture_out_width * texture_out_height * 4,
+                      MEMF_PUBLIC|MEMF_CLEAR);
+  texSndHi = MemAlloc(texture_in_width * texture_in_height * 4,
+                      MEMF_PUBLIC|MEMF_CLEAR);
+  texSndLo = MemAlloc(texture_in_width * texture_in_height * 4,
+                      MEMF_PUBLIC|MEMF_CLEAR);
+
   EnableDMA(DMAF_BLITTER);
 
   BitmapClear(screen[0]);
@@ -367,9 +394,6 @@ static void Kill(void) {
 
 PROFILE(UVMap);
 
-#define TW texture_in_width
-#define TH texture_in_height
-
 static void Render(void) {
   int size = TW * TH;
   short fstOff = (frameCount * TW * 2 + frameCount / 2) & (size - 1);
@@ -377,6 +401,21 @@ static void Render(void) {
 
   /* screen's bitplane #0 is used as a chunky buffer */
   ProfilerStart(UVMap);
+
+  {
+    short val;
+
+    if ((val = TrackValueGet(&UvmapTransition, frameFromStart)) || lastStep) {
+      short texSrcIdx = TrackValueGet(&UvmapSrcTexture, frameFromStart);
+      short texDstIdx = TrackValueGet(&UvmapDstTexture, frameFromStart);
+      short step = val / 2;
+
+      CopyTexture(texSrcIdx ? texture_in_pixels : texture_out_pixels,
+                  texDstIdx ? texSndHi : texFstHi,
+                  texDstIdx ? texSndLo : texFstLo, step);
+    }
+  }
+
   {
     u_short *chunky = screen[active]->planes[0] + WIDTH * HEIGHT / 2;
     u_short *fstHi = texFstHi + fstOff;
