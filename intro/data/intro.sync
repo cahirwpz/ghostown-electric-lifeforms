@@ -292,3 +292,24 @@ $0125 10 !trigger
 $012A 10 !trigger
 $012E 10 !trigger
 @end
+
+@track UvmapTransition
+$0000 128 !trigger
+$0020 128
+$0100 128
+$0120 128
+@end
+
+@track UvmapSrcTexture
+$0000 1 !step
+$0020 0
+$0100 0
+$0120 1
+@end
+
+@track UvmapDstTexture
+$0000 1 !step
+$0020 0
+$0100 1
+$0120 0
+@end
