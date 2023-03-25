@@ -1,9 +1,13 @@
+#pragma once
+
 #include <SDL.h>
 #include <SDL_image.h>
 #include <math.h>
 #include <stdbool.h>
 
+#ifndef TEST
 #define TEST 0
+#endif
 
 #if TEST
 static const int WIDTH = 640;
@@ -23,8 +27,10 @@ static SDL_Surface *iChannel0;
 static SDL_Surface *iChannel1;
 
 static bool mapDone = false;
-static uint8_t umap[WIDTH * HEIGHT];
-static uint8_t vmap[WIDTH * HEIGHT];
+
+typedef uint8_t uvmap_t[2][WIDTH * HEIGHT];
+
+static uvmap_t uvmap;
 
 typedef struct vec3 {
   float x, y, z, w;
@@ -185,52 +191,22 @@ static int texpos(float x, int n) {
   return (int)((x - floorf(x)) * (float)n);
 }
 
-Uint32 texture(SDL_Surface *img, vec3 uv) {
+static Uint32 texture(SDL_Surface *img, vec3 uv) {
   Uint32 *tex = (Uint32 *)img->pixels;
   int u = (uv.x - floorf(uv.x)) * img->w;
   int v = (uv.y - floorf(uv.y)) * img->h;
   return tex[v * img->w + u];
 }
 
-float PipeInnerDist(vec3 p, float r) {
-  return sqrtf(p.x * p.x + p.y * p.y) - r;
-}
-
-float PipeOuterDist(vec3 p, float r) {
-  return r - sqrtf(p.x * p.x + p.y * p.y);
-}
-
-void PerFrame(void) {
-  static float iTimeStart;
-  static bool iTimeFirst = true;
-
-  if (iTimeFirst) {
-    iTimeStart = SDL_GetTicks() / 1000.0f;
-    iTimeFirst = false;
-  }
-
-  iTime = SDL_GetTicks() / 1000.0 - iTimeStart;
-}
-
 typedef struct hit {
   float dist;
   int obj;
+  vec3 uv;
 } hit;
 
-const float pipeOuterRadius = 2.0;
-const float pipeInnerRadius = 0.6;
+static hit GetDist(vec3 p);
 
-hit GetDist(vec3 p) {
-  float p0 = PipeOuterDist(p, pipeOuterRadius);
-  float p1 = PipeInnerDist(p, pipeInnerRadius);
-
-  if (p0 < p1)
-    return (hit){p0, 0};
-  else
-    return (hit){p1, 1};
-}
-
-hit RayMarch(vec3 ro, vec3 rd) {
+static hit RayMarch(vec3 ro, vec3 rd) {
   // distance from origin 
   float dO = 0.0;
   hit h;
@@ -252,7 +228,9 @@ hit RayMarch(vec3 ro, vec3 rd) {
   return (hit){dO, h.obj}; 
 }
 
-void Render(SDL_Surface *canvas) {
+static hit ScenePixel(vec3 uv);
+
+static void Render(SDL_Surface *canvas) {
   Uint32 *buffer = (Uint32 *)canvas->pixels;
 
   uint32_t start = SDL_GetTicks();
@@ -264,48 +242,26 @@ void Render(SDL_Surface *canvas) {
       vec3 uv = (vec3){
         (2.0f * (float)x - WIDTH) / HEIGHT, 1.0f - (float)y / HEIGHT * 2.0f};
 
-      // camera-to-world transformation
-      vec3 lookat = (vec3){0.0, 0.0, -1.0};
-      vec3 ro = (vec3){1.9, 0.0, -2.5};
+      hit h = ScenePixel(uv);
 
-      mat4 ca = m4_camera_lookat(ro, lookat, 0.);
-      vec3 co = v3_normalize((vec3){uv.x, uv.y, 2.0});
-      vec3 rd = m4_translate(co, ca);
-
-      hit h = RayMarch(ro, rd);
-
-      vec3 p = v3_add(ro, v3_mul(rd, h.dist));
-
-      vec3 tuv = v3_mul((vec3){atan2(p.x, p.y), p.z}, .5 / M_PI);
+      if (h.obj == -1) {
+        SDL_Log("Missed the surface at (%d,%d)!", x, y);
+        continue;
+      } 
 
       Uint32 col = 0;
 
-      // fetch a color from texture for given object
-      switch (h.obj) {
-        case 0: // Outer pipe
-          tuv.x *= 2.;
-          tuv.y *= 1.;
-          tuv = v3_add(tuv, (vec3){iTime * 0.1, iTime * 0.1});
-          col = texture(iChannel1, tuv);
-          break;
-          
-        case 1: // Inner pipe
-          tuv.x *= 2.;
-          tuv.y *= 4.;
-          tuv = v3_add(tuv, (vec3){iTime * 0.1, -iTime * 0.25});
-          col = texture(iChannel0, tuv);
-          break;
-
-        default:
-          SDL_Log("Missed the surface at (%d,%d)!", x, y);
-          break;
+      if (h.obj == 0) {
+        col = texture(iChannel0, h.uv);
+      } else {
+        col = texture(iChannel1, h.uv);
       }
 
       int pos = y * WIDTH + x;
 
       if (!mapDone) {
-        umap[pos] = (texpos(tuv.x, TEXSIZE) << 1) | h.obj;
-        vmap[pos] = texpos(tuv.y, TEXSIZE);
+        uvmap[0][pos] = (texpos(h.uv.x, TEXSIZE) << 1) | h.obj;
+        uvmap[1][pos] = texpos(h.uv.y, TEXSIZE);
       }
 
       buffer[pos] = col;
@@ -319,7 +275,7 @@ void Render(SDL_Surface *canvas) {
   mapDone = true;
 }
 
-SDL_Surface *LoadTexture(const char *path) {
+static SDL_Surface *LoadTexture(const char *path) {
   SDL_Surface *loaded;
   SDL_Surface *native;
   SDL_PixelFormat *pixelfmt;
@@ -337,7 +293,7 @@ SDL_Surface *LoadTexture(const char *path) {
   return native;
 }
 
-void DeltaEncoder(uint8_t *out, uint8_t *data, int width, int height) {
+static void DeltaEncoder(uint8_t *out, uint8_t *data, int width, int height) {
   *out++ = data[0];
   for (int x = 1; x < width; x++)
     *out++ = data[x] - data[x - 1];
@@ -351,26 +307,43 @@ void DeltaEncoder(uint8_t *out, uint8_t *data, int width, int height) {
   }
 }
 
-void SaveMap(const char *path, const char *name, uint8_t *map) {
+void SaveMap(const char *path, const char *name, uvmap_t uvmap) {
   FILE *f = fopen(path, "wb");
   uint8_t *output = malloc(WIDTH * HEIGHT);
 
-  DeltaEncoder(output, map, WIDTH, HEIGHT);
+  fprintf(f, "static u_char %s[2][%d] = {\n", name, WIDTH * HEIGHT);
 
-  fprintf(f, "static u_char %s[%d] = {\n", name, WIDTH * HEIGHT);
-  for (int y = 0; y < HEIGHT; y++) {
-    fprintf(f, "  ");
-    for (int x = 0; x < WIDTH; x++) {
-      int c = output[y * WIDTH + x];
-      fprintf(f, "%d, ", c);
+  for (int i = 0; i < 2; i++) {
+    DeltaEncoder(output, uvmap[i], WIDTH, HEIGHT);
+
+    fprintf(f, "  {\n");
+    for (int y = 0; y < HEIGHT; y++) {
+      fprintf(f, "    /* y = %2d */ ", y);
+      for (int x = 0; x < WIDTH; x++) {
+        int c = output[y * WIDTH + x];
+        fprintf(f, "%d, ", c);
+      }
+      fprintf(f, "\n");
     }
-    fprintf(f, "\n");
+    fprintf(f, "  },\n");
   }
-  fprintf(f, "};\n");
 
+  fprintf(f, "};\n");
   fclose(f);
 
   free(output);
+}
+
+static void PerFrame(void) {
+  static float iTimeStart;
+  static bool iTimeFirst = true;
+
+  if (iTimeFirst) {
+    iTimeStart = SDL_GetTicks() / 1000.0f;
+    iTimeFirst = false;
+  }
+
+  iTime = SDL_GetTicks() / 1000.0 - iTimeStart;
 }
 
 int main(void) {
@@ -385,8 +358,8 @@ int main(void) {
 
   SDL_Surface *canvas = SDL_CreateRGBSurfaceWithFormat(
     0, WIDTH, HEIGHT, 32, SDL_PIXELFORMAT_RGBA8888);
-  iChannel0 = LoadTexture("lava.png");
-  iChannel1 = LoadTexture("slabs.png");
+  iChannel0 = LoadTexture("slabs.png");
+  iChannel1 = LoadTexture("lava.png");
 
   int quit = 0;
   SDL_Event event;
@@ -419,8 +392,9 @@ int main(void) {
   SDL_Quit();
 
 #if !TEST
-  SaveMap("map-u.c", "umap", umap);
-  SaveMap("map-v.c", "vmap", vmap);
+  SaveMap(NAME "-uv.c", NAME, uvmap);
+#else
+  (void)SaveMap;
 #endif
 
   return 0;
