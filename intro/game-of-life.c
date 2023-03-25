@@ -530,6 +530,7 @@ static void GolStep(void) {
     ColorCyclingStep(&palptr[16], wireworld_chip_cycling, cycling_len, &wireworld_chip_pal);
   } else {
     ColorFadingStep();
+    (void)ColorPingPongStep;
   }
 
   stepCount++;

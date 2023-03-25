@@ -2,11 +2,11 @@ extern TrackT GOLCellColor;
 extern TrackT GOLLogoColor;
 extern TrackT GOLLogoSin;
 
-static void ColorFadingStep() {
+static void ColorFadingStep(void) {
     short i;
-    short s = TrackValueGet(&GOLLogoSin, frameCount); //normfx(SIN(TrackValueGet(&GOLLogoSin, frameCount) * 32) * 8) + 8;
-    short cell_col, logo_col;
-    // Log("%d\n", s);
+    short s = TrackValueGet(&GOLLogoSin, frameCount);
+    short cell_col = 0;
+    short logo_col = 0;
 
     switch(TrackValueGet(&GOLCellColor, frameCount)) {
         case 0: cell_col = 0; break;
@@ -22,11 +22,8 @@ static void ColorFadingStep() {
         case 3: logo_col = 15; break;
     }
 
-
     for (i = 0; i < 8; i++)
       CopInsSet16(palptr + i, ColorTransition(palette_vitruvian.colors[i], 0x000, cell_col));
-
     for (i = 0; i < 8; i++)
       CopInsSet16(palptr + i + 8, ColorTransition(palette_vitruvian.colors[i & 7], 0xfff, logo_col));
-
 }
