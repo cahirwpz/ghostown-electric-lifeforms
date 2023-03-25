@@ -5,7 +5,9 @@
 #include <math.h>
 #include <stdbool.h>
 
+#ifndef TEST
 #define TEST 0
+#endif
 
 #if TEST
 static const int WIDTH = 640;
