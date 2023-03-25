@@ -1,10 +1,10 @@
 extern TrackT GOLCellColor;
 extern TrackT GOLLogoColor;
-extern TrackT GOLLogoSin;
+extern TrackT GOLLogoFade;
 
 static void ColorFadingStep(void) {
     short i;
-    short s = TrackValueGet(&GOLLogoSin, frameCount);
+    short s = TrackValueGet(&GOLLogoFade, frameCount);
     short cell_col = 0;
     short logo_col = 0;
 

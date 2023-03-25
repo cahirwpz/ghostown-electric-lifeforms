@@ -324,7 +324,7 @@ static void Load(void) {
   TrackInit(&GOLPaletteV);
   TrackInit(&GOLCellColor);
   TrackInit(&GOLLogoColor);
-  TrackInit(&GOLLogoSin);
+  TrackInit(&GOLLogoFade);
 
   loaded = true;
 }

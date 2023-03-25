@@ -192,7 +192,7 @@ $0420 0 !step
 $0430 1
 @end
 
-@track GOLLogoSin
+@track GOLLogoFade
 $0420 0 !smooth
 $0430 0
 $0500 15
