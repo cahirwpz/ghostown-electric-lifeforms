@@ -24,11 +24,12 @@ static void SpawnElectrons(const ElectronArrayT *electrons,
   short n = electrons->num_electrons - 1;
   short spawn_mask = TrackValueGet(&WireworldSpawnMask, frameCount);
   short min_delay = TrackValueGet(&WireworldMinDelay, frameCount);
+  short manual_override = TrackValueGet(&WireworldSpawnNow, frameCount);
 
   if (n < 0)
     return;
   do {
-    if (*spawn <= stepCount) {
+    if (manual_override || *spawn <= stepCount) {
       short hx = (*pts++) + EXT_WIDTH_LEFT;
       short hy = (*pts++) + EXT_HEIGHT_TOP;
       short tx = (*pts++) + EXT_WIDTH_LEFT;

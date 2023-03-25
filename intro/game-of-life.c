@@ -408,7 +408,7 @@ static void InitWireworld(void) {
   SharedPreInit();
   for (i = 0; i < pal->count; i++)
     CopInsSet16(&palptr[i], pal->colors[i]);
-  InitSpawnFrames(cur_electrons, TrackValueGet(&WireworldSpawnNow, frameCount));
+  InitSpawnFrames(cur_electrons, TrackValueGet(&WireworldSpawnMask, frameCount));
 
   if (display_bg) {
     BitmapT *tmp = NewBitmap(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH);
@@ -491,9 +491,6 @@ static void GolStep(void) {
     current_board = boards[wireworld_step];
     current_game = &wireworlds[wireworld_step];
     wireworld_step ^= 1;
-
-    if (TrackValueGet(&WireworldSpawnNow, frameCount))
-      InitSpawnFrames(cur_electrons, 0);
 
     // set pixels on correct board
     SpawnElectrons(cur_electrons,

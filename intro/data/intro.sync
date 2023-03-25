@@ -17,9 +17,9 @@ $0800 6
 $0A00 3
 # weave
 $0C00 2
-# wireworld
-$0E00 10
 # uvmap
+$0E00 10
+# wireworld
 $1000 7
 # logo
 $1200 0
@@ -197,6 +197,27 @@ $0500 1
 # 0 - vitruvian, 1 - pcb
 $0000 0 !step
 $0500 1
+@end
+
+# next spawn frame = (random() & WireworldSpawnMask) + WireworldMinDelay;
+@track WireworldSpawnMask
+$0300 7 !step
+$1000 15
+@end
+
+@track WireworldMinDelay
+$0300 0 !step
+$1000 8
+@end
+
+@track WireworldSpawnNow
+$1010 1 !event
+$1020 1
+$1030 1
+$1100 1
+$1110 1
+$1120 1
+$1130 1
 @end
 
 @track SeaAnemoneVariant
