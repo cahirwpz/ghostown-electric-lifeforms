@@ -16,7 +16,7 @@ LOGOUT := 2
 #      automatically facilitating `startup-sequence` feature of AmigaDOS.
 # 0 => Executable files must be started from ROM or ADF since they require
 #      custom environment created by bootstrap code.
-AMIGAOS := 1
+AMIGAOS := 0
 
 # 1 => Turn on profiler that reports minimum-average-maximum number of raster
 #      lines measured between calls to ProfilerStart / ProfilerStop.
