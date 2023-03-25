@@ -89,8 +89,6 @@
 // -----------------------------------------------------------------------------
 //
 
-#define RAND_SPAWN_MASK 0xf
-#define RAND_SPAWN_MIN_DELAY 8
 #define NUM_SCENES 4
 
 #include "data/wireworld-vitruvian.c"
@@ -317,6 +315,9 @@ static void Load(void) {
   TrackInit(&GOLGame);
   TrackInit(&WireworldDisplayBg);
   TrackInit(&WireworldBg);
+  TrackInit(&WireworldSpawnMask);
+  TrackInit(&WireworldMinDelay);
+  TrackInit(&WireworldSpawnNow);
   TrackInit(&GOLPaletteH);
   TrackInit(&GOLPaletteS);
   TrackInit(&GOLPaletteV);
@@ -407,7 +408,7 @@ static void InitWireworld(void) {
   SharedPreInit();
   for (i = 0; i < pal->count; i++)
     CopInsSet16(&palptr[i], pal->colors[i]);
-  InitSpawnFrames(cur_electrons);
+  InitSpawnFrames(cur_electrons, TrackValueGet(&WireworldSpawnNow, frameCount));
 
   if (display_bg) {
     BitmapT *tmp = NewBitmap(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH);
@@ -490,6 +491,9 @@ static void GolStep(void) {
     current_board = boards[wireworld_step];
     current_game = &wireworlds[wireworld_step];
     wireworld_step ^= 1;
+
+    if (TrackValueGet(&WireworldSpawnNow, frameCount))
+      InitSpawnFrames(cur_electrons, 0);
 
     // set pixels on correct board
     SpawnElectrons(cur_electrons,

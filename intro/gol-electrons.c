@@ -3,12 +3,15 @@ static short next_spawn[128];
 
 static const ElectronArrayT *cur_electrons;
 
-static void InitSpawnFrames(const ElectronArrayT *electrons) {
-  short *spawn = next_spawn;
-  short i;
+extern TrackT WireworldSpawnMask;
+extern TrackT WireworldMinDelay;
+extern TrackT WireworldSpawnNow;
 
+static void InitSpawnFrames(const ElectronArrayT *electrons, short spawn_mask) {
+  short i;
+  short *spawn = next_spawn;
   for (i = 0; i < electrons->num_electrons; i++)
-    *spawn++ = stepCount + (random() & RAND_SPAWN_MASK);
+    *spawn++ = stepCount + (spawn_mask & random());
 }
 
 static void SpawnElectrons(const ElectronArrayT *electrons,
@@ -19,6 +22,9 @@ static void SpawnElectrons(const ElectronArrayT *electrons,
   short *pts = (short *)electrons->points;
   short *spawn = next_spawn;
   short n = electrons->num_electrons - 1;
+  short spawn_mask = TrackValueGet(&WireworldSpawnMask, frameCount);
+  short min_delay = TrackValueGet(&WireworldMinDelay, frameCount);
+
   if (n < 0)
     return;
   do {
@@ -31,7 +37,7 @@ static void SpawnElectrons(const ElectronArrayT *electrons,
       int post = EXT_BOARD_WIDTH * ty + tx;
       bset(bpl_heads + (posh >> 3), ~posh);
       bset(bpl_tails + (post >> 3), ~post);
-      *spawn++ += (random() & RAND_SPAWN_MASK) + RAND_SPAWN_MIN_DELAY;
+      *spawn++ += (random() & spawn_mask) + min_delay;
     } else {
       pts += 4;
       spawn++;
