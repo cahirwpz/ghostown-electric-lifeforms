@@ -25,8 +25,10 @@ static SDL_Surface *iChannel0;
 static SDL_Surface *iChannel1;
 
 static bool mapDone = false;
-static uint8_t umap[WIDTH * HEIGHT];
-static uint8_t vmap[WIDTH * HEIGHT];
+
+typedef uint8_t uvmap_t[2][WIDTH * HEIGHT];
+
+static uvmap_t uvmap;
 
 typedef struct vec3 {
   float x, y, z, w;
@@ -256,8 +258,8 @@ static void Render(SDL_Surface *canvas) {
       int pos = y * WIDTH + x;
 
       if (!mapDone) {
-        umap[pos] = (texpos(h.uv.x, TEXSIZE) << 1) | h.obj;
-        vmap[pos] = texpos(h.uv.y, TEXSIZE);
+        uvmap[0][pos] = (texpos(h.uv.x, TEXSIZE) << 1) | h.obj;
+        uvmap[1][pos] = texpos(h.uv.y, TEXSIZE);
       }
 
       buffer[pos] = col;
@@ -303,23 +305,28 @@ static void DeltaEncoder(uint8_t *out, uint8_t *data, int width, int height) {
   }
 }
 
-void SaveMap(const char *path, const char *name, uint8_t *map) {
+void SaveMap(const char *path, const char *name, uvmap_t uvmap) {
   FILE *f = fopen(path, "wb");
   uint8_t *output = malloc(WIDTH * HEIGHT);
 
-  DeltaEncoder(output, map, WIDTH, HEIGHT);
+  fprintf(f, "static u_char %s[2][%d] = {\n", name, WIDTH * HEIGHT);
 
-  fprintf(f, "static u_char %s[%d] = {\n", name, WIDTH * HEIGHT);
-  for (int y = 0; y < HEIGHT; y++) {
-    fprintf(f, "  ");
-    for (int x = 0; x < WIDTH; x++) {
-      int c = output[y * WIDTH + x];
-      fprintf(f, "%d, ", c);
+  for (int i = 0; i < 2; i++) {
+    DeltaEncoder(output, uvmap[i], WIDTH, HEIGHT);
+
+    fprintf(f, "  {\n");
+    for (int y = 0; y < HEIGHT; y++) {
+      fprintf(f, "    /* y = %2d */ ", y);
+      for (int x = 0; x < WIDTH; x++) {
+        int c = output[y * WIDTH + x];
+        fprintf(f, "%d, ", c);
+      }
+      fprintf(f, "\n");
     }
-    fprintf(f, "\n");
+    fprintf(f, "  },\n");
   }
-  fprintf(f, "};\n");
 
+  fprintf(f, "};\n");
   fclose(f);
 
   free(output);
@@ -383,8 +390,7 @@ int main(void) {
   SDL_Quit();
 
 #if !TEST
-  SaveMap(NAME "-u.c", NAME "_u", umap);
-  SaveMap(NAME "-v.c", NAME "_v", vmap);
+  SaveMap(NAME "-uv.c", NAME, uvmap);
 #else
   (void)SaveMap;
 #endif
