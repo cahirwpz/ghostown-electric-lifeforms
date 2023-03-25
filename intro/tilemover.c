@@ -68,7 +68,7 @@ static TilemoverPalT tilemover_palettes = {
   &pal_blue,    // soundwave
   &pal_red,     // windmills 
   &pal_green,   // rolling tube
-  &pal_red,     // funky soundwave
+  &pal_blue,     // funky soundwave
   &pal_blue,    // static
 };
 

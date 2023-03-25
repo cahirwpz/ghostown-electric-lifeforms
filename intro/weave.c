@@ -193,6 +193,7 @@ static void MakeCopperListBars(StateBarT *bars) {
   CopEnd(cp);
 }
 
+/* TODO: Calculate all of that upfront, so we don't use precious cycles. */
 static void UpdateBarColor(StateBarT *bars, short step) {
   u_char *_colortab = colortab;
   short i;
