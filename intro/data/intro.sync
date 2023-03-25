@@ -17,15 +17,15 @@ $0800 6
 $0A00 3
 # weave
 $0C00 2
-# uvmap
+# uvgut
 $0E00 10
 # wireworld
 $1000 7
-# logo
-$1200 0
+# uvtit
+$1200 11
 # scrolling text
-$1300 1
-$1600 -1
+$1400 1
+$1700 -1
 @end
 
 @track GhostownLogoPal
@@ -98,13 +98,9 @@ $010A 2
 $010C 2
 $010E 2
 
-$0110 2 !event
-#$0112 2
-#$0114 2
-#$0116 2
-#$0118 2
+$0110 2
 
-$0120 5 !event
+$0120 5
 $0122 5
 $0124 5
 $0126 5
@@ -113,7 +109,7 @@ $012A 5
 $012C 5
 $012E 5
 
-$0130 4 !event
+$0130 4
 $0132 4
 $0134 4
 $0136 4
@@ -122,13 +118,13 @@ $013A 4
 $013C 4
 $013E 4
 
-$0200 3 !event
+$0200 3
 $0202 3
 $0204 3
 $0206 3
 $0208 3
 
-$0210 5 !event
+$0210 5
 $0212 5
 $0214 5
 $0216 5
@@ -137,7 +133,7 @@ $021A 5
 $021C 5
 $021E 5
 
-$0220 4 !event
+$0220 4
 $0222 4
 $0224 4
 $0226 4
@@ -146,7 +142,7 @@ $022A 4
 $022C 4
 $022E 4
 
-$0230 3 !event
+$0230 3
 $0232 3 
 $0234 3 
 $0236 3 
@@ -241,44 +237,44 @@ $0110 1
 
 @track SeaAnemoneFadeOut
 $000E 15 !trigger
-$001E 15 !trigger
-$002E 15 !trigger
-$003E 15 !trigger
-$010E 15 !trigger
-$011E 15 !trigger
+$001E 15
+$002E 15
+$003E 15
+$010E 15
+$011E 15
 @end
 
 @track SeaAnemoneFadeIn
 $0010 15 !trigger
-$0020 15 !trigger
-$0030 15 !trigger
-$0100 15 !trigger
-$0110 15 !trigger
+$0020 15
+$0030 15
+$0100 15
+$0110 15
 @end
 
 @track SeaAnemoneGradient
 $0013 33 !trigger
-$0019 33 !trigger
-$0032 33 !trigger
-$0037 33 !trigger
+$0019 33
+$0032 33
+$0037 33
 @end
 
 @track SeaAnemonePalPulse
 $0005 30 !trigger
-$000A 30 !trigger
-$0015 30 !trigger
-$001A 30 !trigger
-$0025 30 !trigger
-$002A 30 !trigger
-$0035 30 !trigger
-$003A 30 !trigger
-$0105 30 !trigger
-$010A 30 !trigger
-$0115 30 !trigger
-$0120 30 !trigger
-$0125 30 !trigger
-$012A 30 !trigger
-$012E 30 !trigger
+$000A 30
+$0015 30
+$001A 30
+$0025 30
+$002A 30
+$0035 30
+$003A 30
+$0105 30
+$010A 30
+$0115 30
+$0120 30
+$0125 30
+$012A 30
+$012E 30
 @end
 
 @track TurmiteBoard
@@ -289,27 +285,48 @@ $0100 3
 
 @track TurmiteFadeIn
 $0000 15 !trigger
-$0020 15 !trigger
-$0100 15 !trigger
+$0020 15
+$0100 15
 @end
 
 @track TurmiteFadeOut
 $001E 15 !trigger
-$003E 15 !trigger
+$003E 15
 @end
 
 @track TurmitePal
 $000A 10 !trigger
-$0015 10 !trigger
-$002A 10 !trigger
-$002E 10 !trigger
-$010E 10 !trigger
-$0110 10 !trigger
-$0115 10 !trigger
-$011A 10 !trigger
-$011E 10 !trigger
-$0120 10 !trigger
-$0125 10 !trigger
-$012A 10 !trigger
-$012E 10 !trigger
+$0015 10
+$002A 10
+$002E 10
+$010E 10
+$0110 10
+$0115 10
+$011A 10
+$011E 10
+$0120 10
+$0125 10
+$012A 10
+$012E 10
+@end
+
+@track UvmapTransition
+$0000 128 !trigger
+$0020 128
+$0100 128
+$0120 128
+@end
+
+@track UvmapSrcTexture
+$0000 1 !step
+$0020 0
+$0100 0
+$0120 1
+@end
+
+@track UvmapDstTexture
+$0000 1 !step
+$0020 0
+$0100 1
+$0120 0
 @end

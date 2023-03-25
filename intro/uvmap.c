@@ -3,6 +3,7 @@
 #include <copper.h>
 #include <fx.h>
 #include <pixmap.h>
+#include <sync.h>
 #include <system/interrupt.h>
 #include <system/memory.h>
 
@@ -11,18 +12,24 @@
 #define DEPTH 4
 #define FULLPIXEL 1
 
+extern TrackT UvmapTransition;
+extern TrackT UvmapSrcTexture;
+extern TrackT UvmapDstTexture;
+
 static u_short *texFstHi, *texFstLo;
 static u_short *texSndHi, *texSndLo;
 static BitmapT *screen[2];
-static u_short active = 0;
+static __code u_short active = 0;
+static __code short c2p_phase;
+static __code void **c2p_bpl;
 static CopListT *cp;
 static CopInsT *bplptr[DEPTH];
 
-#include "data/uvgut-inside.c"
-#include "data/uvgut-outside.c"
+#include "data/texture-inside.c"
+#include "data/texture-outside.c"
 #include "data/gradient.c"
-#include "data/uvgut/map-u.c"
-#include "data/uvgut/map-v.c"
+#include "data/uvmap/gut-uv.c"
+#include "data/uvmap/tit-uv.c"
 
 #define UVMapRenderSize ((5 + WIDTH * HEIGHT / 32 * (8 * 8 + 2)) * 2)
 void (*UVMapRender)(u_short *chunkyEnd asm("a0"),
@@ -43,21 +50,36 @@ static u_short PixelLo[16] = {
   0x2020, 0x2121, 0x2222, 0x2323, 0x3030, 0x3131, 0x3232, 0x3333, 
 };
 
-static void PixmapToTexture(const PixmapT *image,
-                            u_short *imageHi, u_short *imageLo) 
+#define TW texture_in_width
+#define TH texture_in_height
+
+static __code short lastStep;
+
+static void CopyTexture(const u_char *data, u_short *hi0, u_short *lo0,
+                        short step)
 {
-  u_char *data = image->pixels;
-  short n = image->width * image->height;
-  /* Extra halves for cheap texture motion. */
-  u_short *hi0 = imageHi;
-  u_short *hi1 = imageHi + n;
-  u_short *lo0 = imageLo;
-  u_short *lo1 = imageLo + n;
+  register u_short *lo1 asm("a3");
+  register u_short *hi1 asm("a4");
+  short n;
+
+  if (lastStep <= step)
+    return;
+
+  {
+    int start = step * TW;
+    data += start;
+    hi0 += start;
+    lo0 += start;
+    hi1 = hi0 + TW * TH;
+    lo1 = lo0 + TW * TH;
+  }
+
+  n = (lastStep - step) * TW;
 
   while (--n >= 0) {
     int c = *data++;
-    u_short hi = PixelHi[c];
-    u_short lo = PixelLo[c];
+    short hi = PixelHi[c];
+    short lo = PixelLo[c];
     *hi0++ = hi;
     *hi1++ = hi;
     *lo0++ = lo;
@@ -65,9 +87,7 @@ static void PixmapToTexture(const PixmapT *image,
   }
 }
 
-static void ScrambleUVMap(u_short *uvmap) {
-  u_char *u = umap;
-  u_char *v = vmap;
+static void ScrambleUVMap(u_short *uvmap, u_char *u, u_char *v) {
   short i;
 
 #define MAKEUV() (((*v++) << 7) | (*u++))
@@ -92,7 +112,7 @@ static void MakeUVMapRenderCode(u_short *uvmap) {
 
   /* The map is pre-scrambled to avoid one c2p pass:
    * [a b c d e f g h] => [a b e f c d g h] */
-  short n = WIDTH * HEIGHT / 32;
+  register short n asm("d7") = WIDTH * HEIGHT / 32 - 1;
 
   register short m1 asm("d5") = 1;
   register short m2 asm("d6") = -2;
@@ -100,7 +120,7 @@ static void MakeUVMapRenderCode(u_short *uvmap) {
   *code++ = 0x48e7; *code++ = 0x3f00; /* movem.l d2-d7,-(sp) */
   data -= 4;
 
-  while (n--) {
+  do {
     short m, w, o;
 
     for (m = 0x0e00; m >= 0; m -= 0x0200) {
@@ -124,7 +144,7 @@ static void MakeUVMapRenderCode(u_short *uvmap) {
     }
 
     *code++ = 0x48a0; *code++ = 0xff00; /* d0-d7,-(a0) */
-  }
+  } while (--n != -1);
 
   *code++ = 0x4cdf; *code++ = 0x00fc; /* movem.l (sp)+,d2-d7 */
   *code++ = 0x4e75; /* rts */
@@ -148,31 +168,29 @@ static void DeltaDecode(uint8_t *data) {
 }
 
 static void Load(void) {
-  short *uvmap;
+  static bool done = false;
 
-  DeltaDecode(umap);
-  DeltaDecode(vmap);
+  if (!done) {
+    DeltaDecode(gut[0]);
+    DeltaDecode(gut[1]);
 
-  uvmap = MemAlloc(WIDTH * HEIGHT * sizeof(short), MEMF_PUBLIC);
-  ScrambleUVMap(uvmap);
+    DeltaDecode(tit[0]);
+    DeltaDecode(tit[1]);
 
-  UVMapRender = MemAlloc(UVMapRenderSize, MEMF_PUBLIC);
-  MakeUVMapRenderCode(uvmap);
-  MemFree(uvmap);
+    {
+      short *uvmap = MemAlloc(WIDTH * HEIGHT * sizeof(short), MEMF_PUBLIC);
 
-  texFstHi = MemAlloc(texture_out.width * texture_out.height * 4, MEMF_PUBLIC);
-  texFstLo = MemAlloc(texture_out.width * texture_out.height * 4, MEMF_PUBLIC);
-  PixmapToTexture(&texture_out, texFstHi, texFstLo);
+      ScrambleUVMap(uvmap, gut[0], gut[1]);
+      memcpy(gut, uvmap, WIDTH * HEIGHT * sizeof(short));
+      ScrambleUVMap(uvmap, tit[0], tit[1]);
+      memcpy(tit, uvmap, WIDTH * HEIGHT * sizeof(short));
 
-  texSndHi = MemAlloc(texture_in.width * texture_in.height * 4, MEMF_PUBLIC);
-  texSndLo = MemAlloc(texture_in.width * texture_in.height * 4, MEMF_PUBLIC);
-  PixmapToTexture(&texture_in, texSndHi, texSndLo);
+      MemFree(uvmap);
+    }
+
+    done = true;
+  }
 }
-
-static struct {
-  short phase;
-  void **bpl;
-} c2p = { 256, NULL };
 
 #define BLTSIZE ((WIDTH / 2) * HEIGHT) /* 8000 bytes */
 
@@ -180,7 +198,7 @@ static struct {
  * `c2p_2x1_4bpl_mangled_fast_blitter.py` in `prototypes/c2p`. */
 
 static void ChunkyToPlanar(void) {
-  register void **bpl asm("a0") = c2p.bpl;
+  register void **bpl asm("a0") = c2p_bpl;
 
   /*
    * Our chunky buffer of size (WIDTH/2, HEIGHT/2) is stored in bpl[0].
@@ -208,7 +226,7 @@ static void ChunkyToPlanar(void) {
 
   ClearIRQ(INTF_BLIT);
 
-  switch (c2p.phase) {
+  switch (c2p_phase) {
     case 0:
       /* Initialize chunky to planar. */
       custom->bltamod = 2;
@@ -300,7 +318,7 @@ static void ChunkyToPlanar(void) {
       break;
   }
 
-  c2p.phase++;
+  c2p_phase++;
 }
 
 static void MakeCopperList(CopListT *cp) {
@@ -328,8 +346,21 @@ static void MakeCopperList(CopListT *cp) {
 }
 
 static void Init(void) {
+  TrackInit(&UvmapTransition);
+  TrackInit(&UvmapSrcTexture);
+  TrackInit(&UvmapDstTexture);
+
   screen[0] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH);
   screen[1] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH);
+
+  texFstHi = MemAlloc(texture_out_width * texture_out_height * 4,
+                      MEMF_PUBLIC|MEMF_CLEAR);
+  texFstLo = MemAlloc(texture_out_width * texture_out_height * 4,
+                      MEMF_PUBLIC|MEMF_CLEAR);
+  texSndHi = MemAlloc(texture_in_width * texture_in_height * 4,
+                      MEMF_PUBLIC|MEMF_CLEAR);
+  texSndLo = MemAlloc(texture_in_width * texture_in_height * 4,
+                      MEMF_PUBLIC|MEMF_CLEAR);
 
   EnableDMA(DMAF_BLITTER);
 
@@ -344,8 +375,25 @@ static void Init(void) {
 
   EnableDMA(DMAF_RASTER);
 
+  active = 0;
+  c2p_bpl = NULL;
+  c2p_phase = 256;
+  lastStep = TH;
+
   SetIntVector(INTB_BLIT, (IntHandlerT)ChunkyToPlanar, NULL);
   EnableINT(INTF_BLIT);
+}
+
+static void InitGut(void) {
+  UVMapRender = MemAlloc(UVMapRenderSize, MEMF_PUBLIC);
+  MakeUVMapRenderCode((u_short *)gut);
+  Init();
+}
+
+static void InitTit(void) {
+  UVMapRender = MemAlloc(UVMapRenderSize, MEMF_PUBLIC);
+  MakeUVMapRenderCode((u_short *)tit);
+  Init();
 }
 
 static void Kill(void) {
@@ -367,9 +415,6 @@ static void Kill(void) {
 
 PROFILE(UVMap);
 
-#define TW texture_in_width
-#define TH texture_in_height
-
 static void Render(void) {
   int size = TW * TH;
   short fstOff = (frameCount * TW * 2 + frameCount / 2) & (size - 1);
@@ -377,6 +422,23 @@ static void Render(void) {
 
   /* screen's bitplane #0 is used as a chunky buffer */
   ProfilerStart(UVMap);
+
+  {
+    short val;
+
+    if ((val = TrackValueGet(&UvmapTransition, frameFromStart)) || lastStep) {
+      short texSrcIdx = TrackValueGet(&UvmapSrcTexture, frameFromStart);
+      short texDstIdx = TrackValueGet(&UvmapDstTexture, frameFromStart);
+      short step = val / 2;
+
+      CopyTexture(texSrcIdx ? texture_in_pixels : texture_out_pixels,
+                  texDstIdx ? texSndHi : texFstHi,
+                  texDstIdx ? texSndLo : texFstLo, step);
+
+      lastStep = step;
+    }
+  }
+
   {
     u_short *chunky = screen[active]->planes[0] + WIDTH * HEIGHT / 2;
     u_short *fstHi = texFstHi + fstOff;
@@ -388,10 +450,11 @@ static void Render(void) {
   }
   ProfilerStop(UVMap);
 
-  c2p.phase = 0;
-  c2p.bpl = screen[active]->planes;
+  c2p_phase = 0;
+  c2p_bpl = screen[active]->planes;
   ChunkyToPlanar();
   active ^= 1;
 }
 
-EFFECT(UVMap, Load, NULL, Init, Kill, Render);
+EFFECT(UVGut, Load, NULL, InitGut, Kill, Render);
+EFFECT(UVTit, Load, NULL, InitTit, Kill, Render);
