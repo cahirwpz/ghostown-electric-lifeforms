@@ -13,7 +13,7 @@ $0500 8
 $0800 6
 # weave
 $0C00 2
-# uvmap
+# uvgut
 $1000 10
 # tree
 $1400 4
@@ -23,7 +23,7 @@ $1600 5
 $1800 7
 # game of life - electric
 $1A00 8
-# uvgut 2
+# uvtit
 $1C00 10
 # turmites
 $1E00 3
@@ -52,7 +52,6 @@ $2A30 0
 $0400 1 !step
 $0410 2
 @end
-
 
 # Available values:
 # 1 - static
