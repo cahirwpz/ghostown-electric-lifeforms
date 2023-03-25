@@ -5,6 +5,8 @@
 #include <sync.h>
 #include <types.h>
 #include <system/memory.h>
+#include <c2p_1x1_4.h>
+#include <pixmap.h>
 
 #define WIDTH 320
 #define HEIGHT 256
@@ -13,11 +15,12 @@
 #include "data/ghostown-logo-01.c"
 #include "data/ghostown-logo-02.c"
 #include "data/ghostown-logo-03.c"
-#include "data/ghostown-logo-crop.c"
+#include "data/ghostown-logo-crop-px.c"
 
 static __code bool cleanup;
 static CopListT *cp;
 static BitmapT *screen;
+BitmapT *ghostown_logo;
 
 static const PaletteT *ghostown_logo_pal[] = {
   NULL,
@@ -28,10 +31,20 @@ static const PaletteT *ghostown_logo_pal[] = {
 
 extern TrackT GhostownLogoPal;
 
+static void Load(void) {
+  int bplSize = (ghostown_logo_px_width * ghostown_logo_px_height) / 8;
+  ghostown_logo = NewBitmap(ghostown_logo_px_width, ghostown_logo_px_height, 4);
+  c2p_1x1_4(
+          &ghostown_logo_px_pixels,
+          ghostown_logo->planes[0],
+          ghostown_logo_px_width,
+          ghostown_logo_px_height,
+          bplSize);
+}
+
 static void Init(void) {
   cleanup = true;
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH);
-
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
 
   {
@@ -42,8 +55,8 @@ static void Init(void) {
   }
 
   EnableDMA(DMAF_BLITTER);
-  BitmapCopy(screen, (WIDTH - ghostown_logo_width) / 2,
-             (HEIGHT - ghostown_logo_height) / 2, &ghostown_logo);
+  BitmapCopy(screen, (WIDTH - ghostown_logo_px_width) / 2,
+             (HEIGHT - ghostown_logo_px_height) / 2, ghostown_logo);
   WaitBlitter();
   DisableDMA(DMAF_BLITTER);
 
@@ -60,12 +73,15 @@ static void Init(void) {
 }
 
 void KillLogo(void) {
-  if (cleanup) {
+  static __code bool enabled = false;
+
+  if (enabled) {
     DisableDMA(DMAF_RASTER);
     DeleteCopList(cp);
 
     DeleteBitmap(screen);
-    cleanup = false;
+  } else {
+    enabled = true;
   }
 }
 
@@ -91,4 +107,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(Logo, NULL, NULL, Init, NULL, Render);
+EFFECT(Logo, Load, NULL, Init, NULL, Render);

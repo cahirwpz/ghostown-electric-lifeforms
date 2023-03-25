@@ -4,6 +4,8 @@
 #include <color.h>
 #include <sync.h>
 #include <system/memory.h>
+#include <c2p_1x1_4.h>
+#include <pixmap.h>
 
 #define WIDTH 320
 #define HEIGHT 256
@@ -23,12 +25,18 @@ static const PaletteT *electric_lifeforms_pal[] = {
 
 extern TrackT ElectricLifeformsLogoPal;
 
+static void Load(void) {
+  int bplSize = (electric_lifeforms_width * electric_lifeforms_height) / 8;
+  screen = NewBitmap(WIDTH, HEIGHT, 4);
+  c2p_1x1_4(
+    &electric_lifeforms_pixels,
+    screen->planes[0],
+    electric_lifeforms_width,
+    electric_lifeforms_height,
+    bplSize);
+}
+
 static void Init(void) {
-  screen = NewBitmap(WIDTH, HEIGHT, DEPTH);
-
-  memcpy(screen->planes[0], electric_lifeforms.planes[0],
-         electric_lifeforms_size);
-
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
 
   {
@@ -80,4 +88,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(Vitruvian, NULL, NULL, Init, Kill, Render);
+EFFECT(Vitruvian, Load, NULL, Init, Kill, Render);

@@ -9,6 +9,8 @@
 #include <strings.h>
 #include <system/memory.h>
 #include <color.h>
+#include <c2p_1x1_4.h>
+#include <pixmap.h>
 
 #include "data/bar.c"
 #include "data/stripes.c"
@@ -54,7 +56,7 @@ static short sintab8[128 * 4];
 static StateFullT stateFull[2];
 static StateBarT stateBars[2];
 static SpriteT stripe[NSPRITES];
-
+static BitmapT *bar_px;
 /* These numbers must be even due to optimizations. */
 static char StripePhase[STRIPES] = { 4, 24, 16, 2, 10 };
 static char StripePhaseIncr[STRIPES] = { 10, -10, 4, -12, 8 };
@@ -72,7 +74,7 @@ static void MakeCopperListFull(StateFullT *state) {
 
   /* Setup initial bitplane pointers. */
   for (i = 0; i < DEPTH; i++)
-    CopMove32(cp, bplpt[i], bar.planes[i]);
+    CopMove32(cp, bplpt[i], bar_px->planes[i]);
   CopMove16(cp, bplcon1, 0);
 
   /* Move back bitplane pointers to repeat the line. */
@@ -160,7 +162,7 @@ static void MakeCopperListBars(StateBarT *bars) {
 
   /* Setup initial bitplane pointers. */
   for (i = 0; i < DEPTH; i++)
-    CopMove32(cp, bplpt[i], bar.planes[i]);
+    CopMove32(cp, bplpt[i], bar_px->planes[i]);
   CopMove16(cp, bplcon1, 0);
 
   /* Move back bitplane pointers to repeat the line. */
@@ -242,13 +244,13 @@ static void UpdateBarState(StateBarT *bars) {
       shift = ~bx & 15;
 
       if (by < 0)
-        offset -= by * bar_bytesPerRow;
+        offset -= by * bar_px->bytesPerRow;
 
       if (i & 1)
-        offset += bar_bytesPerRow * 33;
+        offset += bar_px->bytesPerRow * 33;
 
       for (j = 0; j < DEPTH; j++, ins += 2)
-        CopInsSet32(ins, bar.planes[j] + offset);
+        CopInsSet32(ins, bar_px->planes[j] + offset);
       CopInsSet16(ins, (shift << 4) | shift);
     }
 
@@ -348,7 +350,16 @@ static void CopySpriteTiles(int t) {
 }
 
 static void Load(void) {
+  int bplSize = (bar_width * bar_height) / 8;
   short i;
+
+  bar_px = NewBitmap(bar_width, bar_height, 4);
+  c2p_1x1_4(
+    &bar_pixels,
+    bar_px->planes[0],
+    bar_width,
+    bar_height,
+    bplSize);
 
   MakeSinTab8();
 

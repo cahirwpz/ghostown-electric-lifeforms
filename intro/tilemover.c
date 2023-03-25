@@ -77,7 +77,7 @@ static const short blip_sequence[] = {
   0, 0, 1, 2, 3, 4, 5, 5, 5, 4, 3, 2, 1
 };
 
-extern const BitmapT ghostown_logo;
+extern BitmapT *ghostown_logo;
 extern TrackT TileMoverNumber;
 extern TrackT TileMoverBlit;
 extern TrackT TileMoverBgBlip;
@@ -250,6 +250,7 @@ static void UpdateBitplanePointers(void) {
 }
 
 static void Load(void) {
+  
   short i;
 
   for (i = 0; i < NFLOWFIELDS; i++)
@@ -257,9 +258,9 @@ static void Load(void) {
 
   EnableDMA(DMAF_BLITTER);
   /* bitmap width aligned to word */
-  logo_blit = NewBitmap(ghostown_logo.width, ghostown_logo.height, 1);
-  BlitSimple(ghostown_logo.planes[0], ghostown_logo.planes[1],
-             ghostown_logo.planes[2], logo_blit,
+  logo_blit = NewBitmap(ghostown_logo->width, ghostown_logo->height, 1);
+  BlitSimple(ghostown_logo->planes[0], ghostown_logo->planes[1],
+             ghostown_logo->planes[2], logo_blit,
              ABC | ANBC | ABNC | ANBNC | NABC | NANBC | NABNC); 
   WaitBlitter();
   DisableDMA(DMAF_BLITTER);
