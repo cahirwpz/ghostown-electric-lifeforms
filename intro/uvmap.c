@@ -82,8 +82,6 @@ static void CopyTexture(const u_char *data, u_short *hi0, u_short *lo0,
     *lo0++ = lo;
     *lo1++ = lo;
   }
-
-  lastStep = step;
 }
 
 static void ScrambleUVMap(u_short *uvmap) {
@@ -412,6 +410,8 @@ static void Render(void) {
       CopyTexture(texSrcIdx ? texture_in_pixels : texture_out_pixels,
                   texDstIdx ? texSndHi : texFstHi,
                   texDstIdx ? texSndLo : texFstLo, step);
+
+      lastStep = step;
     }
   }
 
