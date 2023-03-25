@@ -1,3 +1,4 @@
+#define NAME "gut"
 #include "uvmap.h"
 
 const float pipeOuterRadius = 2.0;

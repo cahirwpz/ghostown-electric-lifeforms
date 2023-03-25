@@ -8,4 +8,4 @@ uvgut: uvgut.c uvmap.h
 	$(CC) $(CFLAGS) $(LDLIBS) -o $@ $<
 
 clean:
-	rm -rf uvgut uvgut.dSYM map-*.* *~
+	rm -rf uvgut uvgut.dSYM gut-*.* *~

@@ -23,11 +23,11 @@ static u_short active = 0;
 static CopListT *cp;
 static CopInsT *bplptr[DEPTH];
 
-#include "data/uvgut-inside.c"
-#include "data/uvgut-outside.c"
+#include "data/texture-inside.c"
+#include "data/texture-outside.c"
 #include "data/gradient.c"
-#include "data/uvgut/map-u.c"
-#include "data/uvgut/map-v.c"
+#include "data/uvmap/gut-u.c"
+#include "data/uvmap/gut-v.c"
 
 #define UVMapRenderSize ((5 + WIDTH * HEIGHT / 32 * (8 * 8 + 2)) * 2)
 void (*UVMapRender)(u_short *chunkyEnd asm("a0"),
@@ -88,8 +88,8 @@ static void CopyTexture(const u_char *data, u_short *hi0, u_short *lo0,
 }
 
 static void ScrambleUVMap(u_short *uvmap) {
-  u_char *u = umap;
-  u_char *v = vmap;
+  u_char *u = gut_u;
+  u_char *v = gut_v;
   short i;
 
 #define MAKEUV() (((*v++) << 7) | (*u++))
@@ -176,8 +176,8 @@ static void Load(void) {
   TrackInit(&UvmapSrcTexture);
   TrackInit(&UvmapDstTexture);
 
-  DeltaDecode(umap);
-  DeltaDecode(vmap);
+  DeltaDecode(gut_u);
+  DeltaDecode(gut_v);
 
   uvmap = MemAlloc(WIDTH * HEIGHT * sizeof(short), MEMF_PUBLIC);
   ScrambleUVMap(uvmap);

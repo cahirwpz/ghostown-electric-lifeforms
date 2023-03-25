@@ -349,8 +349,8 @@ int main(void) {
 
   SDL_Surface *canvas = SDL_CreateRGBSurfaceWithFormat(
     0, WIDTH, HEIGHT, 32, SDL_PIXELFORMAT_RGBA8888);
-  iChannel0 = LoadTexture("lava.png");
-  iChannel1 = LoadTexture("slabs.png");
+  iChannel0 = LoadTexture("slabs.png");
+  iChannel1 = LoadTexture("lava.png");
 
   int quit = 0;
   SDL_Event event;
@@ -383,8 +383,8 @@ int main(void) {
   SDL_Quit();
 
 #if !TEST
-  SaveMap("map-u.c", "umap", umap);
-  SaveMap("map-v.c", "vmap", vmap);
+  SaveMap(NAME "-u.c", NAME "_u", umap);
+  SaveMap(NAME "-v.c", NAME "_v", vmap);
 #else
   (void)SaveMap;
 #endif
