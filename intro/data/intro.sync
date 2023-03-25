@@ -17,15 +17,15 @@ $0800 6
 $0A00 3
 # weave
 $0C00 2
-# wireworld
+# uvgut
 $0E00 10
-# uvmap
+# wireworld
 $1000 7
-# logo
-$1200 0
+# uvtit
+$1200 11
 # scrolling text
-$1300 1
-$1600 -1
+$1400 1
+$1700 -1
 @end
 
 @track GhostownLogoPal
