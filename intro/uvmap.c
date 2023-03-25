@@ -19,7 +19,9 @@ extern TrackT UvmapDstTexture;
 static u_short *texFstHi, *texFstLo;
 static u_short *texSndHi, *texSndLo;
 static BitmapT *screen[2];
-static u_short active = 0;
+static __code u_short active = 0;
+static __code short c2p_phase;
+static __code void **c2p_bpl;
 static CopListT *cp;
 static CopInsT *bplptr[DEPTH];
 
@@ -187,10 +189,9 @@ static void Load(void) {
   MemFree(uvmap);
 }
 
-static struct {
-  short phase;
-  void **bpl;
-} c2p = { 256, NULL };
+static void UnLoad(void) {
+  MemFree(UVMapRender);
+}
 
 #define BLTSIZE ((WIDTH / 2) * HEIGHT) /* 8000 bytes */
 
@@ -198,7 +199,7 @@ static struct {
  * `c2p_2x1_4bpl_mangled_fast_blitter.py` in `prototypes/c2p`. */
 
 static void ChunkyToPlanar(void) {
-  register void **bpl asm("a0") = c2p.bpl;
+  register void **bpl asm("a0") = c2p_bpl;
 
   /*
    * Our chunky buffer of size (WIDTH/2, HEIGHT/2) is stored in bpl[0].
@@ -226,7 +227,7 @@ static void ChunkyToPlanar(void) {
 
   ClearIRQ(INTF_BLIT);
 
-  switch (c2p.phase) {
+  switch (c2p_phase) {
     case 0:
       /* Initialize chunky to planar. */
       custom->bltamod = 2;
@@ -318,7 +319,7 @@ static void ChunkyToPlanar(void) {
       break;
   }
 
-  c2p.phase++;
+  c2p_phase++;
 }
 
 static void MakeCopperList(CopListT *cp) {
@@ -371,6 +372,10 @@ static void Init(void) {
 
   EnableDMA(DMAF_RASTER);
 
+  active = 0;
+  c2p_bpl = NULL;
+  c2p_phase = 256;
+
   SetIntVector(INTB_BLIT, (IntHandlerT)ChunkyToPlanar, NULL);
   EnableINT(INTF_BLIT);
 }
@@ -386,7 +391,6 @@ static void Kill(void) {
   MemFree(texFstLo);
   MemFree(texSndHi);
   MemFree(texSndLo);
-  MemFree(UVMapRender);
 
   DeleteBitmap(screen[0]);
   DeleteBitmap(screen[1]);
@@ -427,10 +431,10 @@ static void Render(void) {
   }
   ProfilerStop(UVMap);
 
-  c2p.phase = 0;
-  c2p.bpl = screen[active]->planes;
+  c2p_phase = 0;
+  c2p_bpl = screen[active]->planes;
   ChunkyToPlanar();
   active ^= 1;
 }
 
-EFFECT(UVMap, Load, NULL, Init, Kill, Render);
+EFFECT(UVMap, Load, UnLoad, Init, Kill, Render);
