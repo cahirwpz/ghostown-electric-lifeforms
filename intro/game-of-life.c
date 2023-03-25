@@ -100,6 +100,7 @@
 #include "data/chip.c"
 #include "data/wireworld-pcb-pal.c"
 #include "data/electric.c"
+#include "data/lifeforms.c"
 
 extern TrackT GOLPaletteH;
 extern TrackT GOLPaletteS;
