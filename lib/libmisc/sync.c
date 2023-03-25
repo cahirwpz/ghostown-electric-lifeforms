@@ -69,6 +69,7 @@ short TrackValueGet(TrackT *track, short frame) {
     case TRACK_LINEAR:
       return curr->value + div16(step * track->delta, track->interval);
 
+#if 0
     case TRACK_SMOOTH:
       /* Less than 1% error compared to real smoothstep function. */
       {
@@ -83,6 +84,7 @@ short TrackValueGet(TrackT *track, short frame) {
         short k = normfx(t * t);
         return curr->value + normfx(track->delta * k);
       }
+#endif
 
     case TRACK_TRIGGER:
       {
