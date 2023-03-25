@@ -99,6 +99,7 @@
 #include "data/wireworld-fullscreen-electrons.c"
 #include "data/chip.c"
 #include "data/wireworld-pcb-pal.c"
+#include "data/electric.c"
 
 extern TrackT GOLPaletteH;
 extern TrackT GOLPaletteS;
@@ -146,6 +147,7 @@ static __code short prev_states_depth = PREV_STATES_DEPTH;
 #include "gol-electrons.c"
 #include "gol-palette.c"
 #include "gol-pingpong.c"
+#include "gol-transparency.c"
 
 static const GameDefinitionT *current_game;
 
@@ -320,8 +322,20 @@ static void Load(void) {
   TrackInit(&GOLPaletteH);
   TrackInit(&GOLPaletteS);
   TrackInit(&GOLPaletteV);
+  TrackInit(&GOLCellColor);
+  TrackInit(&GOLLogoColor);
+  TrackInit(&GOLLogoSin);
 
   loaded = true;
+}
+
+static void LoadBackground(const BitmapT *bg, u_short x, u_short y) {
+    BitmapT *tmp = NewBitmap(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH);
+    BitmapCopy(tmp, x, y, bg);
+    WaitBlitter();
+    PixelDouble(tmp->planes[0], prev_states[4]->planes[0], double_pixels);
+    DeleteBitmap(tmp);
+    CopInsSet32(bplptr[3], prev_states[4]->planes[0]);
 }
 
 static void SharedPreInit(void) {
@@ -409,14 +423,8 @@ static void InitWireworld(void) {
     CopInsSet16(&palptr[i], pal->colors[i]);
   InitSpawnFrames(cur_electrons);
 
-  if (display_bg) {
-    BitmapT *tmp = NewBitmap(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH);
-    BitmapCopy(tmp, 0, 0, desired_bg);
-    WaitBlitter();
-    PixelDouble(tmp->planes[0], prev_states[4]->planes[0], double_pixels);
-    DeleteBitmap(tmp);
-    CopInsSet32(bplptr[3], prev_states[4]->planes[0]);
-  }
+  if (display_bg)
+    LoadBackground(desired_bg, 0, 0);
 
   // board 11 is special in case of wireworld - it contains the electron paths
   BitmapCopy(boards[11], EXT_WIDTH_LEFT, EXT_HEIGHT_TOP, desired_bg);
@@ -431,9 +439,11 @@ static void InitWireworld(void) {
 static void InitGameOfLife(void) {
   current_game = &games[0];
   wireworld = false;
-  prev_states_depth = 5;
+  prev_states_depth = 4;
 
   SharedPreInit();
+
+  LoadBackground(&electric_logo, 0, 32);
 
   BitmapClear(boards[0]);
   BitmapCopy(boards[0], EXT_WIDTH_LEFT, EXT_HEIGHT_TOP, &wireworld_vitruvian);
@@ -519,7 +529,7 @@ static void GolStep(void) {
       sizeof(wireworld_chip_cycling)/sizeof(wireworld_chip_cycling[0]);
     ColorCyclingStep(&palptr[16], wireworld_chip_cycling, cycling_len, &wireworld_chip_pal);
   } else {
-    ColorPingPongStep(palptr, pingpong);
+    ColorFadingStep();
   }
 
   stepCount++;

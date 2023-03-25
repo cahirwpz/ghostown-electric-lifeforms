@@ -41,7 +41,8 @@ CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
 	data/grass-[1-2].c \
 	data/uvgut-{in,out}side.c data/gradient.c data/gradient.png \
 	data/tilemover-*.c data/chip.c data/wireworld_pcb_pal.c \
-	data/pal-gold*.c data/pal-green*.c data/pal-red*.c data/pal-blue*.c
+	data/pal-gold*.c data/pal-green*.c data/pal-red*.c data/pal-blue*.c \
+	data/electric.c
 
 SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   tilemover.c sea-anemone.c game-of-life.c vitruvian.c uvmap.c \
@@ -72,6 +73,7 @@ PNG2C.wireworld-vitruvian := --bitmap wireworld_vitruvian,160x128x1,+limit_depth
 PNG2C.chip := --sprite wireworld_chip,64,4,+attached --palette wireworld_chip_pal,16
 PNG2C.wireworld-pcb-pal := --pixmap wireworld_pcb_pal,4x32x12
 PNG2C.loader := --bitmap loader,64x64x1 --palette loader_pal,2
+PNG2C.electric := --bitmap electric_logo,160x64x1
 
 PNG2C.circles := \
 	--bitmap circle1,3x3x1,extract_at=0x0 \
