@@ -407,6 +407,7 @@ static void Kill(void) {
   MemFree(texFstLo);
   MemFree(texSndHi);
   MemFree(texSndLo);
+  MemFree(UVMapRender);
 
   DeleteBitmap(screen[0]);
   DeleteBitmap(screen[1]);

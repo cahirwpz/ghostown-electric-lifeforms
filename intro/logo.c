@@ -15,7 +15,7 @@
 #include "data/ghostown-logo-03.c"
 #include "data/ghostown-logo-crop.c"
 
-static __code bool enabled;
+static __code bool cleanup;
 static CopListT *cp;
 static BitmapT *screen;
 
@@ -29,7 +29,7 @@ static const PaletteT *ghostown_logo_pal[] = {
 extern TrackT GhostownLogoPal;
 
 static void Init(void) {
-  enabled = true;
+  cleanup = true;
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH);
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
@@ -60,12 +60,12 @@ static void Init(void) {
 }
 
 void KillLogo(void) {
-  if (enabled) {
+  if (cleanup) {
     DisableDMA(DMAF_RASTER);
     DeleteCopList(cp);
 
     DeleteBitmap(screen);
-    enabled = false;
+    cleanup = false;
   }
 }
 
