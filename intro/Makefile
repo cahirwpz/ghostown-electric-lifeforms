@@ -29,7 +29,7 @@ CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
 	data/$(MODULE)*.o data/$(MODULE).{smp,trk}* data/text-scroll-font.c \
 	data/intro.c data/electric-lifeforms-0[1-2].c \
 	data/fruit-*.c data/anemone-gradient-pal.c \
-	data/ghostown-logo-crop.c \
+	data/ghostown-logo-crop-px.c \
 	data/logo-electrons.c data/electric-lifeforms.c \
 	data/ghostown-logo-0[1-3].c \
 	data/wireworld-fullscreen.c \
@@ -135,8 +135,8 @@ PNG2C.tilemover-drops := --bitmap tilemover_drops,16x16x1
 PNG2C.tilemover-block := --bitmap tilemover_block,96x80x1
 PNG2C.tilemover-bg-pal := --palette tilemover_bg_pal,6
 
-PNG2C.texture-inside := --pixmap texture_in,64x64x4 --palette texture_pal,16
-PNG2C.texture-outside := --pixmap texture_out,64x64x4
+PNG2C.texture-inside := --pixmap texture_in,64x64x8 --palette texture_pal,16
+PNG2C.texture-outside := --pixmap texture_out,64x64x8
 PNG2C.gradient := --pixmap gradient,16x16x12
 
 CPPFLAGS += -DINTRO -DVQ=$(VQ) -DDELTA=$(DELTA) -DKLANG=$(KLANG) -I.
