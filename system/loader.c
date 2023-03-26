@@ -72,14 +72,18 @@ void Loader(BootDataT *bd) {
 #if MULTITASK
   TaskInit(CurrentTask, "main", bd->bd_stkbot, bd->bd_stksz);
 #endif
+#if 0
   CallFuncList(&__INIT_LIST__);
+#endif
 
   {
     __unused int retval = main();
     Log("[Loader] main() returned %d.\n", retval);
   }
 
+#if 0
   CallFuncList(&__EXIT_LIST__);
+#endif
   
   Log("[Loader] Shutdown complete!\n");
 }

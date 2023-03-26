@@ -147,12 +147,16 @@ static void RunEffects(void) {
 }
 
 extern void InitSamples(void);
+extern void InitColorTab(void);
+extern void InitSinTab(void);
 
 int main(void) {
   /* NOP that triggers fs-uae debugger to stop and inform GDB that it should
    * fetch segments locations to relocate symbol information read from file. */
   asm volatile("exg %d7,%d7");
 
+  InitColorTab();
+  InitSinTab();
   InitSamples();
   PtInstallCIA();
   PtInit(Module, Samples, 0);
