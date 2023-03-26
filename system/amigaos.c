@@ -81,6 +81,9 @@ BootDataT *SaveOS(void) {
 
   Log("[Startup] Save AmigaOS state.\n");
 
+  Log("[Startup] AvailMem: CHIP=%lu FAST=%lu\n",
+      AvailMem(MEMF_CHIP), AvailMem(MEMF_FAST));
+
   /* KS 1.3 and earlier are brain-dead since they don't clear BSS sections :( */
   if (ExecVer <= 34) {
     bzero(_bss, (size_t)_bss_size);
