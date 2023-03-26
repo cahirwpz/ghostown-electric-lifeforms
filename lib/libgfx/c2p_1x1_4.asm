@@ -32,20 +32,8 @@ _c2p_1x1_4
 	move.l	#$0f0f0f0f,d4
 	move.l	#$00ff00ff,d5
 
-	move.l	(a0)+,d0
-	move.l	(a0)+,d2
-	move.l	(a0)+,d1
-	move.l	(a0)+,d3
-
-	and.l	d4,d0
-	and.l	d4,d1
-	and.l	d4,d2
-	and.l	d4,d3
-	lsl.l	#4,d0
-	lsl.l	#4,d1
-	or.l	d2,d0
-	or.l	d3,d1
-
+	move.l (a0)+,d0
+	move.l (a0)+,d1
 ; a3a2a1a0e3e2e1e0 b3b2b1b0f3f2f1f0 c3c2c1c0g3g2g1g0 d3d2d1d0h3h2h1h0
 ; i3i2i1i0m3m2m1m0 j3j2j1j0n3n2n1n0 k3k2k1k0o3o2o1o0 l3l2l1l0p3p2p1p0
 
@@ -85,23 +73,14 @@ _c2p_1x1_4
 	bra.s	.start
 
 .pix16
-	move.l	(a0)+,d0
-	move.l	(a0)+,d2
-	move.l	(a0)+,d1
-	move.l	(a0)+,d3
+	move.l (a0)+,d0
+	move.l (a0)+,d1
 
 	move.w	d6,(a5)+
 	swap	d6
 
-	and.l	d4,d0
-	and.l	d4,d1
-	and.l	d4,d2
-	and.l	d4,d3
-	lsl.l	#4,d0
-	lsl.l	#4,d1
-	or.l	d2,d0
-	or.l	d3,d1
-
+	move.l (a0)+,d0
+	move.l (a0)+,d1
 ; a3a2a1a0e3e2e1e0 b3b2b1b0f3f2f1f0 c3c2c1c0g3g2g1g0 d3d2d1d0h3h2h1h0
 ; i3i2i1i0m3m2m1m0 j3j2j1j0n3n2n1n0 k3k2k1k0o3o2o1o0 l3l2l1l0p3p2p1p0
 
