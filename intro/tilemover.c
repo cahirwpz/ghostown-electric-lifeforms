@@ -6,6 +6,7 @@
 #include <system/interrupt.h>
 #include <fx.h>
 #include <sync.h>
+#include <palettes.h>
 
 /*
  * Display window position within render buffer is always constant.
@@ -54,10 +55,6 @@ static short tiles[NFLOWFIELDS][NTILES];
 #include "data/tilemover-wave.c"
 #include "data/tilemover-drops.c"
 #include "data/tilemover-block.c"
-
-#include "data/pal-blue.c"
-#include "data/pal-green.c"
-#include "data/pal-red.c"
 
 typedef const PaletteT *TilemoverPalT[8];
 

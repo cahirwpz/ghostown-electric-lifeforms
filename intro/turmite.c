@@ -10,18 +10,7 @@
 #include <sync.h>
 #include <system/memory.h>
 #include <system/interrupt.h>
-
-#include "data/pal-gold.c"
-#include "data/pal-gold-dark.c"
-#include "data/pal-gold-light.c"
-
-#include "data/pal-green.c"
-#include "data/pal-green-dark.c"
-#include "data/pal-green-light.c"
-
-#include "data/pal-red.c"
-#include "data/pal-red-dark.c"
-#include "data/pal-red-light.c"
+#include <palettes.h>
 
 #include "data/turmite-credits-1.c"
 #include "data/turmite-credits-2.c"
