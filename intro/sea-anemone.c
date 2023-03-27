@@ -22,17 +22,7 @@ static __code CopListT *cp[2];
 static CopInsT *bplptr[DEPTH];
 static BitmapT *screen;
 
-#include "data/pal-gold.c"
-#include "data/pal-gold-dark.c"
-#include "data/pal-gold-light.c"
-
-#include "data/pal-blue.c"
-#include "data/pal-blue-dark.c"
-#include "data/pal-blue-light.c"
-
-#include "data/pal-red.c"
-#include "data/pal-red-dark.c"
-#include "data/pal-red-light.c"
+#include "palettes.h"
 
 #include "data/anemone-gradient-pal.c"
 #include "data/anemone-gradient.c"
