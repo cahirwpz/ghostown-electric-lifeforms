@@ -26,14 +26,10 @@ static const PaletteT *electric_lifeforms_pal[] = {
 extern TrackT ElectricLifeformsLogoPal;
 
 static void Load(void) {
-  int bplSize = (electric_lifeforms_width * electric_lifeforms_height) / 8;
-  screen = NewBitmap(WIDTH, HEIGHT, 4);
-  c2p_1x1_4(
-    &electric_lifeforms_pixels,
-    screen->planes[0],
-    electric_lifeforms_width,
-    electric_lifeforms_height,
-    bplSize);
+  screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1);
+  c2p_1x1_4(electric_lifeforms_pixels, screen->planes[0],
+            electric_lifeforms_width, electric_lifeforms_height,
+            electric_lifeforms_width * electric_lifeforms_height / 8);
 }
 
 static void Init(void) {

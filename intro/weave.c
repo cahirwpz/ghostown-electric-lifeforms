@@ -341,16 +341,11 @@ static void CopySpriteTiles(int t) {
 }
 
 static void Load(void) {
-  int bplSize = (bar_width * bar_height) / 8;
   int i, j;
 
   bar_px = NewBitmap(bar_width, bar_height, 4);
-  c2p_1x1_4(
-    &bar_pixels,
-    bar_px->planes[0],
-    bar_width,
-    bar_height,
-    bplSize);
+  c2p_1x1_4(bar_pixels, bar_px->planes[0], bar_width, bar_height,
+            bar_width * bar_height / 8);
 
   for (i = 0, j = 0; i < 128; i++, j += 32)
     sintab8[i] = (sintab[j] + 512) >> 10;

@@ -32,14 +32,10 @@ static const PaletteT *ghostown_logo_pal[] = {
 extern TrackT GhostownLogoPal;
 
 static void Load(void) {
-  int bplSize = (ghostown_logo_px_width * ghostown_logo_px_height) / 8;
   ghostown_logo = NewBitmap(ghostown_logo_px_width, ghostown_logo_px_height, 4);
-  c2p_1x1_4(
-          &ghostown_logo_px_pixels,
-          ghostown_logo->planes[0],
-          ghostown_logo_px_width,
-          ghostown_logo_px_height,
-          bplSize);
+  c2p_1x1_4(ghostown_logo_px_pixels, ghostown_logo->planes[0],
+            ghostown_logo_px_width, ghostown_logo_px_height,
+            ghostown_logo_px_width * ghostown_logo_px_height / 8);
 }
 
 static void Init(void) {

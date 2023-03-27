@@ -20,7 +20,7 @@ _c2p_1x1_4
 	
 	move.w	d1,d2
 	mulu.w	d0,d2
-        lsl.l   #3,d2
+        lsl.l   #2,d2
 	lea	(a0,d2.l),a2
 
 	move.l	a1,a3
