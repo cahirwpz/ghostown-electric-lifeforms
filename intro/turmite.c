@@ -37,21 +37,7 @@ extern TrackT TurmitePal;
 extern TrackT TurmiteFadeIn;
 extern TrackT TurmiteFadeOut;
 
-extern const PaletteT pal_gold;
-extern const PaletteT pal_gold_dark;
-extern const PaletteT pal_gold_light;
-
-extern const PaletteT pal_green;
-extern const PaletteT pal_green_dark;
-extern const PaletteT pal_green_light;
-
-extern const PaletteT pal_blue;
-extern const PaletteT pal_blue_dark;
-extern const PaletteT pal_blue_light;
-
-extern const PaletteT pal_red;
-extern const PaletteT pal_red_dark;
-extern const PaletteT pal_red_light;
+#include "palettes.h"
 
 static u_short *turmite_credits_bpl[] = {
   NULL,

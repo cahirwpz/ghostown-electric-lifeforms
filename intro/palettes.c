@@ -1,4 +1,4 @@
-#include <palette.h>
+#include "palettes.h"
 
 #include "data/pal-gold.c"
 #include "data/pal-gold-dark.c"
