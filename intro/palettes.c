@@ -1,3 +1,5 @@
+#include <palette.h>
+
 #include "data/pal-gold.c"
 #include "data/pal-gold-dark.c"
 #include "data/pal-gold-light.c"
@@ -13,4 +15,3 @@
 #include "data/pal-green.c"
 #include "data/pal-green-dark.c"
 #include "data/pal-green-light.c"
-

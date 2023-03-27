@@ -9,7 +9,6 @@
 #include <stdlib.h>
 #include <sync.h>
 #include <system/interrupt.h>
-#include <palettes.h>
 
 #define WIDTH 320
 #define HEIGHT 256
@@ -22,6 +21,22 @@ static __code short active = 0;
 static __code CopListT *cp[2];
 static CopInsT *bplptr[DEPTH];
 static BitmapT *screen;
+
+extern const PaletteT pal_gold;
+extern const PaletteT pal_gold_dark;
+extern const PaletteT pal_gold_light;
+
+extern const PaletteT pal_green;
+extern const PaletteT pal_green_dark;
+extern const PaletteT pal_green_light;
+
+extern const PaletteT pal_blue;
+extern const PaletteT pal_blue_dark;
+extern const PaletteT pal_blue_light;
+
+extern const PaletteT pal_red;
+extern const PaletteT pal_red_dark;
+extern const PaletteT pal_red_light;
 
 #include "data/anemone-gradient-pal.c"
 #include "data/anemone-gradient.c"
