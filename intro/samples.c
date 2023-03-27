@@ -149,7 +149,7 @@ void InitSamples(void) {
 #if KLANG == 1
   Log("[Init] Generating samples\n");
   {
-    void *TmpBuf = MemAlloc(32768, MEMF_PUBLIC);
+    void *TmpBuf = MemAlloc(36864, MEMF_PUBLIC|MEMF_CLEAR);
     GenerateSamples(TmpBuf);
     MemFree(TmpBuf);
   }
