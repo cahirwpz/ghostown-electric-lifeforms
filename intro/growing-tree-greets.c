@@ -114,33 +114,30 @@ static unsigned char grElude[] = {
 128,128
 };
 
-// FOCUS DESIGN
-static unsigned char grFD[] = {
-  10,10,
-  1,
-  5,5, 255,255,
-  128,128
+// EMPTY PLACEHOLDER
+static unsigned char emptyPlaceholder[] = {
+0,0,
+1,
+0,0, 255,255,
+128,128
 };
-// FUTURIS
-static unsigned char grFututis[] = {
-  10,10,
-  1,
-  5,5, 255,255,
-  128,128
-};
+
 // TO BE CONTINUED :)
 static unsigned char grTBC[] = {
-  10,10,
-  1,
-  5,5, 255,255,
-  128,128
+44,177,
+0,
+0,8,23,8,255,255,
+19,0,8,16,4,22,4,26,7,26,12,24,17,21,21,18,255,255,
+133,15,133,14,131,13,129,14,128,17,129,21,131,22,136,19,138,17,255,255,
+227,13,224,13,222,15,222,19,225,20,227,19,255,255,
+128,128
 };
 
 static unsigned char *greetsSet0[] = {
   grAltair,
   grAW,
   grDesire,
-  grFD,
+  emptyPlaceholder,
   NULL,
 };
 
@@ -148,7 +145,7 @@ static unsigned char *greetsSet1[] = {
   grAppendix,
   grCapsule,
   grDreamweb,
-  grFututis,
+  emptyPlaceholder,
   NULL,
 };
 
