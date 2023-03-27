@@ -55,9 +55,7 @@ static short tiles[NFLOWFIELDS][NTILES];
 #include "data/tilemover-drops.c"
 #include "data/tilemover-block.c"
 
-#include "data/pal-blue.c"
-#include "data/pal-green.c"
-#include "data/pal-red.c"
+#include "palettes.h"
 
 typedef const PaletteT *TilemoverPalT[8];
 
