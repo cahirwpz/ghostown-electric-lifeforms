@@ -55,16 +55,11 @@ static void ShowMemStats(void) {
   Log("[Memory] CHIP: %d FAST: %d\n", MemAvail(MEMF_CHIP), MemAvail(MEMF_FAST));
 }
 
-void PixmapToBitmap(BitmapT *bm, int width, int height, int depth, void *pixels)
+void PixmapToBitmap(BitmapT *bm, short width, short height, short depth,
+                    void *pixels)
 {
-  short bytesPerRow = ((width + 15) & ~15) / 8;
+  short bytesPerRow = ((short)(width + 15) & ~15) / 8;
   int bplSize = bytesPerRow * height;
-  void *planes;
-
-  planes = MemAlloc(bplSize * 4, MEMF_PUBLIC);
-  c2p_1x1_4(pixels, planes, width, height, bplSize);
-  memcpy(pixels, planes, bplSize * 4);
-  MemFree(planes);
 
   bm->width = width;
   bm->height = height;
@@ -74,6 +69,13 @@ void PixmapToBitmap(BitmapT *bm, int width, int height, int depth, void *pixels)
   bm->flags = BM_DISPLAYABLE | BM_STATIC;
 
   BitmapSetPointers(bm, pixels);
+
+  {
+    void *planes = MemAlloc(bplSize * 4, MEMF_PUBLIC);
+    c2p_1x1_4(pixels, planes, width, height, bplSize);
+    memcpy(pixels, planes, bplSize * 4);
+    MemFree(planes);
+  }
 }
 
 static void LoadEffects(EffectT **effects) {
