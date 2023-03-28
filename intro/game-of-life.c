@@ -1,7 +1,7 @@
+#include <intro.h>
 #include <bitmap.h>
 #include <blitter.h>
 #include <copper.h>
-#include <effect.h>
 #include <fx.h>
 #include <sprite.h>
 #include <pixmap.h>

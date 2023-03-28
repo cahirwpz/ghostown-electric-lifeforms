@@ -1,4 +1,4 @@
-#include <effect.h>
+#include <intro.h>
 #include <blitter.h>
 #include <copper.h>
 #include <fx.h>

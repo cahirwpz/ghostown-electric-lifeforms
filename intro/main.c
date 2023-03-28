@@ -6,6 +6,8 @@
 #include <palette.h>
 #include <sync.h>
 #include <system/task.h>
+#include <c2p_1x1_4.h>
+
 #include "intro.h"
 
 #define _SYSTEM
@@ -51,6 +53,27 @@ static EffectT *AllEffects[] = {
 
 static void ShowMemStats(void) {
   Log("[Memory] CHIP: %d FAST: %d\n", MemAvail(MEMF_CHIP), MemAvail(MEMF_FAST));
+}
+
+void PixmapToBitmap(BitmapT *bm, int width, int height, int depth, void *pixels)
+{
+  short bytesPerRow = ((width + 15) & ~15) / 8;
+  int bplSize = bytesPerRow * height;
+  void *planes;
+
+  planes = MemAlloc(bplSize * 4, MEMF_PUBLIC);
+  c2p_1x1_4(pixels, planes, width, height, width * height / 8);
+  memcpy(pixels, planes, bplSize * 4);
+  MemFree(planes);
+
+  bm->width = width;
+  bm->height = height;
+  bm->depth = depth;
+  bm->bytesPerRow = bytesPerRow;
+  bm->bplSize = bytesPerRow * height;
+  bm->flags = BM_DISPLAYABLE|BM_STATIC;
+
+  BitmapSetPointers(bm, planes);
 }
 
 static void LoadEffects(EffectT **effects) {

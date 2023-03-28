@@ -1,4 +1,4 @@
-#include "effect.h"
+#include "intro.h"
 
 #include "custom.h"
 #include "copper.h"
@@ -9,7 +9,6 @@
 #include <strings.h>
 #include <system/memory.h>
 #include <color.h>
-#include <c2p_1x1_4.h>
 #include <pixmap.h>
 
 #include "data/bar.c"
@@ -56,7 +55,7 @@ static short sintab8[128 * 4];
 static StateFullT *stateFull;
 static StateBarT *stateBars;
 static SpriteT stripe[NSPRITES];
-static BitmapT *bar_px;
+static BitmapT bar;
 
 /* These numbers must be even due to optimizations. */
 static char StripePhase[STRIPES] = { 4, 24, 16, 2, 10 };
@@ -75,7 +74,7 @@ static void MakeCopperListFull(StateFullT *state) {
 
   /* Setup initial bitplane pointers. */
   for (i = 0; i < DEPTH; i++)
-    CopMove32(cp, bplpt[i], bar_px->planes[i]);
+    CopMove32(cp, bplpt[i], bar.planes[i]);
   CopMove16(cp, bplcon1, 0);
 
   /* Move back bitplane pointers to repeat the line. */
@@ -163,7 +162,7 @@ static void MakeCopperListBars(StateBarT *bars) {
 
   /* Setup initial bitplane pointers. */
   for (i = 0; i < DEPTH; i++)
-    CopMove32(cp, bplpt[i], bar_px->planes[i]);
+    CopMove32(cp, bplpt[i], bar.planes[i]);
   CopMove16(cp, bplcon1, 0);
 
   /* Move back bitplane pointers to repeat the line. */
@@ -245,13 +244,13 @@ static void UpdateBarState(StateBarT *bars) {
       shift = ~bx & 15;
 
       if (by < 0)
-        offset -= by * bar_px->bytesPerRow;
+        offset -= by * bar.bytesPerRow;
 
       if (i & 1)
-        offset += bar_px->bytesPerRow * 33;
+        offset += bar.bytesPerRow * 33;
 
       for (j = 0; j < DEPTH; j++, ins += 2)
-        CopInsSet32(ins, bar_px->planes[j] + offset);
+        CopInsSet32(ins, bar.planes[j] + offset);
       CopInsSet16(ins, (shift << 4) | shift);
     }
 
@@ -343,9 +342,7 @@ static void CopySpriteTiles(int t) {
 static void Load(void) {
   int i, j;
 
-  bar_px = NewBitmap(bar_width, bar_height, 4);
-  c2p_1x1_4(bar_pixels, bar_px->planes[0], bar_width, bar_height,
-            bar_width * bar_height / 8);
+  PixmapToBitmap(&bar, bar_width, bar_height, 4, bar_pixels);
 
   for (i = 0, j = 0; i < 128; i++, j += 32)
     sintab8[i] = (sintab[j] + 512) >> 10;

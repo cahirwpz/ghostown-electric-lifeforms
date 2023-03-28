@@ -5,7 +5,6 @@
 #include <sync.h>
 #include <types.h>
 #include <system/memory.h>
-#include <c2p_1x1_4.h>
 #include <pixmap.h>
 
 #define WIDTH 320
@@ -15,12 +14,12 @@
 #include "data/ghostown-logo-01.c"
 #include "data/ghostown-logo-02.c"
 #include "data/ghostown-logo-03.c"
-#include "data/ghostown-logo-crop-px.c"
+#include "data/ghostown-logo-crop.c"
 
 static __code bool cleanup;
 static CopListT *cp;
 static BitmapT *screen;
-BitmapT *ghostown_logo;
+BitmapT ghostown_logo;
 
 static const PaletteT *ghostown_logo_pal[] = {
   NULL,
@@ -32,10 +31,8 @@ static const PaletteT *ghostown_logo_pal[] = {
 extern TrackT GhostownLogoPal;
 
 static void Load(void) {
-  ghostown_logo = NewBitmap(ghostown_logo_px_width, ghostown_logo_px_height, 4);
-  c2p_1x1_4(ghostown_logo_px_pixels, ghostown_logo->planes[0],
-            ghostown_logo_px_width, ghostown_logo_px_height,
-            ghostown_logo_px_width * ghostown_logo_px_height / 8);
+  PixmapToBitmap(&ghostown_logo, ghostown_logo_width, ghostown_logo_height, 3,
+                 ghostown_logo_pixels);
 }
 
 static void Init(void) {
@@ -51,8 +48,8 @@ static void Init(void) {
   }
 
   EnableDMA(DMAF_BLITTER);
-  BitmapCopy(screen, (WIDTH - ghostown_logo_px_width) / 2,
-             (HEIGHT - ghostown_logo_px_height) / 2, ghostown_logo);
+  BitmapCopy(screen, (WIDTH - ghostown_logo_width) / 2,
+             (HEIGHT - ghostown_logo_height) / 2, &ghostown_logo);
   WaitBlitter();
   DisableDMA(DMAF_BLITTER);
 

@@ -4,7 +4,6 @@
 #include <color.h>
 #include <sync.h>
 #include <system/memory.h>
-#include <c2p_1x1_4.h>
 #include <pixmap.h>
 
 #define WIDTH 320
@@ -16,6 +15,7 @@
 
 static CopListT *cp;
 static BitmapT *screen;
+static BitmapT electric_lifeforms;
 
 static const PaletteT *electric_lifeforms_pal[] = {
   NULL,
@@ -26,13 +26,13 @@ static const PaletteT *electric_lifeforms_pal[] = {
 extern TrackT ElectricLifeformsLogoPal;
 
 static void Load(void) {
-  screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1);
-  c2p_1x1_4(electric_lifeforms_pixels, screen->planes[0],
-            electric_lifeforms_width, electric_lifeforms_height,
-            electric_lifeforms_width * electric_lifeforms_height / 8);
+  PixmapToBitmap(&electric_lifeforms, electric_lifeforms_width,
+                 electric_lifeforms_height, 3, electric_lifeforms_pixels);
 }
 
 static void Init(void) {
+  screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1);
+
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
 
   {

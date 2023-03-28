@@ -29,7 +29,7 @@ CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
 	data/$(MODULE)*.o data/$(MODULE).{smp,trk}* data/text-scroll-font.c \
 	data/intro.c data/electric-lifeforms-0[1-2].c \
 	data/fruit-*.c data/anemone-gradient-pal.c \
-	data/ghostown-logo-crop-px.c \
+	data/ghostown-logo-crop.c \
 	data/logo-electrons.c data/electric-lifeforms.c \
 	data/ghostown-logo-0[1-3].c \
 	data/wireworld-fullscreen.c \
@@ -48,20 +48,20 @@ SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   samples.c palettes.c
 MAIN := #
 
-PNG2C.bar := --pixmap bar,480x67x4,+limit_bpp --palette bar_pal,32
+PNG2C.bar := --pixmap bar,480x67x4,+limit_bpp,+onlydata,+displayable --palette bar_pal,32
 PNG2C.stripes := --bitmap stripes,128x64x2,+limit_depth,+interleaved,-displayable --palette stripes_pal,16
 PNG2C.text-scroll-font := --bitmap font,768x8x1,-displayable --palette font_pal,2
 PNG2C.turmite-credits-1 := --bitmap turmite_credits_1,256x256x1,+onlydata,-displayable
 PNG2C.turmite-credits-2 := --bitmap turmite_credits_2,256x256x1,+onlydata,-displayable
 PNG2C.turmite-credits-3 := --bitmap turmite_credits_3,256x256x1,+onlydata,-displayable
-PNG2C.electric-lifeforms-01 := --pixmap electric_lifeforms,320x256x4 --palette electric_lifeforms_1_pal,8
+PNG2C.electric-lifeforms-01 := --pixmap electric_lifeforms,320x256x4,+onlydata,+displayable --palette electric_lifeforms_1_pal,8
 PNG2C.electric-lifeforms-02 := --palette electric_lifeforms_2_pal,8
 PNG2C.fruit-1 := --bitmap fruit_1,16x16x2,+onlydata --palette fruit_1_pal,4
 PNG2C.fruit-2 := --bitmap fruit_2,16x16x2,+onlydata --palette fruit_2_pal,4
 PNG2C.grass-1 := --sprite grass_1,32,8 --palette grass_1_pal,4
 PNG2C.grass-2 := --sprite grass_2,32,8 --palette grass_2_pal,4
 PNG2C.tilemover-pal := --palette tilemover_pal,16
-PNG2C.ghostown-logo-crop-px := --pixmap ghostown_logo_px,192x131x4
+PNG2C.ghostown-logo-crop := --pixmap ghostown_logo,192x131x4,+onlydata,+displayable
 PNG2C.ghostown-logo-01 := --palette ghostown_logo_1_pal,8
 PNG2C.ghostown-logo-02 := --palette ghostown_logo_2_pal,8
 PNG2C.ghostown-logo-03 := --palette ghostown_logo_3_pal,8
