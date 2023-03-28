@@ -4,7 +4,6 @@
 #include <color.h>
 #include <sync.h>
 #include <system/memory.h>
-#include <pixmap.h>
 
 #define WIDTH 320
 #define HEIGHT 256
@@ -31,7 +30,10 @@ static void Load(void) {
 }
 
 static void Init(void) {
-  screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1);
+  screen = NewBitmap(WIDTH, HEIGHT, DEPTH);
+
+  memcpy(screen->planes[0], electric_lifeforms.planes[0],
+         WIDTH * HEIGHT * DEPTH / 8);
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
 

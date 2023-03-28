@@ -5,7 +5,6 @@
 #include <sync.h>
 #include <types.h>
 #include <system/memory.h>
-#include <pixmap.h>
 
 #define WIDTH 320
 #define HEIGHT 256

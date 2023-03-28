@@ -9,12 +9,12 @@
 #include <strings.h>
 #include <system/memory.h>
 #include <color.h>
-#include <pixmap.h>
 
 #include "data/bar.c"
 #include "data/stripes.c"
 
 #define bar_bplmod ((bar_width - WIDTH) / 8 - 2)
+#define bar_bytesPerRow (bar_width / 8)
 
 #define WIDTH (320 - 32)
 #define HEIGHT 256
@@ -244,10 +244,10 @@ static void UpdateBarState(StateBarT *bars) {
       shift = ~bx & 15;
 
       if (by < 0)
-        offset -= by * bar.bytesPerRow;
+        offset -= by * bar_bytesPerRow;
 
       if (i & 1)
-        offset += bar.bytesPerRow * 33;
+        offset += bar_bytesPerRow * 33;
 
       for (j = 0; j < DEPTH; j++, ins += 2)
         CopInsSet32(ins, bar.planes[j] + offset);
