@@ -62,7 +62,7 @@ void PixmapToBitmap(BitmapT *bm, int width, int height, int depth, void *pixels)
   void *planes;
 
   planes = MemAlloc(bplSize * 4, MEMF_PUBLIC);
-  c2p_1x1_4(pixels, planes, width, height, width * height / 8);
+  c2p_1x1_4(pixels, planes, width, height, bplSize);
   memcpy(pixels, planes, bplSize * 4);
   MemFree(planes);
 
@@ -70,10 +70,10 @@ void PixmapToBitmap(BitmapT *bm, int width, int height, int depth, void *pixels)
   bm->height = height;
   bm->depth = depth;
   bm->bytesPerRow = bytesPerRow;
-  bm->bplSize = bytesPerRow * height;
-  bm->flags = BM_DISPLAYABLE|BM_STATIC;
+  bm->bplSize = bplSize;
+  bm->flags = BM_DISPLAYABLE | BM_STATIC;
 
-  BitmapSetPointers(bm, planes);
+  BitmapSetPointers(bm, pixels);
 }
 
 static void LoadEffects(EffectT **effects) {
