@@ -1556,6 +1556,11 @@ mt_checkfx:
 	move.w	fx_tab(pc,d0.w),d0
 	jmp	fx_tab(pc,d0.w)
 
+mt_vibrato set mt_nop                   ; 4 x y
+mt_vibrvolslide set mt_nop              ; 6 x y
+mt_tremolo set mt_nop                   ; 7 x y
+mt_e_cmds set mt_nop                    ; E x y
+
 fx_tab:
 	dc.w	mt_arpeggio-fx_tab	; $0
 	dc.w	mt_portaup-fx_tab
@@ -1877,6 +1882,10 @@ checkmorefx:
 .1:	move.w	morefx_tab(pc,d5.w),d0
 	jmp	morefx_tab(pc,d0.w)
 
+mt_posjump set mt_pernop        ; B x y
+mt_patternbrk set mt_pernop     ; D x y
+mt_e_cmds set mt_pernop         ; E x y
+
 morefx_tab:
 	dc.w	mt_pernop-morefx_tab,mt_pernop-morefx_tab,mt_pernop-morefx_tab
 	dc.w	mt_pernop-morefx_tab,mt_pernop-morefx_tab,mt_pernop-morefx_tab
@@ -1900,6 +1909,10 @@ moreblockedfx:
 	lsr.w	#7,d6
 	move.w	blmorefx_tab(pc,d6.w),d0
 	jmp	blmorefx_tab(pc,d0.w)
+
+mt_posjump set mt_nop           ; B x y
+mt_patternbrk set mt_nop        ; D x y
+blocked_e_cmds set mt_nop       ; E x y
 
 blmorefx_tab:
 	dc.w	mt_nop-blmorefx_tab,mt_nop-blmorefx_tab
@@ -2053,7 +2066,7 @@ mt_toneporta_nc:
 .5:	move.w	d2,AUDPER(a5)
 .6	rts
 
-
+        rem
 mt_vibrato:
 ; cmd 4 x y (x = speed, y = amplitude)
 ; d4 = xy
@@ -2107,7 +2120,7 @@ mt_vibrato_nc:
 	; increase vibratopos by speed
 	add.b	d4,n_vibratopos(a2)
 	rts
-
+        erem
 
 mt_tonevolslide:
 ; cmd 5 x y (x = volume-up, y = volume-down)
@@ -2116,7 +2129,7 @@ mt_tonevolslide:
 	pea	mt_volumeslide(pc)
 	bra	mt_toneporta_nc
 
-
+        rem
 mt_vibrvolslide:
 ; cmd 6 x y (x = volume-up, y = volume-down)
 ; d4 = xy
@@ -2191,7 +2204,7 @@ mt_tremolo:
 	; increase tremolopos by speed
 	add.b	d4,n_tremolopos(a2)
 	rts
-
+        erem
 
 mt_volumeslide:
 ; cmd A x y (x = volume-up, y = volume-down)
@@ -2227,7 +2240,7 @@ set_vol:
 	move.w	d0,AUDVOL(a5)
 	rts
 
-
+        rem
 mt_posjump:
 ; cmd B x y (xy = new song position)
 ; d4 = xy
@@ -2240,7 +2253,7 @@ jump_pos0:
 	move.w	d7,mt_PBreakPos(a4)
 	st	mt_PosJumpFlag(a4)
 	rts
-
+        erem
 
 mt_volchange:
 ; cmd C x y (xy = new volume)
@@ -2257,7 +2270,7 @@ mt_volchange:
 	move.w	d4,AUDVOL(a5)
 	rts
 
-
+        rem
 mt_patternbrk:
 ; cmd D x y (xy = break pos in decimal)
 ; d4 = xy
@@ -2277,7 +2290,7 @@ mt_patternbrk:
 
 mult10tab:
 	dc.b	0,10,20,30,40,50,60,70,80,90,0,0,0,0,0,0
-
+        erem
 
 mt_setspeed:
 ; cmd F x y (xy<$20 new speed, xy>=$20 new tempo)
@@ -2298,7 +2311,7 @@ mt_setspeed:
 	move.b	d0,CIAB+CIATAHI
 	rts
 
-
+        rem
 mt_e_cmds:
 ; cmd E x y (x=command, y=argument)
 ; d4 = xy
@@ -2554,6 +2567,7 @@ mt_funk:
 	move.w	d0,n_funk(a2)
 	bne	mt_updatefunk
 .1:	rts
+        erem
 
 mt_updatefunk:
 ; d0 = funk speed
