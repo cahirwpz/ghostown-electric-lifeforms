@@ -25,7 +25,7 @@ const (
 )
 
 const (
-	FramesPerRow = 6 // Assuming constant BPM of 125
+	FramesPerRow = 3 // Assuming constant BPM of 125
 )
 
 type TrackItem struct {
