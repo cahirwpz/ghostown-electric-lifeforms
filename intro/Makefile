@@ -48,7 +48,7 @@ SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   samples.c palettes.c
 MAIN := #
 
-PNG2C.bar := --pixmap bar,480x67x8 --palette bar_pal,32
+PNG2C.bar := --pixmap bar,480x67x4,+limit_bpp --palette bar_pal,32
 PNG2C.stripes := --bitmap stripes,128x64x2,+limit_depth,+interleaved,-displayable --palette stripes_pal,16
 PNG2C.text-scroll-font := --bitmap font,768x8x1,-displayable --palette font_pal,2
 PNG2C.turmite-credits-1 := --bitmap turmite_credits_1,256x256x1,+onlydata,-displayable

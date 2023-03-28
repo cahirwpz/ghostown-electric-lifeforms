@@ -315,6 +315,7 @@ def do_pixmap(im, desc):
     param = parse(desc,
                   ('name', str),
                   ('width,height,bpp', (int, int, int)),
+                  ('limit_bpp', bool, False),
                   ('onlydata', bool, False))
 
     name = param['name']
@@ -322,6 +323,7 @@ def do_pixmap(im, desc):
     has_height = param['height']
     has_bpp = param['bpp']
     onlydata = param['onlydata']
+    limit_bpp = param['limit_bpp']
 
     width, height = im.size
 
@@ -342,6 +344,9 @@ def do_pixmap(im, desc):
 
         colors = im.getextrema()[1] + 1
         bpp = int(ceil(log(colors, 2)))
+        if limit_bpp:
+            bpp = min(bpp, has_bpp)
+
         if bpp > has_bpp:
             raise SystemExit(
                 'Image\'s bits per pixel is %d, expected %d!' % (bpp, has_bpp))
