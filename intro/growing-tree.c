@@ -48,19 +48,18 @@ static BranchT *branches;
 static BranchT *lastBranch;
 
 typedef struct Greets {
-  unsigned char x, y; // pos x,y
-  unsigned char delay; // delay in frames
-  unsigned char *currentDataPos; // ptr to data
+  short x, y; // pos x,y
+  u_char delay; // delay in frames
+  u_char *currentDataPos; // ptr to data
 } GreetsT;
 
 static GreetsT greetsData[3];
 
 static int hashTableIdx = 0;
 
-static int fastrand_a = 0, fastrand_b = 0;
+static __code int fastrand_a = 0, fastrand_b = 0;
 static inline int fastrand(void) {
-  int *hashAddr = &hashTable[hashTableIdx*2];
-
+  int *hashAddr = &hashTable[hashTableIdx * 2];
 
   // https://www.atari-forum.com/viewtopic.php?p=188000#p188000
   asm volatile("move.l (%2)+,%0\n"
@@ -107,7 +106,8 @@ static void setTreePalette(void) {
   nrPal ^= 1;
 }
 
-static int greetsIdx = 0;
+static __code int greetsIdx = 0;
+
 static void GreetsSetTrack(short idx, unsigned char *greetzData) {
   greetsData[idx].x = *greetzData++;
   greetsData[idx].y = *greetzData++;
@@ -121,13 +121,13 @@ static void GreetsNextTrack(void) {
   GreetsSetTrack(2, greetsSet2[greetsIdx]);
   greetsIdx++;
 
-  hashTableIdx++; hashTableIdx &= 3;
+  hashTableIdx++;
+  hashTableIdx &= 3;
   fastrand_a = fastrand_b = 0;
-  if(greetsIdx == 4) {
+  if (greetsIdx == 4) {
     greetsIdx = 0; // TODO: remove it
   }
 }
-
 
 static void Init(void) {
   short i;
@@ -341,49 +341,44 @@ static bool SplitBranch(BranchT *parent, BranchT **lastp) {
   return false;
 }
 
-static void DrawGreetings(short nr) {
-  unsigned char x1, x2, y1, y2;
+static void DrawGreetings(GreetsT *greets) {
+  short x1, x2, y1, y2;
 
-  if (greetsData[nr].currentDataPos == NULL) {
+  if (!greets->currentDataPos)
+    return;
+
+  if (greets->delay) {
+    greets->delay--;
     return;
   }
 
-  if (greetsData[nr].delay) {
-    greetsData[nr].delay--;
-    return;
-  }
-
-  x1 = *greetsData[nr].currentDataPos++;
-  y1 = *greetsData[nr].currentDataPos++;
+  x1 = *greets->currentDataPos++;
+  y1 = *greets->currentDataPos++;
 
   if (x1 == 128 && y1 == 128) {
     // end of logo
-    greetsData[nr].currentDataPos = NULL;
+    greets->currentDataPos = NULL;
     return;
   }
 
-  x2 = *greetsData[nr].currentDataPos;
-  y2 = *(greetsData[nr].currentDataPos+1);
+  x2 = greets->currentDataPos[0];
+  y2 = greets->currentDataPos[1];
 
   if (x2 == 255 && y2 == 255) {
     // to next logo branch
-    greetsData[nr].currentDataPos++;
-    greetsData[nr].currentDataPos++;
+    greets->currentDataPos++;
+    greets->currentDataPos++;
     return;
   }
 
-  DrawBranch(
-    greetsData[nr].x + x1, greetsData[nr].y + y1,
-    greetsData[nr].x + x2, greetsData[nr].y + y2
-  );
+  DrawBranch(greets->x + x1, greets->y + y1, greets->x + x2, greets->y + y2);
 }
 
-static void handleDrawingGreets(void) {
-  DrawGreetings(0);
-  DrawGreetings(1);
-  DrawGreetings(2);
+static void HandleDrawingGreets(void) {
+  DrawGreetings(&greetsData[0]);
+  DrawGreetings(&greetsData[1]);
+  DrawGreetings(&greetsData[2]);
 }
-
 
 void GrowingTree(BranchT *branches, BranchT **lastp) {
   u_short *fruit = nrPal ? _fruit_1_bpl : _fruit_2_bpl;
@@ -450,7 +445,7 @@ static void Render(void) {
   if (waitFrame > 0) {
     if (frameCount - waitFrame < 100) {
       TaskWaitVBlank();
-      handleDrawingGreets();
+      HandleDrawingGreets();
       return;
     }
 
@@ -468,7 +463,7 @@ static void Render(void) {
   ProfilerStart(GrowTree);
   GrowingTree(branches, &lastBranch);
 
-  handleDrawingGreets();
+  HandleDrawingGreets();
 
   ProfilerStop(GrowTree);
 
