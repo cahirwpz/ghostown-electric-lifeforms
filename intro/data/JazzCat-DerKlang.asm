@@ -56,8 +56,8 @@ _AK_ProgressLen:
 
 AK_USE_PROGRESS			equ 1
 AK_FINE_PROGRESS		equ 1
-AK_FINE_PROGRESS_LEN	equ 256562
-AK_SMP_LEN				equ 194052
+AK_FINE_PROGRESS_LEN	equ 246552
+AK_SMP_LEN				equ 184042
 AK_EXT_SMP_LEN			equ 9079
 
 AK_Generate:
@@ -4643,7 +4643,7 @@ AK_Vars:
 				dc.l	$00001000		; Instrument 17 Length 
 				dc.l	$000012e2		; Instrument 18 Length 
 				dc.l	$000012e2		; Instrument 19 Length 
-				dc.l	$0000444e		; Instrument 20 Length 
+				dc.l	$0000225c		; Instrument 20 Length 
 				dc.l	$0000225c		; Instrument 21 Length 
 				dc.l	$0000301c		; Instrument 22 Length 
 				dc.l	$00000002		; Instrument 23 Length 
@@ -4653,7 +4653,7 @@ AK_Vars:
 				dc.l	$000020a6		; Instrument 27 Length 
 				dc.l	$000020a6		; Instrument 28 Length 
 				dc.l	$00001eee		; Instrument 29 Length 
-				dc.l	$000020a6		; Instrument 30 Length 
+				dc.l	$00001b7e		; Instrument 30 Length 
 				dc.l	$00000516		; Instrument 31 Length 
 				dc.l	$0000090d		; External Sample 1 Length 
 				dc.l	$00001592		; External Sample 2 Length 
