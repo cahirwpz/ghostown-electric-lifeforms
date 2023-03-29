@@ -108,17 +108,17 @@ static void setTreePalette(void) {
 
 static __code int greetsIdx = 0;
 
-static void GreetsSetTrack(short idx, unsigned char *greetzData) {
-  greetsData[idx].x = *greetzData++;
-  greetsData[idx].y = *greetzData++;
-  greetsData[idx].delay = *greetzData++;
-  greetsData[idx].currentDataPos = greetzData;
+static void GreetsSetTrack(GreetsT *greets, u_char *greetzData) {
+  greets->x = *greetzData++;
+  greets->y = *greetzData++;
+  greets->delay = *greetzData++;
+  greets->currentDataPos = greetzData;
 }
 
 static void GreetsNextTrack(void) {
-  GreetsSetTrack(0, greetsSet0[greetsIdx]);
-  GreetsSetTrack(1, greetsSet1[greetsIdx]);
-  GreetsSetTrack(2, greetsSet2[greetsIdx]);
+  GreetsSetTrack(&greetsData[0], greetsSet0[greetsIdx]);
+  GreetsSetTrack(&greetsData[1], greetsSet1[greetsIdx]);
+  GreetsSetTrack(&greetsData[2], greetsSet2[greetsIdx]);
   greetsIdx++;
 
   hashTableIdx++;
