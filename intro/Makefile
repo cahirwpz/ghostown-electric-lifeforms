@@ -26,7 +26,7 @@ LIBS := libpt
 BUILD-FILES := audiovq
 
 CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
-	data/$(MODULE)-*.o data/$(MODULE).{smp,trk}* data/text-scroll-font.c \
+	data/$(MODULE)*.o data/$(MODULE).{smp,trk}* data/text-scroll-font.c \
 	data/intro.c data/electric-lifeforms-0[1-2].c \
 	data/fruit-*.c data/anemone-gradient-pal.c \
 	data/ghostown-logo-crop.c \
@@ -38,14 +38,14 @@ CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
 	data/wireworld-vitruvian-electrons.c \
 	data/turmite-credits-[1-3].c \
 	data/circles.c data/squares.c \
-	data/grass-[1-2].c \
-	data/uvgut-{in,out}side.c data/gradient.c data/gradient.png \
+	data/grass-[1-2].c data/loader.c \
+	data/texture-{in,out}side.c data/gradient.c data/gradient.png \
 	data/tilemover-*.c data/chip.c data/wireworld_pcb_pal.c \
 	data/pal-gold*.c data/pal-green*.c data/pal-red*.c data/pal-blue*.c
 
 SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   tilemover.c sea-anemone.c game-of-life.c vitruvian.c uvmap.c \
-	   samples.c
+	   samples.c palettes.c
 MAIN := #
 
 PNG2C.bar := --bitmap bar,480x67x4,+limit_depth --palette bar_pal,32
@@ -109,23 +109,21 @@ PNG2C.squares := \
 	--bitmap square15,31x31x1,extract_at=0x238 \
 	--bitmap square16,33x33x1,extract_at=0x270
 
-PNG2C.pal-gold := --palette pal_gold,16
-PNG2C.pal-gold-dark := --palette pal_gold_dark,16
-PNG2C.pal-gold-light := --palette pal_gold_light,16
+PNG2C.pal-gold := --palette pal_gold,16,+shared
+PNG2C.pal-gold-dark := --palette pal_gold_dark,16,+shared
+PNG2C.pal-gold-light := --palette pal_gold_light,16,+shared
 
-PNG2C.pal-blue := --palette pal_blue,16
-PNG2C.pal-blue-dark := --palette pal_blue_dark,16
-PNG2C.pal-blue-light := --palette pal_blue_light,16
+PNG2C.pal-blue := --palette pal_blue,16,+shared
+PNG2C.pal-blue-dark := --palette pal_blue_dark,16,+shared
+PNG2C.pal-blue-light := --palette pal_blue_light,16,+shared
 
-PNG2C.pal-green := --palette pal_green,16
-PNG2C.pal-green-dark := --palette pal_green_dark,16
-PNG2C.pal-green-light := --palette pal_green_light,16
+PNG2C.pal-green := --palette pal_green,16,+shared
+PNG2C.pal-green-dark := --palette pal_green_dark,16,+shared
+PNG2C.pal-green-light := --palette pal_green_light,16,+shared
 
-PNG2C.pal-red := --palette pal_red,16
-PNG2C.pal-red-dark := --palette pal_red_dark,16
-PNG2C.pal-red-light := --palette pal_red_light,16
-
-PNG2C.pal-blue := --palette pal_blue,16
+PNG2C.pal-red := --palette pal_red,16,+shared
+PNG2C.pal-red-dark := --palette pal_red_dark,16,+shared
+PNG2C.pal-red-light := --palette pal_red_light,16,+shared
 
 PNG2C.anemone-gradient-pal := --palette anemone_gradient_pal,16
 
@@ -135,8 +133,8 @@ PNG2C.tilemover-drops := --bitmap tilemover_drops,16x16x1
 PNG2C.tilemover-block := --bitmap tilemover_block,96x80x1
 PNG2C.tilemover-bg-pal := --palette tilemover_bg_pal,6
 
-PNG2C.uvgut-inside := --pixmap texture_in,64x64x8 --palette texture_pal,16
-PNG2C.uvgut-outside := --pixmap texture_out,64x64x8
+PNG2C.texture-inside := --pixmap texture_in,64x64x8 --palette texture_pal,16
+PNG2C.texture-outside := --pixmap texture_out,64x64x8
 PNG2C.gradient := --pixmap gradient,16x16x12
 
 CPPFLAGS += -DINTRO -DVQ=$(VQ) -DDELTA=$(DELTA) -DKLANG=$(KLANG) -I.
@@ -190,7 +188,7 @@ data/%.png: data/%.rle
 	@echo "[RLE] $(DIR)$< -> $(DIR)$@"
 	$(PYTHON3) $(RLE2PNG) $< $@ || (rm -f $@ && exit 1)
 
-data/gradient.png: $(GRADIENT) data/uvgut-inside.png
+data/gradient.png: $(GRADIENT) data/texture-inside.png
 	@echo "[GEN] $@"
 	$(PYTHON3) $(GRADIENT) load $(word 2,$^) copy hue 0.25 save $@
 

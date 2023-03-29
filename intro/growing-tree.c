@@ -43,8 +43,8 @@ typedef struct Branch {
 
 #define MAXBRANCHES 256
 
-static BranchT branches[MAXBRANCHES];
-static BranchT *lastBranch = branches;
+static BranchT *branches;
+static BranchT *lastBranch;
 
 static inline int fastrand(void) {
   static int m[2] = { 0x3E50B28C, 0xD461A7F9 };
@@ -99,6 +99,9 @@ static void setTreePalette(void) {
 static void Init(void) {
   short i;
 
+  branches = MemAlloc(sizeof(BranchT) * MAXBRANCHES, MEMF_PUBLIC);
+  lastBranch = branches;
+
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH);
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
@@ -127,6 +130,8 @@ static void Init(void) {
 
 static void Kill(void) {
   DisableDMA(DMAF_COPPER | DMAF_BLITTER | DMAF_RASTER | DMAF_SPRITE);
+
+  MemFree(branches);
 
   DeleteBitmap(screen);
   DeleteCopList(cp);

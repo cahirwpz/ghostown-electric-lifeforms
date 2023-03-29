@@ -25,11 +25,11 @@ static __code void **c2p_bpl;
 static CopListT *cp;
 static CopInsT *bplptr[DEPTH];
 
-#include "data/uvgut-inside.c"
-#include "data/uvgut-outside.c"
+#include "data/texture-inside.c"
+#include "data/texture-outside.c"
 #include "data/gradient.c"
-#include "data/uvgut/map-u.c"
-#include "data/uvgut/map-v.c"
+#include "data/uvmap/gut-uv.c"
+#include "data/uvmap/tit-uv.c"
 
 #define UVMapRenderSize ((5 + WIDTH * HEIGHT / 32 * (8 * 8 + 2)) * 2)
 void (*UVMapRender)(u_short *chunkyEnd asm("a0"),
@@ -53,7 +53,7 @@ static u_short PixelLo[16] = {
 #define TW texture_in_width
 #define TH texture_in_height
 
-static __code short lastStep = TH;
+static __code short lastStep;
 
 static void CopyTexture(const u_char *data, u_short *hi0, u_short *lo0,
                         short step)
@@ -85,13 +85,9 @@ static void CopyTexture(const u_char *data, u_short *hi0, u_short *lo0,
     *lo0++ = lo;
     *lo1++ = lo;
   }
-
-  lastStep = step;
 }
 
-static void ScrambleUVMap(u_short *uvmap) {
-  u_char *u = umap;
-  u_char *v = vmap;
+static void ScrambleUVMap(u_short *uvmap, u_char *u, u_char *v) {
   short i;
 
 #define MAKEUV() (((*v++) << 7) | (*u++))
@@ -116,7 +112,7 @@ static void MakeUVMapRenderCode(u_short *uvmap) {
 
   /* The map is pre-scrambled to avoid one c2p pass:
    * [a b c d e f g h] => [a b e f c d g h] */
-  short n = WIDTH * HEIGHT / 32;
+  register short n asm("d7") = WIDTH * HEIGHT / 32 - 1;
 
   register short m1 asm("d5") = 1;
   register short m2 asm("d6") = -2;
@@ -124,7 +120,7 @@ static void MakeUVMapRenderCode(u_short *uvmap) {
   *code++ = 0x48e7; *code++ = 0x3f00; /* movem.l d2-d7,-(sp) */
   data -= 4;
 
-  while (n--) {
+  do {
     short m, w, o;
 
     for (m = 0x0e00; m >= 0; m -= 0x0200) {
@@ -148,7 +144,7 @@ static void MakeUVMapRenderCode(u_short *uvmap) {
     }
 
     *code++ = 0x48a0; *code++ = 0xff00; /* d0-d7,-(a0) */
-  }
+  } while (--n != -1);
 
   *code++ = 0x4cdf; *code++ = 0x00fc; /* movem.l (sp)+,d2-d7 */
   *code++ = 0x4e75; /* rts */
@@ -172,25 +168,28 @@ static void DeltaDecode(uint8_t *data) {
 }
 
 static void Load(void) {
-  short *uvmap;
+  static bool done = false;
 
-  TrackInit(&UvmapTransition);
-  TrackInit(&UvmapSrcTexture);
-  TrackInit(&UvmapDstTexture);
+  if (!done) {
+    DeltaDecode(gut[0]);
+    DeltaDecode(gut[1]);
 
-  DeltaDecode(umap);
-  DeltaDecode(vmap);
+    DeltaDecode(tit[0]);
+    DeltaDecode(tit[1]);
 
-  uvmap = MemAlloc(WIDTH * HEIGHT * sizeof(short), MEMF_PUBLIC);
-  ScrambleUVMap(uvmap);
+    {
+      short *uvmap = MemAlloc(WIDTH * HEIGHT * sizeof(short), MEMF_PUBLIC);
 
-  UVMapRender = MemAlloc(UVMapRenderSize, MEMF_PUBLIC);
-  MakeUVMapRenderCode(uvmap);
-  MemFree(uvmap);
-}
+      ScrambleUVMap(uvmap, gut[0], gut[1]);
+      memcpy(gut, uvmap, WIDTH * HEIGHT * sizeof(short));
+      ScrambleUVMap(uvmap, tit[0], tit[1]);
+      memcpy(tit, uvmap, WIDTH * HEIGHT * sizeof(short));
 
-static void UnLoad(void) {
-  MemFree(UVMapRender);
+      MemFree(uvmap);
+    }
+
+    done = true;
+  }
 }
 
 #define BLTSIZE ((WIDTH / 2) * HEIGHT) /* 8000 bytes */
@@ -347,6 +346,10 @@ static void MakeCopperList(CopListT *cp) {
 }
 
 static void Init(void) {
+  TrackInit(&UvmapTransition);
+  TrackInit(&UvmapSrcTexture);
+  TrackInit(&UvmapDstTexture);
+
   screen[0] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH);
   screen[1] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH);
 
@@ -375,9 +378,22 @@ static void Init(void) {
   active = 0;
   c2p_bpl = NULL;
   c2p_phase = 256;
+  lastStep = TH;
 
   SetIntVector(INTB_BLIT, (IntHandlerT)ChunkyToPlanar, NULL);
   EnableINT(INTF_BLIT);
+}
+
+static void InitGut(void) {
+  UVMapRender = MemAlloc(UVMapRenderSize, MEMF_PUBLIC);
+  MakeUVMapRenderCode((u_short *)gut);
+  Init();
+}
+
+static void InitTit(void) {
+  UVMapRender = MemAlloc(UVMapRenderSize, MEMF_PUBLIC);
+  MakeUVMapRenderCode((u_short *)tit);
+  Init();
 }
 
 static void Kill(void) {
@@ -391,6 +407,7 @@ static void Kill(void) {
   MemFree(texFstLo);
   MemFree(texSndHi);
   MemFree(texSndLo);
+  MemFree(UVMapRender);
 
   DeleteBitmap(screen[0]);
   DeleteBitmap(screen[1]);
@@ -417,6 +434,8 @@ static void Render(void) {
       CopyTexture(texSrcIdx ? texture_in_pixels : texture_out_pixels,
                   texDstIdx ? texSndHi : texFstHi,
                   texDstIdx ? texSndLo : texFstLo, step);
+
+      lastStep = step;
     }
   }
 
@@ -437,4 +456,5 @@ static void Render(void) {
   active ^= 1;
 }
 
-EFFECT(UVMap, Load, UnLoad, Init, Kill, Render);
+EFFECT(UVGut, Load, NULL, InitGut, Kill, Render);
+EFFECT(UVTit, Load, NULL, InitTit, Kill, Render);

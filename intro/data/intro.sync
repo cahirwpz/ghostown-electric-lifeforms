@@ -13,7 +13,7 @@ $0500 8
 $0800 6
 # weave
 $0C00 2
-# uvmap
+# uvgut
 $1000 10
 # tree
 $1400 4
@@ -23,8 +23,8 @@ $1600 5
 $1800 7
 # game of life - electric
 $1A00 8
-# uvgut 2
-$1C00 10
+# uvtit
+$1C00 11
 # turmites
 $1E00 3
 # tilemover 
@@ -52,7 +52,6 @@ $2A30 0
 $0400 1 !step
 $0410 2
 @end
-
 
 # Available values:
 # 1 - static
@@ -186,6 +185,27 @@ $0500 1
 # 0 - vitruvian, 1 - pcb
 $0000 0 !step
 $0500 1
+@end
+
+# next spawn frame = (random() & WireworldSpawnMask) + WireworldMinDelay;
+@track WireworldSpawnMask
+$0300 7 !step
+$1000 15
+@end
+
+@track WireworldMinDelay
+$0300 0 !step
+$1000 8
+@end
+
+@track WireworldSpawnNow
+$1010 1 !event
+$1020 1
+$1030 1
+$1100 1
+$1110 1
+$1120 1
+$1130 1
 @end
 
 @track SeaAnemoneVariant

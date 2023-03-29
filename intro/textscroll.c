@@ -15,8 +15,10 @@
 
 static __code short active = 0;
 
+typedef CopInsT *CopInsPtrT;
+
 static CopListT *cp[2];
-static CopInsT *linebpl[2][HEIGHT];
+static CopInsPtrT (*linebpl)[2][HEIGHT];
 static BitmapT *scroll;
 
 static __code short last_line = -1;
@@ -26,7 +28,7 @@ extern uint8_t Text[];
 
 #include "data/text-scroll-font.c"
 
-static CopListT *MakeCopperList(short n) {
+static CopListT *MakeCopperList(CopInsPtrT *linebpl) {
   CopListT *cp = NewCopList(100 + 3 * HEIGHT);
   CopInit(cp);
   CopSetupBitplanes(cp, NULL, scroll, DEPTH);
@@ -36,7 +38,7 @@ static CopListT *MakeCopperList(short n) {
 
     for (i = 0; i < HEIGHT; i++, ptr += scroll->bytesPerRow) {
       CopWaitSafe(cp, Y(i), 0);
-      linebpl[n][i] = CopMove32(cp, bplpt[0], ptr);
+      linebpl[i] = CopMove32(cp, bplpt[0], ptr);
     }
   }
   CopEnd(cp);
@@ -51,8 +53,9 @@ static void Init(void) {
   SetupPlayfield(MODE_HIRES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
   LoadPalette(&font_pal, 0);
 
-  cp[0] = MakeCopperList(0);
-  cp[1] = MakeCopperList(1);
+  linebpl = MemAlloc(sizeof(CopInsPtrT) * 2 * HEIGHT, MEMF_PUBLIC);
+  cp[0] = MakeCopperList((*linebpl)[0]);
+  cp[1] = MakeCopperList((*linebpl)[1]);
 
   CopListActivate(cp[active]);
 
@@ -64,6 +67,7 @@ static void Kill(void) {
 
   DeleteCopList(cp[0]);
   DeleteCopList(cp[1]);
+  MemFree(linebpl);
   DeleteBitmap(scroll);
 }
 
@@ -90,7 +94,7 @@ static void RenderLine(u_char *dst, char *line, short size) {
 }
 
 static void SetupLinePointers(void) {
-  CopInsT **ins = linebpl[active];
+  CopInsT **ins = (*linebpl)[active];
   void *plane = scroll->planes[0];
   int stride = scroll->bytesPerRow;
   int bplsize = scroll->bplSize;
