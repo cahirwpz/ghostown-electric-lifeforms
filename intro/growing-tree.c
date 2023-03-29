@@ -18,6 +18,7 @@ static CopInsT *bplptr[DEPTH];
 static BitmapT *screen;
 static CopInsT *sprptr[8];
 
+#include "growing-tree-greets.c"
 #include "data/fruit-1.c"
 #include "data/fruit-2.c"
 #include "data/grass-1.c"
@@ -46,10 +47,19 @@ typedef struct Branch {
 static BranchT *branches;
 static BranchT *lastBranch;
 
-static inline int fastrand(void) {
-  static int m[2] = { 0x3E50B28C, 0xD461A7F9 };
+typedef struct Greets {
+  short x, y; // pos x,y
+  u_char delay; // delay in frames
+  u_char *currentDataPos; // ptr to data
+} GreetsT;
 
-  int a, b;
+static GreetsT greetsData[3];
+
+static int hashTableIdx = 0;
+
+static __code int fastrand_a = 0, fastrand_b = 0;
+static inline int fastrand(void) {
+  int *hashAddr = &hashTable[hashTableIdx * 2];
 
   // https://www.atari-forum.com/viewtopic.php?p=188000#p188000
   asm volatile("move.l (%2)+,%0\n"
@@ -57,10 +67,10 @@ static inline int fastrand(void) {
                "swap   %1\n"
                "add.l  %0,(%2)\n"
                "add.l  %1,-(%2)\n"
-               : "=d" (a), "=d" (b)
-               : "a" (m));
+               : "=d" (fastrand_a), "=d" (fastrand_b)
+               : "a" (hashAddr));
   
-  return a;
+  return fastrand_a;
 }
 
 #define random fastrand
@@ -96,6 +106,29 @@ static void setTreePalette(void) {
   nrPal ^= 1;
 }
 
+static __code int greetsIdx = 0;
+
+static void GreetsSetTrack(GreetsT *greets, u_char *greetzData) {
+  greets->x = *greetzData++;
+  greets->y = *greetzData++;
+  greets->delay = *greetzData++;
+  greets->currentDataPos = greetzData;
+}
+
+static void GreetsNextTrack(void) {
+  GreetsSetTrack(&greetsData[0], greetsSet0[greetsIdx]);
+  GreetsSetTrack(&greetsData[1], greetsSet1[greetsIdx]);
+  GreetsSetTrack(&greetsData[2], greetsSet2[greetsIdx]);
+  greetsIdx++;
+
+  hashTableIdx++;
+  hashTableIdx &= 3;
+  fastrand_a = fastrand_b = 0;
+  if (greetsIdx == 4) {
+    greetsIdx = 0; // TODO: remove it
+  }
+}
+
 static void Init(void) {
   short i;
 
@@ -122,6 +155,8 @@ static void Init(void) {
   CopEnd(cp);
 
   setTreePalette();
+  GreetsNextTrack();
+
 
   CopListActivate(cp);
 
@@ -306,6 +341,45 @@ static bool SplitBranch(BranchT *parent, BranchT **lastp) {
   return false;
 }
 
+static void DrawGreetings(GreetsT *greets) {
+  short x1, x2, y1, y2;
+
+  if (!greets->currentDataPos)
+    return;
+
+  if (greets->delay) {
+    greets->delay--;
+    return;
+  }
+
+  x1 = *greets->currentDataPos++;
+  y1 = *greets->currentDataPos++;
+
+  if (x1 == 128 && y1 == 128) {
+    // end of logo
+    greets->currentDataPos = NULL;
+    return;
+  }
+
+  x2 = greets->currentDataPos[0];
+  y2 = greets->currentDataPos[1];
+
+  if (x2 == 255 && y2 == 255) {
+    // to next logo branch
+    greets->currentDataPos++;
+    greets->currentDataPos++;
+    return;
+  }
+
+  DrawBranch(greets->x + x1, greets->y + y1, greets->x + x2, greets->y + y2);
+}
+
+static void HandleDrawingGreets(void) {
+  DrawGreetings(&greetsData[0]);
+  DrawGreetings(&greetsData[1]);
+  DrawGreetings(&greetsData[2]);
+}
+
 void GrowingTree(BranchT *branches, BranchT **lastp) {
   u_short *fruit = nrPal ? _fruit_1_bpl : _fruit_2_bpl;
   BranchT *b;
@@ -371,11 +445,15 @@ static void Render(void) {
   if (waitFrame > 0) {
     if (frameCount - waitFrame < 100) {
       TaskWaitVBlank();
+      HandleDrawingGreets();
       return;
     }
+
     waitFrame = 0;
     BitmapClear(screen);
     setTreePalette();
+
+    GreetsNextTrack();
   }
 
   if (lastBranch == branches) {
@@ -384,6 +462,9 @@ static void Render(void) {
 
   ProfilerStart(GrowTree);
   GrowingTree(branches, &lastBranch);
+
+  HandleDrawingGreets();
+
   ProfilerStop(GrowTree);
 
   if (lastBranch == branches) {
