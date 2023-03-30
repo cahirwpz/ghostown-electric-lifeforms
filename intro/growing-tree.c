@@ -48,9 +48,11 @@ static BranchT *branches;
 static BranchT *lastBranch;
 
 typedef struct Greets {
-  short x, y; // pos x,y
-  u_char delay; // delay in frames
-  u_char *currentDataPos; // ptr to data
+  char *curr;
+  short n;
+  short x, y;
+  short delay;
+  char data[0];
 } GreetsT;
 
 static GreetsT greetsData[3];

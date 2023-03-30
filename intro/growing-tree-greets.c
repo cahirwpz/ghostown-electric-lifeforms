@@ -27,7 +27,7 @@ static u_char *greetsSet1[] = {
   grAppendix,
   grCapsule,
   grDreamweb,
-  emptyPlaceholder,
+  grContinue,
   NULL,
 };
 
@@ -35,6 +35,6 @@ static u_char *greetsSet2[] = {
   grArtway,
   grDekadence,
   grElude,
-  grTbc,
+  grTobe,
   NULL,
 };
