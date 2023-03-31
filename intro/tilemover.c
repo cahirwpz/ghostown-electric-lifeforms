@@ -219,13 +219,27 @@ static void BlitSimple(void *sourceA, void *sourceB, void *sourceC,
   custom->bltsize = bltsize;
 }
 
+// It's just a dirty temporary "fix" - without SRCA in minterms during the first blit 
+// (logo in Init()), the logo never shows up. I added this ugly if just to record video
+// for Slayer, need to fix it properly.
+short blitA = true;
 static void BlitBitmap(short x, short y, const BitmapT *blit) {
   short i;
   short j = active;
   BlitterCopySetup(screen, MARGIN + x, MARGIN + y, blit);
   /* monkeypatch minterms to perform screen1 = screen1 | blit */
-  custom->bltcon0 = (SRCB | SRCC | DEST) | (ABC | ANBC | ABNC);
-
+  if (blitA) {
+    custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (ABC | ANBC | ABNC);
+    blitA = false;
+  } else {
+    custom->bltcon0 = (SRCB | SRCC | DEST) | (ABC | ANBC | ABNC) ; 
+  }
+  
+  // This mask fixes some graphical glitches with blits, but causes others,
+  // need to think about it some more.
+  //custom->bltafwm = 0xFFFF;
+  //custom->bltalwm = 0xFFFF;
+  
   for (i = DEPTH - 1; i >= 0; i--) {
     BlitterCopyStart(j, 0);
     j--;
@@ -282,7 +296,7 @@ extern void KillLogo(void);
 static void Init(void) {
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1);  
   EnableDMA(DMAF_BLITTER);
-  BlitBitmap(S_WIDTH / 2 - 96 - 6, S_HEIGHT / 2 - 66, logo_blit);
+  BlitBitmap(S_WIDTH / 2 - 96 - 8, S_HEIGHT / 2 - 66, logo_blit);
   WaitBlitter();
   DisableDMA(DMAF_BLITTER);
   SetupPlayfield(MODE_LORES, DEPTH, X(MARGIN), Y((256 - S_HEIGHT) / 2),
@@ -423,6 +437,11 @@ static void Render(void) {
   if (current_ff != prev_active) {
     prev_active = current_ff;
     LoadPalette(tilemover_palettes[current_ff], 0);
+    // Spinning torus needs to have screen cleared out to avoid
+    // ugly visual artifacts.
+    if (current_ff == 5) {
+      BitmapClear(screen);
+    }
   }
 
   if (current_blip)
