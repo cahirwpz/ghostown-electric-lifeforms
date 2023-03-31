@@ -18,7 +18,6 @@ static CopInsT *bplptr[DEPTH];
 static BitmapT *screen;
 static CopInsT *sprptr[8];
 
-#include "growing-tree-greets.c"
 #include "data/fruit-1.c"
 #include "data/fruit-2.c"
 #include "data/grass-1.c"
@@ -48,18 +47,54 @@ static BranchT *branches;
 static BranchT *lastBranch;
 
 typedef struct Greets {
+  // state for drawing
   char *curr;
   short n;
   short x, y;
+  // provided data
+  short origin_x, origin_y;
   short delay;
   char data[0];
 } GreetsT;
 
+#include "growing-tree-greets-data.c"
+
+static GreetsT *greetsSet0[] = {
+  &grAltair,
+  &grAtnwhore,
+  &grDesire,
+  &emptyPlaceholder,
+  NULL,
+};
+
+static GreetsT *greetsSet1[] = {
+  &grAppendix,
+  &grCapsule,
+  &grDreamweb,
+  &grContinue,
+  NULL,
+};
+
+static GreetsT *greetsSet2[] = {
+  &grArtway,
+  &grDekadence,
+  &grElude,
+  &grTobe,
+  NULL,
+};
+
 static GreetsT greetsData[3];
 
-static int hashTableIdx = 0;
+static __code int hashTable[] = {
+  0x011bad37, 0x7a6433ee, // 3
+  0x4ffa0d80, 0x23743a06, // 1
+  0x273f164b, 0x9ffa9d90, // 2
+  0x74a7beec, 0xb2818113, // 4 
+};
 
+static __code int hashTableIdx = 0;
 static __code int fastrand_a = 0, fastrand_b = 0;
+
 static inline int fastrand(void) {
   int *hashAddr = &hashTable[hashTableIdx * 2];
 
