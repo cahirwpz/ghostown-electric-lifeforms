@@ -59,33 +59,30 @@ typedef struct Greets {
 
 #include "growing-tree-greets-data.c"
 
-static GreetsT *greetsSet0[] = {
+static GreetsT *greetsArray[] = {
+  // First batch
   &grAltair,
-  &grAtnwhore,
-  &grDesire,
-  &emptyPlaceholder,
-  NULL,
-};
-
-static GreetsT *greetsSet1[] = {
   &grAppendix,
-  &grCapsule,
-  &grDreamweb,
-  &grContinue,
-  NULL,
-};
-
-static GreetsT *greetsSet2[] = {
   &grArtway,
+  // Second batch
+  &grAtnwhore,
+  &grCapsule,
   &grDekadence,
+  // Third batch
+  &grDesire,
+  &grDreamweb,
   &grElude,
+  // Fourth batch
+  &emptyPlaceholder,
+  &grContinue,
   &grTobe,
+  // End
   NULL,
 };
 
 static GreetsT *greetsData[3];
 
-static __code int hashTable[] = {
+static __code int hashTable[8] = {
   0x011bad37, 0x7a6433ee, // 3
   0x4ffa0d80, 0x23743a06, // 1
   0x273f164b, 0x9ffa9d90, // 2
@@ -143,9 +140,14 @@ static void setTreePalette(void) {
   nrPal ^= 1;
 }
 
-static __code int greetsIdx = 0;
+static GreetsT *GreetsFetch(void) {
+  static __code GreetsT **greetsDataPtr = greetsArray;
 
-static GreetsT *GreetsReset(GreetsT *gr) {
+  GreetsT *gr;
+
+  while (!(gr = *greetsDataPtr++))
+    greetsDataPtr = greetsArray;
+
   gr->curr = gr->data;
   gr->x = 0;
   gr->y = 0;
@@ -154,17 +156,14 @@ static GreetsT *GreetsReset(GreetsT *gr) {
 }
 
 static void GreetsNextTrack(void) {
-  greetsData[0] = GreetsReset(greetsSet0[greetsIdx]);
-  greetsData[1] = GreetsReset(greetsSet1[greetsIdx]);
-  greetsData[2] = GreetsReset(greetsSet2[greetsIdx]);
-  greetsIdx++;
+  greetsData[0] = GreetsFetch();
+  greetsData[1] = GreetsFetch();
+  greetsData[2] = GreetsFetch();
 
   hashTableIdx++;
   hashTableIdx &= 3;
+
   fastrand_a = fastrand_b = 0;
-  if (greetsIdx == 4) {
-    greetsIdx = 0; // TODO: remove it
-  }
 }
 
 static void Init(void) {
@@ -194,7 +193,6 @@ static void Init(void) {
 
   setTreePalette();
   GreetsNextTrack();
-
 
   CopListActivate(cp);
 
@@ -382,9 +380,6 @@ static bool SplitBranch(BranchT *parent, BranchT **lastp) {
 static void DrawGreetings(GreetsT *gr) {
   char *curr;
   short x2, y2;
-
-  if (!gr)
-    return;
 
   if (gr->delay > 0) {
     gr->delay--;
