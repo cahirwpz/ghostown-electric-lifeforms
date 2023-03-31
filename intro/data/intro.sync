@@ -2,7 +2,7 @@
 # logo
 $0000 0 !step
 # tilemover
-$0110 5
+$0200 5
 # wireworld
 $0700 7
 # vitruvian
@@ -39,9 +39,9 @@ $3800 -1
 
 @track GhostownLogoPal
 $0000 0 !step
-$0010 1 
-$0020 2
-$0030 3
+$0020 1 
+$0100 2
+$0120 3
 $2A00 3
 $2A10 2
 $2A20 1
@@ -62,10 +62,10 @@ $0810 2
 # 6 - funky soundwave with peak
 # 7 - slow kitchen sink
 @track TileMoverNumber
-$0110 1 !step
-$0114 7
-$0120 2 
-$0200 6 
+$0200 1 !step
+$0202 7
+$0204 2 
+$0220 6 
 $0300 5
 $0400 4
 $0500 6
@@ -79,32 +79,27 @@ $2200 4
 @end
 
 @track TileMoverBlit
-$0101 1 !event
-$0102 1
-$0104 1
-$0106 2 
-$0108 2
-$010A 2
-$010C 2
-$010E 2
+$0201 1 !event
+$0202 1
+$0204 1
+$0206 2 
+$0208 2
+$020A 2
+$020C 2
+$020E 2
 
-$0110 2
+$0210 2
 
-$0200 3
-$0202 3
-$0206 3
-$020A 3
-$020E 3
-
-$0212 3
-$0216 3
-$021A 3
-$021E 3
-
+$0220 3
 $0222 3
 $0226 3
 $022A 3
 $022E 3
+
+$0232 3
+$0236 3
+$023A 3
+$023E 3
 
 $0232 3
 $0236 3
@@ -190,7 +185,7 @@ $062E 5
 @end
 
 @track TileMoverBgBlip
-$0105 12 !event
+$0405 12 !event
 @end
 
 @track GOLPaletteH
@@ -292,63 +287,54 @@ $2130 1
 
 @track SeaAnemoneVariant
 $0000 1 !event
-$0010 1
-$0020 2
-$0030 1
+$0020 1
 $0100 2
-$0110 3
-$0120 4
+$0120 1
+$0200 2
+$0220 3
+$0320 4
 @end
 
+# available palettes
+# 1 - green
+# 2 - blue
+# 3 - red
+# 4 - gold
 @track SeaAnemonePal
 $0000 1 !event
-$0010 2
-$0020 3
-$0030 2
+$0020 2
 $0100 3
-$0110 1
+$0120 2
+$0200 3
+$0220 1
+$0320 4
 @end
 
 @track SeaAnemoneFadeOut
-$000E 15 !trigger
-$001E 15
-$002E 15
+$001E 15 !trigger
 $003E 15
-$010E 15
 $011E 15
+$013E 15
+$021E 15
 @end
 
 @track SeaAnemoneFadeIn
-$0010 15 !trigger
-$0020 15
-$0030 15
+$0020 15 !trigger
 $0100 15
-$0110 15
+$0120 15
+$0200 15
+$0220 15
 @end
 
 @track SeaAnemoneGradient
-$0013 33 !trigger
-$0019 33
-$0032 33
-$0037 33
+$0023 31 !trigger
+$0039 31
+$0122 31
+$0137 31
 @end
 
 @track SeaAnemonePalPulse
 $0005 30 !trigger
-$000A 30
-$0015 30
-$001A 30
-$0025 30
-$002A 30
-$0035 30
-$003A 30
-$0105 30
-$010A 30
-$0115 30
-$0120 30
-$0125 30
-$012A 30
-$012E 30
 @end
 
 @track TurmiteBoard
