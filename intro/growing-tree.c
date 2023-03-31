@@ -83,7 +83,7 @@ static GreetsT *greetsSet2[] = {
   NULL,
 };
 
-static GreetsT greetsData[3];
+static GreetsT *greetsData[3];
 
 static __code int hashTable[] = {
   0x011bad37, 0x7a6433ee, // 3
@@ -145,17 +145,18 @@ static void setTreePalette(void) {
 
 static __code int greetsIdx = 0;
 
-static void GreetsSetTrack(GreetsT *greets, u_char *greetzData) {
-  greets->x = *greetzData++;
-  greets->y = *greetzData++;
-  greets->delay = *greetzData++;
-  greets->currentDataPos = greetzData;
+static GreetsT *GreetsReset(GreetsT *gr) {
+  gr->curr = gr->data;
+  gr->x = 0;
+  gr->y = 0;
+  gr->n = 0;
+  return gr;
 }
 
 static void GreetsNextTrack(void) {
-  GreetsSetTrack(&greetsData[0], greetsSet0[greetsIdx]);
-  GreetsSetTrack(&greetsData[1], greetsSet1[greetsIdx]);
-  GreetsSetTrack(&greetsData[2], greetsSet2[greetsIdx]);
+  greetsData[0] = GreetsReset(greetsSet0[greetsIdx]);
+  greetsData[1] = GreetsReset(greetsSet1[greetsIdx]);
+  greetsData[2] = GreetsReset(greetsSet2[greetsIdx]);
   greetsIdx++;
 
   hashTableIdx++;
@@ -378,43 +379,47 @@ static bool SplitBranch(BranchT *parent, BranchT **lastp) {
   return false;
 }
 
-static void DrawGreetings(GreetsT *greets) {
-  short x1, x2, y1, y2;
+static void DrawGreetings(GreetsT *gr) {
+  char *curr;
+  short x2, y2;
 
-  if (!greets->currentDataPos)
+  if (!gr)
     return;
 
-  if (greets->delay) {
-    greets->delay--;
-    return;
-  }
-
-  x1 = *greets->currentDataPos++;
-  y1 = *greets->currentDataPos++;
-
-  if (x1 == 128 && y1 == 128) {
-    // end of logo
-    greets->currentDataPos = NULL;
+  if (gr->delay > 0) {
+    gr->delay--;
     return;
   }
 
-  x2 = greets->currentDataPos[0];
-  y2 = greets->currentDataPos[1];
-
-  if (x2 == 255 && y2 == 255) {
-    // to next logo branch
-    greets->currentDataPos++;
-    greets->currentDataPos++;
+  if (gr->n < 0)
     return;
+
+  curr = gr->curr;
+
+  if (gr->n == 0) {
+    gr->n = *curr++;
+    if (gr->n < 0)
+      return;
+    gr->x = gr->origin_x + *curr++;
+    gr->y = gr->origin_y + *curr++;
+    gr->n--;
   }
 
-  DrawBranch(greets->x + x1, greets->y + y1, greets->x + x2, greets->y + y2);
+  x2 = gr->x + *curr++;
+  y2 = gr->y + *curr++;
+
+  DrawBranch(gr->x, gr->y, x2, y2);
+
+  gr->curr = curr;
+  gr->n--;
+  gr->x = x2;
+  gr->y = y2;
 }
 
 static void HandleDrawingGreets(void) {
-  DrawGreetings(&greetsData[0]);
-  DrawGreetings(&greetsData[1]);
-  DrawGreetings(&greetsData[2]);
+  DrawGreetings(greetsData[0]);
+  DrawGreetings(greetsData[1]);
+  DrawGreetings(greetsData[2]);
 }
 
 void GrowingTree(BranchT *branches, BranchT **lastp) {
