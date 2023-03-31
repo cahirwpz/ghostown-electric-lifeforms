@@ -7,12 +7,14 @@
 #include <gfx.h>
 #include <line.h>
 #include <stdlib.h>
+#include <sprite.h>
 #include <sync.h>
 #include <system/interrupt.h>
 
 #define WIDTH 320
 #define HEIGHT 256
 #define DEPTH 4
+#define NSPRITES 4
 
 #define DIAMETER 32
 #define NARMS 15 /* must be power of two minus one */
@@ -20,6 +22,7 @@
 static __code short active = 0;
 static __code CopListT *cp[2];
 static CopInsT *bplptr[DEPTH];
+static CopInsT *sprptr[8];
 static BitmapT *screen;
 
 #include "palettes.h"
@@ -29,6 +32,7 @@ static BitmapT *screen;
 
 #include "data/circles.c"
 #include "data/squares.c"
+#include "data/whirl.c"
 
 typedef const BitmapT *ArmShapeT[DIAMETER / 2]; 
 
@@ -321,11 +325,12 @@ INTSERVER(ForEachFrameInterrupt, 0, (IntFuncT)ForEachFrame, NULL);
 static void MakeCopperList(CopListT *cp) {
   CopInit(cp);
   CopSetupBitplanes(cp, bplptr, screen, DEPTH);
+  CopSetupSprites(cp, sprptr);
 
   if (gradientLevel) {
+    short i;
     short *ptr = gradient;
     const short *to = anemone_gradient_pal.colors;
-    short i;
 
     for (i = 1; i < GRADIENTL; i++) {
       short y = *ptr++;
@@ -340,11 +345,29 @@ static void MakeCopperList(CopListT *cp) {
   CopEnd(cp);
 }
 
+static void Load(void) {
+  TrackInit(&SeaAnemoneVariant);
+  TrackInit(&SeaAnemonePal);
+  TrackInit(&SeaAnemonePalPulse);
+  TrackInit(&SeaAnemoneGradient);
+  TrackInit(&SeaAnemoneFadeOut);
+  TrackInit(&SeaAnemoneFadeIn);
+}
+
 static void Init(void) {
+  short i;
+
+  for (i = 0; i < NSPRITES; i++) {
+    short hp = X(i * 16 + (WIDTH - NSPRITES * 16) / 2);
+    SpriteUpdatePos(&whirl[i], hp, Y((HEIGHT - whirl_height) / 2));
+  }
+
   screen = NewBitmap(WIDTH, HEIGHT * 4, DEPTH);
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
   LoadPalette(&pal_gold, 0);
+  for (i = 16; i < 32; i += 4)
+    LoadPalette(&whirl_pal, i);
 
   cp[0] = NewCopList(200);
   cp[1] = NewCopList(200);
@@ -353,13 +376,6 @@ static void Init(void) {
 
   EnableDMA(DMAF_RASTER | DMAF_BLITTER | DMAF_BLITHOG);
 
-  TrackInit(&SeaAnemoneVariant);
-  TrackInit(&SeaAnemonePal);
-  TrackInit(&SeaAnemonePalPulse);
-  TrackInit(&SeaAnemoneGradient);
-  TrackInit(&SeaAnemoneFadeOut);
-  TrackInit(&SeaAnemoneFadeIn);
-  
   ArmsReset(&AnemoneArms);
 
   /* Moved from DrawCircle, since we use only one type of blit. */
@@ -375,6 +391,7 @@ static void Init(void) {
 static void Kill(void) {
   RemIntServer(INTB_VERTB, ForEachFrameInterrupt);
   DisableDMA(DMAF_COPPER | DMAF_BLITTER | DMAF_RASTER | DMAF_BLITHOG);
+  ResetSprites();
 
   DeleteCopList(cp[0]);
   DeleteCopList(cp[1]);
@@ -517,6 +534,7 @@ static void Render(void) {
   active ^= 1;
 
   MakeCopperList(cp[active]);
+
   // Scroll the screen vertically
   if (ArmVariant == 4) {
     short i;
@@ -528,6 +546,16 @@ static void Render(void) {
       CopInsSet32(bplptr[i], screen->planes[i] + lineOffset);
   }
 
+  if (ArmVariant == 3) {
+    short i;
+
+    EnableDMA(DMAF_SPRITE);
+    for (i = 0; i < NSPRITES; i++)
+      CopInsSetSprite(sprptr[i], &whirl[i]);
+  } else {
+    ResetSprites();
+  }
+
   SeaAnemone(&AnemoneArms, *active_shape);
   CopListRun(cp[active]); 
   ProfilerStop(SeaAnemone);
@@ -535,4 +563,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(SeaAnemone, NULL, NULL, Init, Kill, Render);
+EFFECT(SeaAnemone, Load, NULL, Init, Kill, Render);
