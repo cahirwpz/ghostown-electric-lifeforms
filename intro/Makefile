@@ -37,7 +37,7 @@ CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
 	data/wireworld-vitruvian.c \
 	data/wireworld-vitruvian-electrons.c \
 	data/turmite-credits-[1-3].c \
-	data/circles.c data/squares.c \
+	data/circles.c data/squares.c data/whirl.c \
 	data/grass-[1-2].c data/loader.c \
 	data/texture-{in,out}side.c data/gradient.c data/gradient.png \
 	data/tilemover-*.c data/chip.c data/wireworld_pcb_pal.c \
