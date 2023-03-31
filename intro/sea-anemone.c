@@ -86,16 +86,24 @@ extern TrackT SeaAnemoneGradient;
 extern TrackT SeaAnemoneFadeOut;
 extern TrackT SeaAnemoneFadeIn;
 
-typedef const PaletteT *SeaAnemonePalT[4];
+typedef const PaletteT *SeaAnemonePalT[5];
 
 static const SeaAnemonePalT sea_anemone_palettes = {
   NULL, 
-  &pal_gold,
+  &pal_green,
   &pal_blue,
   &pal_red,
+  &pal_gold,
 };
 
 static const SeaAnemonePalT anemone1_pal = {
+  NULL,
+  &pal_green_light,
+  &pal_green,
+  &pal_green_dark,
+};
+
+static const SeaAnemonePalT anemone4_pal = {
   NULL,
   &pal_gold_light,
   &pal_gold,
@@ -116,11 +124,12 @@ static const SeaAnemonePalT anemone3_pal = {
   &pal_red_dark,
 };
 
-static const SeaAnemonePalT *sea_anemone_pal[4] = {
+static const SeaAnemonePalT *sea_anemone_pal[5] = {
   NULL,
   &anemone1_pal,
   &anemone2_pal,
   &anemone3_pal,
+  &anemone4_pal
 };
 
 static const SeaAnemonePalT *active_pal = &anemone1_pal;
@@ -134,8 +143,8 @@ static const short blip_sequence[] = {
 static const short gradient_envelope[] = {
   0,
   0, 1, 2, 3, 4, 5, 6, 7, 8,
-  9, 10, 11, 12, 13, 14, 15,
-  15, 14, 13, 12, 11, 10, 9,
+  9, 10, 11, 12, 13, 14,
+  14, 13, 12, 11, 10, 9,
   8, 7, 6, 5, 4, 3, 2, 1, 0,
 };
 
