@@ -258,7 +258,7 @@ def do_sprite(im, desc):
     stride = ((width + 15) & ~15) // 16
     bpl = planar(pix, width, height, depth)
 
-    print(f'static const short {name}_height = {height};')
+    print(f'#define {name}_height {height}')
     print('')
 
     n = width // 16
@@ -427,6 +427,8 @@ def do_palette(im, desc):
         colors = max(colors, has_colors)
 
     cmap = [pal[i * 3:(i + 1) * 3] for i in range(colors)]
+
+    print("#define %s_count %d\n" % (name, len(cmap)))
 
     print('%sconst PaletteT %s = {' % ('' if shared else 'static ', name))
     print('  .count = %d,' % len(cmap))

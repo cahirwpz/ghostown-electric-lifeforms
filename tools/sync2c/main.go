@@ -25,7 +25,7 @@ const (
 )
 
 const (
-	FramesPerRow = 6 // Assuming constant BPM of 125
+	FramesPerRow = 3 // Assuming constant BPM of 125
 )
 
 type TrackItem struct {
@@ -98,7 +98,7 @@ func parseFrame(token string) (frame int64, err error) {
 }
 
 func parseValue(token string) (value int64, err error) {
-	return strconv.ParseInt(token, 10, 16)
+	return strconv.ParseInt(token, 0, 16)
 }
 
 func parseTrack(tokens []string, track *Track) (err error) {
