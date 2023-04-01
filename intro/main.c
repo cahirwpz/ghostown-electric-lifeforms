@@ -102,7 +102,7 @@ short UpdateFrameCount(void) {
   return t;
 }
 
-#define SYNCPOS(pos) (((((pos) & 0xff00) >> 2) | ((pos) & 0x3f)) * 6)
+#define SYNCPOS(pos) (((((pos) & 0xff00) >> 2) | ((pos) & 0x3f)) * 3)
 
 static void RunEffects(void) {
   /* Set the beginning of intro. Useful for effect synchronization! */
