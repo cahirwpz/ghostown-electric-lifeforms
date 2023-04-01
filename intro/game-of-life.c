@@ -149,7 +149,6 @@ static __code short prev_states_depth = PREV_STATES_DEPTH;
 #include "gol-games.c"
 #include "gol-electrons.c"
 #include "gol-palette.c"
-#include "gol-pingpong.c"
 #include "gol-transparency.c"
 
 static const GameDefinitionT *current_game;
@@ -364,9 +363,6 @@ static void SharedPreInit(void) {
     PixelDouble = MemAlloc(PixelDoubleSize, MEMF_PUBLIC);
     MakePixelDoublingCode();
 
-    pingpong = MemAlloc(sizeof(ColorPingPongT), MEMF_PUBLIC);
-    MakeColorPingPong(pingpong);
-
     allocated = true;
   }
 
@@ -484,7 +480,6 @@ static void Kill(void) {
       DeleteBitmap(background[i]);
 
     MemFree(PixelDouble);
-    MemFree(pingpong);
   }
 
   DeleteCopList(cp);
@@ -544,7 +539,6 @@ static void GolStep(void) {
     short logo_idx = TrackValueGet(&GOLLogoType, frameCount);
     CopInsSet32(bplptr[3], background[logo_idx]->planes[0]);
     ColorFadingStep();
-    (void)ColorPingPongStep;
   }
 
   stepCount++;
