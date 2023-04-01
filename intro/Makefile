@@ -28,7 +28,7 @@ BUILD-FILES := audiovq
 CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
 	data/$(MODULE)*.o data/$(MODULE).{smp,trk}* data/text-scroll-font.c \
 	data/intro.c data/electric-lifeforms-0[1-2].c \
-	data/fruit-*.c data/anemone-gradient.c data/anemone-gradient-pal.c \
+	data/fruit-*.c data/anemone-gradient.c data/anemone-gradient-data.c \
 	data/ghostown-logo-crop.c \
 	data/logo-electrons.c data/electric-lifeforms.c \
 	data/ghostown-logo-0[1-3].c \
@@ -40,7 +40,7 @@ CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
 	data/circles.c data/squares.c \
 	data/grass-[1-2].c data/loader.c \
 	data/texture-{in,out}side.c data/gradient.c data/gradient.png \
-	data/tilemover-*.c data/chip.c data/wireworld_pcb_pal.c \
+	data/tilemover-*.c data/chip.c data/wireworld-pcb-pal.c \
 	data/pal-gold*.c data/pal-green*.c data/pal-red*.c data/pal-blue*.c
 
 SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
