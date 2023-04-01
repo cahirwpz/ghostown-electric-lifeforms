@@ -100,9 +100,6 @@
 #include "data/electric.c"
 #include "data/lifeforms.c"
 
-extern TrackT GOLPaletteH;
-extern TrackT GOLPaletteS;
-extern TrackT GOLPaletteV;
 extern TrackT GOLGame;
 extern TrackT WireworldDisplayBg;
 extern TrackT WireworldBg;
@@ -322,9 +319,6 @@ static void Load(void) {
   TrackInit(&WireworldSpawnMask);
   TrackInit(&WireworldMinDelay);
   TrackInit(&WireworldSpawnNow);
-  TrackInit(&GOLPaletteH);
-  TrackInit(&GOLPaletteS);
-  TrackInit(&GOLPaletteV);
   TrackInit(&GOLCellColor);
   TrackInit(&GOLLogoColor);
   TrackInit(&GOLLogoFade);
