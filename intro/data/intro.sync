@@ -4,11 +4,11 @@ $0000 0 !step
 # tilemover
 $0200 5
 # wireworld
-$0700 7
+$0600 7
 # vitruvian
 $0800 9
 # game of life
-$0900 8
+$0A00 8
 # sea anemone
 $0C00 6
 # weave
@@ -17,24 +17,22 @@ $1000 2
 $1400 10
 # tree
 $1800 4
-# tilemover
-$1C00 5
 # wireworld
-$2000 7
+$1C00 7
 # game of life - electric
-$2400 8
+$2000 8
 # uvtit
-$2600 11
+$2200 11
 # turmites
-$2800 3
+$2400 3
 # tilemover 
-$2C00 5
+$2900 5
 # scrolling text
-$3000 1
+$2D00 1
 # logo 
-$3400 0
+$3000 0
 # end
-$3800 -1
+$3300 -1
 @end
 
 @track GhostownLogoPal
@@ -42,15 +40,15 @@ $0000 0 !step
 $0020 1 
 $0100 2
 $0120 3
-$2A00 3
-$2A10 2
-$2A20 1
-$2A30 0
+$3000 3
+$3020 2
+$3100 1
+$3120 0
 @end
 
 @track ElectricLifeformsLogoPal
 $0800 1 !step
-$0810 2
+$0900 2
 @end
 
 # Available values:
@@ -65,17 +63,34 @@ $0810 2
 $0200 1 !step
 $0202 7
 $0204 2 
-$0220 6 
-$0300 5
+$0300 6 
 $0400 4
-$0500 6
-$0600 5
-#--- second time ---#
-$1600 5
-$1620 6
-$1710 4
+$0420 3
+$0500 5
+$0520 6
 #--- third time ---#
-$2200 4
+$2900 4
+$2A00 7
+$2B00 5
+$2C00 3
+@end
+
+# Available pals:
+# 1 - blue
+# 2 - red
+# 3 - green
+# 4 - gold
+@track TileMoverPal
+$0200 1 !event
+$0400 2
+$0420 3
+$0500 1
+$0520 1
+#--- second time ---#
+$2900 2
+$2A00 1
+$2B00 4
+$2C00 3
 @end
 
 @track TileMoverBlit
@@ -90,42 +105,36 @@ $020E 2
 
 $0210 2
 
-$0220 3
-$0222 3
-$0226 3
-$022A 3
-$022E 3
+$0220 2
+$0226 2
+$022E 2
 
-$0232 3
-$0236 3
-$023A 3
-$023E 3
+$0232 2
+$023A 2
 
-$0232 3
-$0236 3
-$023A 3
-$023E 3
+$0232 2
+$023A 2
 
-$0300 5
-$0302 5
-$0306 5
-$030A 5
-$030E 5
+$0300 3
+$0302 3
+$0306 3
+$030A 3
+$030E 3
 
-$0312 5
-$0316 5
-$031A 5
-$031E 5
+$0312 3
+$0316 3
+$031A 3
+$031E 3
 
-$0322 5
-$0326 5
-$032A 5
-$032E 5
+$0322 3
+$0326 3
+$032A 3
+$032E 3
 
-$0332 5
-$0336 5
-$033A 5
-$033E 5
+$0332 3
+$0336 3
+$033A 3
+$033E 3
 
 $0400 4
 $0402 4
@@ -138,25 +147,26 @@ $0416 4
 $041A 4
 $041E 4
 
-$0422 4
-$0426 4
-$042A 4
-$042E 4
+$0420 3
+$0422 3
+$0426 3
+$042A 3
+$042E 3
 
-$0432 4
-$0436 4
-$043A 4
-$043E 4
+$0432 3
+$0436 3
+$043A 3
+$043E 3
 
-$0502 3
-$0506 3
-$050A 3
-$050E 3
+$0502 5
+$0506 5
+$050A 5
+$050E 5
 
-$0512 3
-$0516 3
-$051A 3
-$051E 3
+$0512 5
+$0516 5
+$051A 5
+$051E 5
 
 $0522 3
 $0526 3
@@ -168,20 +178,78 @@ $0536 3
 $053A 3
 $053E 3
 
-$0602 5
-$0606 5
-$060A 5
-$060E 5
+#--- second time ---#
+$2900 4
+$2902 4
+$2906 4
+$290A 4
+$290E 4
+$2912 4
+$2916 4
+$291A 4
+$291E 4
+$2922 4
+$2926 4
+$292A 4
+$292E 4
+$2932 4
+$2936 4
+$293A 4
+$293E 4
 
-$0612 5
-$0616 5
-$061A 5
-$061E 5
+$2A00 3
+$2A02 3
+$2A06 3
+$2A0A 3
+$2A0E 3
+$2A12 3
+$2A16 3
+$2A1A 3
+$2A1E 3
+$2A22 3
+$2A26 3
+$2A2A 3
+$2A2E 3
+$2A32 3
+$2A36 3
+$2A3A 3
+$2A3E 3
 
-$0622 5
-$0626 5
-$062A 5
-$062E 5
+$2B00 5
+$2B02 5
+$2B06 5
+$2B0A 5
+$2B0E 5
+$2B12 5
+$2B16 5
+$2B1A 5
+$2B1E 5
+$2B22 5
+$2B26 5
+$2B2A 5
+$2B2E 5
+$2B32 5
+$2B36 5
+$2B3A 5
+$2B3E 5
+
+$2C00 3
+$2C02 3
+$2C06 3
+$2C0A 3
+$2C0E 3
+$2C12 3
+$2C16 3
+$2C1A 3
+$2C1E 3
+$2C22 3
+$2C26 3
+$2C2A 3
+$2C2E 3
+$2C32 3
+$2C36 3
+$2C3A 3
+$2C3E 3
 @end
 
 @track TileMoverBgBlip
@@ -205,84 +273,52 @@ $0000 255 !step
 
 @track GOLGame
 # classic gol
-$0920 0 !step
-# coagulations
-$0930 1
+$0A00 0 !step
 # day and night
-$0A00 5
+$0A20 5
 # maze
-$0A10 2
-# three-four
-$0A20 6
-# diamoeba
-$0A30 3
-# maze
-$0B00 2
-# day and night
-$0B10 5
-# classic gol
-$0B20 0
-# three-four
-$0B30 6
-# day and night
-$0C00 5
-# coagulations
-$0C10 1
-# maze
-$0C20 2
-# diamoeba
-$0C30 3
+$0A30 2
+# Diamoeba
+$0B20 3
 #---second time---#
 # maze
-$1A00 2
+$2000 2
 # classic
-$1A10 0
-# ???
-$1A20 4
-# three-four
-$1A30 6
-# coagulations
-$1B00 1
-# day and night
-$1B10 5
-# maze
-$1B20 2
-# classic gol
-$1B30 0
+$2100 0
 @end
 
 @track WireworldDisplayBg
 # 0 - hide bg, 1 - show bg
 # must happen before wireworld effect change
 $0000 0 !step
-$2000 1
+$1C00 1
 @end
 
 @track WireworldBg
 # 0 - vitruvian, 1 - pcb
 $0000 0 !step
-$2000 1
+$1C00 1
 @end
 
 # next spawn frame = (random() & WireworldSpawnMask) + WireworldMinDelay;
 @track WireworldSpawnMask
-$0700 7 !step
-$2000 15
+$0800 7 !step
+$1C00 15
 @end
 
 @track WireworldMinDelay
-$0700 0 !step
-$2000 8
+$0800 0 !step
+$1C00 8
 @end
 
 @track WireworldSpawnNow
-$2010 1 !event
-$2020 1
-$2030 1
-$2100 1
-$2110 1
-$2120 1
-$2130 1
+$1C10 1 !event
+$1C20 1
+$1C30 1
+$1D00 1
+$1D10 1
+$1D20 1
+$1D30 1
 @end
 
 @track SeaAnemoneVariant
@@ -292,7 +328,7 @@ $0100 2
 $0120 1
 $0200 2
 $0220 3
-$0320 4
+$0310 4
 @end
 
 # available palettes
@@ -307,7 +343,7 @@ $0100 3
 $0120 2
 $0200 3
 $0220 1
-$0320 4
+$0310 4
 @end
 
 @track SeaAnemoneFadeOut
@@ -316,6 +352,7 @@ $003E 15
 $011E 15
 $013E 15
 $021E 15
+#$033E 15
 @end
 
 @track SeaAnemoneFadeIn
@@ -324,6 +361,7 @@ $0100 15
 $0120 15
 $0200 15
 $0220 15
+$0310 15
 @end
 
 @track SeaAnemoneGradient
@@ -352,6 +390,7 @@ $0200 15
 @track TurmiteFadeOut
 $003E 15 !trigger
 $013E 15
+$023E 15
 @end
 
 @track TurmitePal
