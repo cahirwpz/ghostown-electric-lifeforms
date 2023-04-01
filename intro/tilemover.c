@@ -38,7 +38,6 @@
 
 static __code BitmapT *screen;
 static __code int active = 0;
-static __code short prev_active = 0;
 static CopListT *cp;
 static CopInsT *bplptr[DEPTH + 1];
 
@@ -57,17 +56,14 @@ static short tiles[NFLOWFIELDS][NTILES];
 
 #include "palettes.h"
 
-typedef const PaletteT *TilemoverPalT[8];
+typedef const PaletteT *TilemoverPalT[5];
 
 static TilemoverPalT tilemover_palettes = {
   NULL,
-  &pal_blue,    // static
-  &pal_blue,    // kitchen sink
-  &pal_blue,    // soundwave
-  &pal_red,     // windmills 
-  &pal_green,   // rolling tube
-  &pal_blue,     // funky soundwave
-  &pal_blue,    // static
+  &pal_blue,    
+  &pal_red,     
+  &pal_green,
+  &pal_gold
 };
 
 static __code short lightLevel = 0;
@@ -77,6 +73,7 @@ static const short blip_sequence[] = {
 
 extern const BitmapT ghostown_logo;
 extern TrackT TileMoverNumber;
+extern TrackT TileMoverPal;
 extern TrackT TileMoverBlit;
 extern TrackT TileMoverBgBlip;
 
@@ -306,6 +303,7 @@ static void Init(void) {
   KillLogo();
 
   TrackInit(&TileMoverNumber);
+  TrackInit(&TileMoverPal);
   TrackInit(&TileMoverBlit);
   TrackInit(&TileMoverBgBlip);
 
@@ -430,13 +428,13 @@ static void BlitShape(short val) {
 PROFILE(TileMover);
 
 static void Render(void) {
+  short current_pal = TrackValueGet(&TileMoverPal, frameCount);
   short current_ff = TrackValueGet(&TileMoverNumber, frameCount);
   short current_blip = TrackValueGet(&TileMoverBgBlip, frameCount);
   short val;
   
-  if (current_ff != prev_active) {
-    prev_active = current_ff;
-    LoadPalette(tilemover_palettes[current_ff], 0);
+  if (current_pal) {
+    LoadPalette(tilemover_palettes[current_pal], 0);
     // Spinning torus needs to have screen cleared out to avoid
     // ugly visual artifacts.
     if (current_ff == 5) {
