@@ -196,7 +196,7 @@ data/%.png: data/%.rle
 
 data/gradient.png: $(GRADIENT) data/texture-inside.png
 	@echo "[GEN] $@"
-	$(PYTHON3) $(GRADIENT) load $(word 2,$^) copy hue 0.25 save $@
+	$(PYTHON3) $(GRADIENT) load $(word 2,$^) copy hue 0.4 save $@
 
 audiovq: audiovq.c
 	@echo "[HOSTCC] $(DIR)$< -> $(DIR)$@"
