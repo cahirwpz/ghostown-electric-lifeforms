@@ -1,6 +1,7 @@
 extern TrackT GOLCellColor;
 extern TrackT GOLLogoColor;
 extern TrackT GOLLogoFade;
+extern TrackT GOLLogoType;
 
 static void ColorFadingStep(void) {
     short i;
@@ -22,8 +23,8 @@ static void ColorFadingStep(void) {
         case 3: logo_col = 15; break;
     }
 
-    for (i = 0; i < 8; i++)
+    for (i = 0; i < 8; i++) {
       CopInsSet16(palptr + i, ColorTransition(palette_vitruvian.colors[i], 0x000, cell_col));
-    for (i = 0; i < 8; i++)
-      CopInsSet16(palptr + i + 8, ColorTransition(palette_vitruvian.colors[i & 7], 0xfff, logo_col));
+      CopInsSet16(palptr + i + 8, ColorTransition(palette_vitruvian.colors[i], 0xfff, logo_col));
+    }
 }

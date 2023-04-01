@@ -201,6 +201,14 @@ $0520 0
 $0530 15
 @end
 
+# logo bitmap:
+# 0 - ELECTRIC
+# 1 - LIFEFORMS
+@track GOLLogoType
+$0420 0 !step
+$0510 1
+@end
+
 @track WireworldDisplayBg
 # 0 - hide bg, 1 - show bg
 # must happen before wireworld effect change

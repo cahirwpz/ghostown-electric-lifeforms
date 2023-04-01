@@ -127,6 +127,8 @@ static CopInsT *sprptr[8];
 // horizontally doubled pixels)
 static BitmapT *prev_states[PREV_STATES_DEPTH];
 
+static BitmapT *background[2];
+
 // states_head % PREV_STATES_DEPTH points to the newest (currently being
 // pixel-doubled, not displayed yet) game state in prev_states
 static __code short states_head = 0;
@@ -326,17 +328,17 @@ static void Load(void) {
   TrackInit(&GOLCellColor);
   TrackInit(&GOLLogoColor);
   TrackInit(&GOLLogoFade);
+  TrackInit(&GOLLogoType);
 
   loaded = true;
 }
 
-static void LoadBackground(const BitmapT *bg, u_short x, u_short y) {
+static void LoadBackground(const BitmapT *bg, u_short x, u_short y, short idx) {
     BitmapT *tmp = NewBitmap(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH);
     BitmapCopy(tmp, x, y, bg);
     WaitBlitter();
-    PixelDouble(tmp->planes[0], prev_states[4]->planes[0], double_pixels);
+    PixelDouble(tmp->planes[0], background[idx]->planes[0], double_pixels);
     DeleteBitmap(tmp);
-    CopInsSet32(bplptr[3], prev_states[4]->planes[0]);
 }
 
 static void SharedPreInit(void) {
@@ -354,6 +356,9 @@ static void SharedPreInit(void) {
       // achieved via copper line doubling
       prev_states[i] = NewBitmap(DISP_WIDTH, DISP_HEIGHT / 2, BOARD_DEPTH);
     }
+
+    for (i = 0; i < 2; i++)
+      background[i] = NewBitmap(DISP_WIDTH, DISP_HEIGHT / 2, BOARD_DEPTH);
 
     MakeDoublePixels();
     PixelDouble = MemAlloc(PixelDoubleSize, MEMF_PUBLIC);
@@ -424,8 +429,10 @@ static void InitWireworld(void) {
     CopInsSet16(&palptr[i], pal->colors[i]);
   InitSpawnFrames(cur_electrons);
 
-  if (display_bg)
-    LoadBackground(desired_bg, 0, 0);
+  if (display_bg) {
+    LoadBackground(desired_bg, 0, 0, 0);
+    CopInsSet32(bplptr[3], background[0]->planes[0]);
+  }
 
   // board 11 is special in case of wireworld - it contains the electron paths
   BitmapCopy(boards[11], EXT_WIDTH_LEFT, EXT_HEIGHT_TOP, desired_bg);
@@ -444,7 +451,8 @@ static void InitGameOfLife(void) {
 
   SharedPreInit();
 
-  LoadBackground(&electric_logo, 0, 32);
+  LoadBackground(&electric_logo, 0, 32, 0);
+  LoadBackground(&lifeforms_logo, 0, 32, 1);
 
   BitmapClear(boards[0]);
   BitmapCopy(boards[0], EXT_WIDTH_LEFT, EXT_HEIGHT_TOP, &wireworld_vitruvian);
@@ -471,6 +479,9 @@ static void Kill(void) {
 
     for (i = 0; i < PREV_STATES_DEPTH; i++)
       DeleteBitmap(prev_states[i]);
+
+    for (i = 0; i < 2; i++)
+      DeleteBitmap(background[i]);
 
     MemFree(PixelDouble);
     MemFree(pingpong);
@@ -530,6 +541,8 @@ static void GolStep(void) {
       sizeof(wireworld_chip_cycling)/sizeof(wireworld_chip_cycling[0]);
     ColorCyclingStep(&palptr[16], wireworld_chip_cycling, cycling_len, &wireworld_chip_pal);
   } else {
+    short logo_idx = TrackValueGet(&GOLLogoType, frameCount);
+    CopInsSet32(bplptr[3], background[logo_idx]->planes[0]);
     ColorFadingStep();
     (void)ColorPingPongStep;
   }
