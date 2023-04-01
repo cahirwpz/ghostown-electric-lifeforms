@@ -37,8 +37,8 @@ CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
 	data/wireworld-vitruvian.c \
 	data/wireworld-vitruvian-electrons.c \
 	data/turmite-credits-[1-3].c \
-	data/circles.c data/squares.c \
 	data/electric.c \
+	data/circles.c data/squares.c data/whirl.c \
 	data/grass-[1-2].c data/loader.c \
 	data/texture-{in,out}side.c data/gradient.c data/gradient.png \
 	data/tilemover-*.c data/chip.c data/wireworld-pcb-pal.c \
@@ -76,6 +76,7 @@ PNG2C.loader := --bitmap loader,64x64x1 --palette loader_pal,2
 PNG2C.electric := --bitmap electric_logo,160x64x1
 PNG2C.lifeforms := --bitmap lifeforms_logo,160x64x1
 PNG2C.anemone-gradient := --palette anemone_gradient_pal,16
+PNG2C.whirl := --sprite whirl,64,4 --palette whirl_pal,4
 
 PNG2C.circles := \
 	--bitmap circle1,3x3x1,extract_at=0x0 \
@@ -198,7 +199,7 @@ data/%.png: data/%.rle
 
 data/gradient.png: $(GRADIENT) data/texture-inside.png
 	@echo "[GEN] $@"
-	$(PYTHON3) $(GRADIENT) load $(word 2,$^) copy hue 0.25 save $@
+	$(PYTHON3) $(GRADIENT) load $(word 2,$^) copy hue 0.4 save $@
 
 audiovq: audiovq.c
 	@echo "[HOSTCC] $(DIR)$< -> $(DIR)$@"
