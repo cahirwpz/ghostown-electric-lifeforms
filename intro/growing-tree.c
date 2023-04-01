@@ -18,7 +18,6 @@ static CopInsT *bplptr[DEPTH];
 static BitmapT *screen;
 static CopInsT *sprptr[8];
 
-#include "growing-tree-greets.c"
 #include "data/fruit-1.c"
 #include "data/fruit-2.c"
 #include "data/grass-1.c"
@@ -48,16 +47,51 @@ static BranchT *branches;
 static BranchT *lastBranch;
 
 typedef struct Greets {
-  short x, y; // pos x,y
-  u_char delay; // delay in frames
-  u_char *currentDataPos; // ptr to data
+  // state for drawing
+  char *curr;
+  short n;
+  short x, y;
+  // provided data
+  short origin_x, origin_y;
+  short delay;
+  char data[0];
 } GreetsT;
 
-static GreetsT greetsData[3];
+#include "growing-tree-greets-data.c"
 
-static int hashTableIdx = 0;
+static GreetsT *greetsArray[] = {
+  // First batch
+  &grAltair,
+  &grAppendix,
+  &grArtway,
+  // Second batch
+  &grAtnwhore,
+  &grCapsule,
+  &grDekadence,
+  // Third batch
+  &grDesire,
+  &grDreamweb,
+  &grElude,
+  // Fourth batch
+  &emptyPlaceholder,
+  &grContinue,
+  &grTobe,
+  // End
+  NULL,
+};
 
+static GreetsT *greetsData[3];
+
+static __code int hashTable[8] = {
+  0x011bad37, 0x7a6433ee, // 3
+  0x4ffa0d80, 0x23743a06, // 1
+  0x273f164b, 0x9ffa9d90, // 2
+  0x74a7beec, 0xb2818113, // 4 
+};
+
+static __code int hashTableIdx = 0;
 static __code int fastrand_a = 0, fastrand_b = 0;
+
 static inline int fastrand(void) {
   int *hashAddr = &hashTable[hashTableIdx * 2];
 
@@ -106,27 +140,30 @@ static void setTreePalette(void) {
   nrPal ^= 1;
 }
 
-static __code int greetsIdx = 0;
+static GreetsT *GreetsFetch(void) {
+  static __code GreetsT **greetsDataPtr = greetsArray;
 
-static void GreetsSetTrack(GreetsT *greets, u_char *greetzData) {
-  greets->x = *greetzData++;
-  greets->y = *greetzData++;
-  greets->delay = *greetzData++;
-  greets->currentDataPos = greetzData;
+  GreetsT *gr;
+
+  while (!(gr = *greetsDataPtr++))
+    greetsDataPtr = greetsArray;
+
+  gr->curr = gr->data;
+  gr->x = 0;
+  gr->y = 0;
+  gr->n = 0;
+  return gr;
 }
 
 static void GreetsNextTrack(void) {
-  GreetsSetTrack(&greetsData[0], greetsSet0[greetsIdx]);
-  GreetsSetTrack(&greetsData[1], greetsSet1[greetsIdx]);
-  GreetsSetTrack(&greetsData[2], greetsSet2[greetsIdx]);
-  greetsIdx++;
+  greetsData[0] = GreetsFetch();
+  greetsData[1] = GreetsFetch();
+  greetsData[2] = GreetsFetch();
 
   hashTableIdx++;
   hashTableIdx &= 3;
+
   fastrand_a = fastrand_b = 0;
-  if (greetsIdx == 4) {
-    greetsIdx = 0; // TODO: remove it
-  }
 }
 
 static void Init(void) {
@@ -156,7 +193,6 @@ static void Init(void) {
 
   setTreePalette();
   GreetsNextTrack();
-
 
   CopListActivate(cp);
 
@@ -341,43 +377,44 @@ static bool SplitBranch(BranchT *parent, BranchT **lastp) {
   return false;
 }
 
-static void DrawGreetings(GreetsT *greets) {
-  short x1, x2, y1, y2;
+static void DrawGreetings(GreetsT *gr) {
+  char *curr;
+  short x2, y2;
 
-  if (!greets->currentDataPos)
-    return;
-
-  if (greets->delay) {
-    greets->delay--;
+  if (gr->delay > 0) {
+    gr->delay--;
     return;
   }
 
-  x1 = *greets->currentDataPos++;
-  y1 = *greets->currentDataPos++;
-
-  if (x1 == 128 && y1 == 128) {
-    // end of logo
-    greets->currentDataPos = NULL;
+  if (gr->n < 0)
     return;
+
+  curr = gr->curr;
+
+  if (gr->n == 0) {
+    gr->n = *curr++;
+    if (gr->n < 0)
+      return;
+    gr->x = gr->origin_x + *curr++;
+    gr->y = gr->origin_y + *curr++;
+    gr->n--;
   }
 
-  x2 = greets->currentDataPos[0];
-  y2 = greets->currentDataPos[1];
+  x2 = gr->x + *curr++;
+  y2 = gr->y + *curr++;
 
-  if (x2 == 255 && y2 == 255) {
-    // to next logo branch
-    greets->currentDataPos++;
-    greets->currentDataPos++;
-    return;
-  }
+  DrawBranch(gr->x, gr->y, x2, y2);
 
-  DrawBranch(greets->x + x1, greets->y + y1, greets->x + x2, greets->y + y2);
+  gr->curr = curr;
+  gr->n--;
+  gr->x = x2;
+  gr->y = y2;
 }
 
 static void HandleDrawingGreets(void) {
-  DrawGreetings(&greetsData[0]);
-  DrawGreetings(&greetsData[1]);
-  DrawGreetings(&greetsData[2]);
+  DrawGreetings(greetsData[0]);
+  DrawGreetings(greetsData[1]);
+  DrawGreetings(greetsData[2]);
 }
 
 void GrowingTree(BranchT *branches, BranchT **lastp) {
