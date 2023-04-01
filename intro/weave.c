@@ -193,36 +193,6 @@ static void MakeCopperListBars(StateBarT *bars) {
   CopEnd(cp);
 }
 
-/* TODO: Calculate all of that upfront, so we don't use precious cycles. */
-static void UpdateBarColor(StateBarT *bars, short step) {
-  u_char *_colortab = colortab;
-  short i;
-
-  for (i = 0; i < BARS; i++) {
-    CopInsT *pal = bars->palette[i] + 1;
-    const u_short *col = &bar_pal.colors[(i & 1 ? 16 : 0) + 1];
-    short k;
-    
-    for (k = 1; k < 16; k++) {
-      u_short from = *col++;
-      u_short c;
-#if 0
-      c = ColorTransition(from, 0xfff, step);
-#else
-      short r = (from & 0xf00) | 0x0f0 | step;
-      short g = ((from << 4) & 0xf00) | 0x0f0 | step;
-      short b = ((from << 8) & 0xf00) | 0x0f0 | step;
-      r = _colortab[r];
-      g = _colortab[g];
-      b = _colortab[b];
-      c = (r << 4) | g | (b >> 4);
-#endif
-
-      CopInsSet16(pal++, c);
-    }
-  }
-}
-
 static void UpdateBarState(StateBarT *bars) {
   short w = (bar_width - WIDTH) / 2;
   short f = frameCount * 16;
@@ -533,7 +503,6 @@ static void Render(void) {
     EnableDMA(DMAF_SPRITE);
     ControlStripes();
     ProfilerStart(UpdateStripeState);
-    UpdateBarColor(&state->bars, (frameCount >> 2) & 3);
     UpdateBarState(&state->bars);
     UpdateSpriteState(state);
     UpdateStripeState(state);
