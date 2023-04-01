@@ -258,7 +258,7 @@ def do_sprite(im, desc):
     stride = ((width + 15) & ~15) // 16
     bpl = planar(pix, width, height, depth)
 
-    print(f'static const short {name}_height = {height};')
+    print(f'#define {name}_height {height}')
     print('')
 
     n = width // 16
