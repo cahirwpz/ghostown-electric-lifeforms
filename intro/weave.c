@@ -1,17 +1,25 @@
-#include "effect.h"
-
-#include "custom.h"
-#include "copper.h"
-#include "blitter.h"
-#include "bitmap.h"
-#include "sprite.h"
-#include "fx.h"
+#include <intro.h>
+#include <custom.h>
+#include <copper.h>
+#include <blitter.h>
+#include <bitmap.h>
+#include <sprite.h>
+#include <fx.h>
 #include <strings.h>
-#include <system/memory.h>
 #include <color.h>
+#include <sync.h>
+#include <system/memory.h>
+#include <system/interrupt.h>
+
+extern TrackT WeaveBarPulse;
+extern TrackT WeaveStripePulse;
 
 #include "data/bar.c"
+#include "data/bar-dark.c"
+#include "data/bar-bright.c"
 #include "data/stripes.c"
+#include "data/stripes-dark.c"
+#include "data/stripes-bright.c"
 
 #define bar_bplmod ((bar_width - WIDTH) / 8 - 2)
 
@@ -193,36 +201,6 @@ static void MakeCopperListBars(StateBarT *bars) {
   CopEnd(cp);
 }
 
-/* TODO: Calculate all of that upfront, so we don't use precious cycles. */
-static void UpdateBarColor(StateBarT *bars, short step) {
-  u_char *_colortab = colortab;
-  short i;
-
-  for (i = 0; i < BARS; i++) {
-    CopInsT *pal = bars->palette[i] + 1;
-    const u_short *col = &bar_pal.colors[(i & 1 ? 16 : 0) + 1];
-    short k;
-    
-    for (k = 1; k < 16; k++) {
-      u_short from = *col++;
-      u_short c;
-#if 0
-      c = ColorTransition(from, 0xfff, step);
-#else
-      short r = (from & 0xf00) | 0x0f0 | step;
-      short g = ((from << 4) & 0xf00) | 0x0f0 | step;
-      short b = ((from << 8) & 0xf00) | 0x0f0 | step;
-      r = _colortab[r];
-      g = _colortab[g];
-      b = _colortab[b];
-      c = (r << 4) | g | (b >> 4);
-#endif
-
-      CopInsSet16(pal++, c);
-    }
-  }
-}
-
 static void UpdateBarState(StateBarT *bars) {
   short w = (bar_width - WIDTH) / 2;
   short f = frameCount * 16;
@@ -345,7 +323,85 @@ static void Load(void) {
 
   memcpy(&sintab8[128], &sintab8[0], 128 * sizeof(u_short));
   memcpy(&sintab8[256], &sintab8[0], 256 * sizeof(u_short));
+
+  TrackInit(&WeaveBarPulse);
+  TrackInit(&WeaveStripePulse);
 }
+
+static const PaletteT *barPalArray[] = {
+  &bar_bright_pal,
+  &bar_pal,
+  &bar_dark_pal,
+};
+
+static const PaletteT *stripePalArray[] = {
+  &stripes_bright_pal,
+  &stripes_pal,
+  &stripes_dark_pal,
+};
+
+static const short palIdxSeq[] = {
+  -1, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, -1
+};
+
+static short barPalIdx[4];
+static short stripePalIdx[4];
+
+static void LoadColorArray(const u_short *col, short ncols, u_int start) {
+  short n = ncols - 1;
+  volatile u_short *colreg = custom->color + start;
+
+  do {
+    *colreg++ = *col++;
+  } while (--n != -1);
+}
+
+static int ForEachFrame(void) {
+  short val;
+  short i, m;
+
+  UpdateFrameCount();
+
+  if ((val = TrackValueGet(&WeaveStripePulse, frameFromStart))) {
+    for (i = 3; i >= 0; i--, val >>= 1) {
+      if (val & 1)
+        stripePalIdx[i] = 1;
+    }
+  }
+
+  for (i = 0, m = 0; i < 4; i++, m += 4) {
+    short palIdx = palIdxSeq[stripePalIdx[i]];
+    if (palIdx < 0)
+      continue;
+    stripePalIdx[i]++;
+    LoadColorArray(&stripePalArray[palIdx]->colors[m], 4, 16 + m);
+  }
+
+  if ((val = TrackValueGet(&WeaveBarPulse, frameFromStart))) {
+    for (i = 3; i >= 0; i--, val >>= 1) {
+      if (val & 1)
+        barPalIdx[i] = 1;
+    }
+  }
+
+  for (i = 0; i < 4; i++) {
+    short palIdx = palIdxSeq[barPalIdx[i]];
+    if (palIdx < 0)
+      continue;
+    barPalIdx[i]++;
+    {
+      CopInsT *ins = stateFull[active ^ 1].bars.palette[i];
+      const u_short *col = &barPalArray[palIdx]->colors[(i & 1) ? 16 : 0];
+      for (m = 0; m < 16; m++) {
+        CopInsSet16(ins++, *col++);
+      }
+    }
+  }
+
+  return 0;
+}
+
+INTSERVER(ForEachFrameInterrupt, 0, (IntFuncT)ForEachFrame, NULL);
 
 static void Init(void) {
   short i;
@@ -392,10 +448,14 @@ static void Init(void) {
 #endif
 
   EnableDMA(DMAF_RASTER);
+
+  AddIntServer(INTB_VERTB, ForEachFrameInterrupt);
 }
 
 static void Kill(void) {
   short i;
+
+  RemIntServer(INTB_VERTB, ForEachFrameInterrupt);
 
   ResetSprites();
   DisableDMA(DMAF_RASTER | DMAF_COPPER);
@@ -533,7 +593,6 @@ static void Render(void) {
     EnableDMA(DMAF_SPRITE);
     ControlStripes();
     ProfilerStart(UpdateStripeState);
-    UpdateBarColor(&state->bars, (frameCount >> 2) & 3);
     UpdateBarState(&state->bars);
     UpdateSpriteState(state);
     UpdateStripeState(state);

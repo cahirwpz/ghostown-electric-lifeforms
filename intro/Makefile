@@ -50,7 +50,11 @@ SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 MAIN := #
 
 PNG2C.bar := --bitmap bar,480x67x4,+limit_depth --palette bar_pal,32
+PNG2C.bar-dark := --palette bar_dark_pal,32
+PNG2C.bar-bright := --palette bar_bright_pal,32
 PNG2C.stripes := --bitmap stripes,128x64x2,+limit_depth,+interleaved,-displayable --palette stripes_pal,16
+PNG2C.stripes-dark := --palette stripes_dark_pal,16
+PNG2C.stripes-bright := --palette stripes_bright_pal,16
 PNG2C.text-scroll-font := --bitmap font,768x8x1,-displayable --palette font_pal,2
 PNG2C.turmite-credits-1 := --bitmap turmite_credits_1,256x256x1,+onlydata,-displayable
 PNG2C.turmite-credits-2 := --bitmap turmite_credits_2,256x256x1,+onlydata,-displayable
