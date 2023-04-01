@@ -51,8 +51,8 @@ typedef struct StateFull {
 
 static int active = 1;
 static short sintab8[128 * 4];
-static StateFullT stateFull[2];
-static StateBarT stateBars[2];
+static StateFullT *stateFull;
+static StateBarT *stateBars;
 static SpriteT stripe[NSPRITES];
 
 /* These numbers must be even due to optimizations. */
@@ -193,6 +193,7 @@ static void MakeCopperListBars(StateBarT *bars) {
   CopEnd(cp);
 }
 
+/* TODO: Calculate all of that upfront, so we don't use precious cycles. */
 static void UpdateBarColor(StateBarT *bars, short step) {
   u_char *_colortab = colortab;
   short i;
@@ -301,16 +302,6 @@ static void UpdateStripeState(StateFullT *state) {
   }
 }
 
-static void MakeSinTab8(void) {
-  int i, j;
-
-  for (i = 0, j = 0; i < 128; i++, j += 32)
-    sintab8[i] = (sintab[j] + 512) >> 10;
-
-  memcpy(&sintab8[128], &sintab8[0], 128 * sizeof(u_short));
-  memcpy(&sintab8[256], &sintab8[0], 256 * sizeof(u_short));
-}
-
 #define CP_FULL_SIZE (HEIGHT * 22 + 100)
 #define CP_BARS_SIZE (500)
 
@@ -347,23 +338,13 @@ static void CopySpriteTiles(int t) {
 }
 
 static void Load(void) {
-  short i;
+  int i, j;
 
-  MakeSinTab8();
+  for (i = 0, j = 0; i < 128; i++, j += 32)
+    sintab8[i] = (sintab[j] + 512) >> 10;
 
-  for (i = 0; i < NSPRITES; i++) {
-    SprDataT *sprdat =
-      MemAlloc(SprDataSize(HEIGHT + stripes_height, 2), MEMF_CHIP | MEMF_CLEAR);
-    MakeSprite(&sprdat, HEIGHT + stripes_height, false, &stripe[i]);
-    EndSprite(&sprdat);
-  }
-}
-
-static void UnLoad(void) {
-  short i;
-
-  for (i = 0; i < NSPRITES; i++)
-    MemFree(stripe[i].sprdat);
+  memcpy(&sintab8[128], &sintab8[0], 128 * sizeof(u_short));
+  memcpy(&sintab8[256], &sintab8[0], 256 * sizeof(u_short));
 }
 
 static void Init(void) {
@@ -378,14 +359,21 @@ static void Init(void) {
   /* Place sprites 0-3 above playfield, and 4-7 below playfield. */
   custom->bplcon2 = BPLCON2_PF2PRI | BPLCON2_PF2P1 | BPLCON2_PF1P1;
 
-  for (i = 0; i < NSPRITES; i++)
+  for (i = 0; i < NSPRITES; i++) {
+    SprDataT *sprdat =
+      MemAlloc(SprDataSize(HEIGHT + stripes_height, 2), MEMF_CHIP | MEMF_CLEAR);
+    MakeSprite(&sprdat, HEIGHT + stripes_height, false, &stripe[i]);
+    EndSprite(&sprdat);
     SpriteUpdatePos(&stripe[i], X(0), Y(0));
+  }
 
+  stateFull = MemAlloc(sizeof(StateFullT) * 2, MEMF_PUBLIC|MEMF_CLEAR);
   stateFull[0].cp = NewCopList(CP_FULL_SIZE);
   stateFull[1].cp = NewCopList(CP_FULL_SIZE);
   MakeCopperListFull(&stateFull[0]);
   MakeCopperListFull(&stateFull[1]);
 
+  stateBars = MemAlloc(sizeof(StateBarT) * 2, MEMF_PUBLIC|MEMF_CLEAR);
   stateBars[0].cp = NewCopList(CP_BARS_SIZE);
   stateBars[1].cp = NewCopList(CP_BARS_SIZE);
   MakeCopperListBars(&stateBars[0]);
@@ -407,12 +395,21 @@ static void Init(void) {
 }
 
 static void Kill(void) {
+  short i;
+
   ResetSprites();
   DisableDMA(DMAF_RASTER | DMAF_COPPER);
+
   DeleteCopList(stateFull[0].cp);
   DeleteCopList(stateFull[1].cp);
+  MemFree(stateFull);
+
   DeleteCopList(stateBars[0].cp);
   DeleteCopList(stateBars[1].cp);
+  MemFree(stateBars);
+
+  for (i = 0; i < NSPRITES; i++)
+    MemFree(stripe[i].sprdat);
 }
 
 PROFILE(UpdateStripeState);
@@ -548,4 +545,4 @@ static void Render(void) {
   active ^= 1;
 }
 
-EFFECT(Weave, Load, UnLoad, Init, Kill, Render);
+EFFECT(Weave, Load, NULL, Init, Kill, Render);

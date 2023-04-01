@@ -89,8 +89,6 @@
 // -----------------------------------------------------------------------------
 //
 
-#define RAND_SPAWN_MASK 0xf
-#define RAND_SPAWN_MIN_DELAY 8
 #define NUM_SCENES 4
 
 #include "data/wireworld-vitruvian.c"
@@ -321,6 +319,9 @@ static void Load(void) {
   TrackInit(&GOLGame);
   TrackInit(&WireworldDisplayBg);
   TrackInit(&WireworldBg);
+  TrackInit(&WireworldSpawnMask);
+  TrackInit(&WireworldMinDelay);
+  TrackInit(&WireworldSpawnNow);
   TrackInit(&GOLPaletteH);
   TrackInit(&GOLPaletteS);
   TrackInit(&GOLPaletteV);
@@ -423,7 +424,7 @@ static void InitWireworld(void) {
   SharedPreInit();
   for (i = 0; i < pal->count; i++)
     CopInsSet16(&palptr[i], pal->colors[i]);
-  InitSpawnFrames(cur_electrons);
+  InitSpawnFrames(cur_electrons, TrackValueGet(&WireworldSpawnMask, frameCount));
 
   if (display_bg) {
     LoadBackground(desired_bg, 0, 0, 0);

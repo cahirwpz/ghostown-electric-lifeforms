@@ -2,48 +2,54 @@
 # logo
 $0000 0 !step
 # tilemover
-$0100 5
+$0200 5
 # wireworld
-$0300 7
+$0600 7
 # vitruvian
-$0400 9
+$0800 9
 # game of life
-$0420 8
-# tree
-$0600 4
+$0A00 8
 # sea anemone
-$0800 6
-# turmite
-$0A00 3
+$0C00 6
 # weave
-$0C00 2
+$1000 2
+# uvgut
+$1400 10
+# tree
+$1800 4
 # wireworld
-$0E00 10
-# uvmap
-$1000 7
-# logo
-$1200 0
+$1C00 7
+# game of life - electric
+$2000 8
+# uvtit
+$2200 11
+# turmites
+$2400 3
+# tilemover 
+$2900 5
 # scrolling text
-$1300 1
-$1600 -1
+$2D00 1
+# logo 
+$3000 0
+# end
+$3300 -1
 @end
 
 @track GhostownLogoPal
 $0000 0 !step
-$0010 1 
-$0020 2
-$0030 3
-$1200 3
-$1210 2
-$1220 1
-$1230 0
+$0020 1 
+$0100 2
+$0120 3
+$3000 3
+$3020 2
+$3100 1
+$3120 0
 @end
 
 @track ElectricLifeformsLogoPal
-$0400 1 !step
-$0410 2
+$0800 1 !step
+$0900 2
 @end
-
 
 # Available values:
 # 1 - static
@@ -52,104 +58,202 @@ $0410 2
 # 4 - windmills
 # 5 - rolling tube
 # 6 - funky soundwave with peak
+# 7 - slow kitchen sink
 @track TileMoverNumber
-$0100 1 !step
-$0104 7
-$0112 2 
-$0120 5 
-$0130 4
-$0200 3
-$0210 5
-$0220 4
-$0230 6
+$0200 1 !step
+$0202 7
+$0204 2 
+$0300 6 
+$0400 4
+$0420 3
+$0500 5
+$0520 6
+#--- third time ---#
+$2900 4
+$2A00 7
+$2B00 5
+$2C00 3
 @end
 
-@track TileMoverBgBlip
-$0105 12 !event
-$010D 12 
-$0111 12
-$011D 12 
-$0121 12
-$012D 12 
-$0131 12
-$013D 12 
-$0201 12 
-$0205 12 
-$0209 12 
-$0211 12
-$0215 12 
-$0219 12 
-$021D 12 
-$0221 12
-$0227 12 
-$022D 12 
-$0231 12 
-$0237 12 
-$023D 12 
+# Available pals:
+# 1 - blue
+# 2 - red
+# 3 - green
+# 4 - gold
+@track TileMoverPal
+$0200 1 !event
+$0400 2
+$0420 3
+$0500 1
+$0520 1
+#--- second time ---#
+$2900 2
+$2A00 1
+$2B00 4
+$2C00 3
 @end
 
 @track TileMoverBlit
-$0101 1 !event
-$0102 1
-$0104 1
-$0106 2 
-$0108 2
-$010A 2
-$010C 2
-$010E 2
+$0201 1 !event
+$0202 1
+$0204 1
+$0206 2 
+$0208 2
+$020A 2
+$020C 2
+$020E 2
 
-$0110 2
+$0210 2
 
-$0120 5
-$0122 5
-$0124 5
-$0126 5
-$0128 5
-$012A 5
-$012C 5
-$012E 5
+$0220 2
+$0226 2
+$022E 2
 
-$0130 4
-$0132 4
-$0134 4
-$0136 4
-$0138 4
-$013A 4
-$013C 4
-$013E 4
+$0232 2
+$023A 2
 
-$0200 3
-$0202 3
-$0204 3
-$0206 3
-$0208 3
+$0232 2
+$023A 2
 
-$0210 5
-$0212 5
-$0214 5
-$0216 5
-$0218 5
-$021A 5
-$021C 5
-$021E 5
+$0300 3
+$0302 3
+$0306 3
+$030A 3
+$030E 3
 
-$0220 4
-$0222 4
-$0224 4
-$0226 4
-$0228 4
-$022A 4
-$022C 4
-$022E 4
+$0312 3
+$0316 3
+$031A 3
+$031E 3
 
-$0230 3
-$0232 3 
-$0234 3 
-$0236 3 
-$0238 3 
-$023A 3 
-$023C 3 
-$023E 3 
+$0322 3
+$0326 3
+$032A 3
+$032E 3
+
+$0332 3
+$0336 3
+$033A 3
+$033E 3
+
+$0400 4
+$0402 4
+$0406 4
+$040A 4
+$040E 4
+
+$0412 4
+$0416 4
+$041A 4
+$041E 4
+
+$0420 3
+$0422 3
+$0426 3
+$042A 3
+$042E 3
+
+$0432 3
+$0436 3
+$043A 3
+$043E 3
+
+$0502 5
+$0506 5
+$050A 5
+$050E 5
+
+$0512 5
+$0516 5
+$051A 5
+$051E 5
+
+$0522 3
+$0526 3
+$052A 3
+$052E 3
+
+$0532 3
+$0536 3
+$053A 3
+$053E 3
+
+#--- second time ---#
+$2900 4
+$2902 4
+$2906 4
+$290A 4
+$290E 4
+$2912 4
+$2916 4
+$291A 4
+$291E 4
+$2922 4
+$2926 4
+$292A 4
+$292E 4
+$2932 4
+$2936 4
+$293A 4
+$293E 4
+
+$2A00 3
+$2A02 3
+$2A06 3
+$2A0A 3
+$2A0E 3
+$2A12 3
+$2A16 3
+$2A1A 3
+$2A1E 3
+$2A22 3
+$2A26 3
+$2A2A 3
+$2A2E 3
+$2A32 3
+$2A36 3
+$2A3A 3
+$2A3E 3
+
+$2B00 5
+$2B02 5
+$2B06 5
+$2B0A 5
+$2B0E 5
+$2B12 5
+$2B16 5
+$2B1A 5
+$2B1E 5
+$2B22 5
+$2B26 5
+$2B2A 5
+$2B2E 5
+$2B32 5
+$2B36 5
+$2B3A 5
+$2B3E 5
+
+$2C00 3
+$2C02 3
+$2C06 3
+$2C0A 3
+$2C0E 3
+$2C12 3
+$2C16 3
+$2C1A 3
+$2C1E 3
+$2C22 3
+$2C26 3
+$2C2A 3
+$2C2E 3
+$2C32 3
+$2C36 3
+$2C3A 3
+$2C3E 3
+@end
+
+@track TileMoverBgBlip
+$0405 12 !event
 @end
 
 @track GOLPaletteH
@@ -169,135 +273,151 @@ $0000 255 !step
 
 @track GOLGame
 # classic gol
-$0420 0 !step
-# coagulations
-$0430 1
+$0A00 0 !step
 # day and night
-$0500 5
+$0A20 5
 # maze
-$0510 2
-# three-four
-$0520 6
-# diamoeba
-$0530 3
+$0A30 2
+# Diamoeba
+$0B20 3
+#---second time---#
+# maze
+$2000 2
+# classic
+$2100 0
 @end
 
 @track GOLCellColor
-$0420 0 !step
-$0500 2
+$2000 0 !step
+$2020 2
 @end
 
 @track GOLLogoColor
-$0420 0 !step
-$0430 1
+$2000 0 !step
+$2020 1
 @end
 
 @track GOLLogoFade
-$0420 0 !smooth
-$0430 0
-$0500 15
-$0510 0
-$0520 0
-$0530 15
+$2000 0 !smooth
+$2010 0
+$2020 15
+$2030 0
+$2100 0
+$2110 15
 @end
 
 # logo bitmap:
 # 0 - ELECTRIC
 # 1 - LIFEFORMS
 @track GOLLogoType
-$0420 0 !step
-$0510 1
+$2000 0 !step
+$2100 1
 @end
 
 @track WireworldDisplayBg
 # 0 - hide bg, 1 - show bg
 # must happen before wireworld effect change
 $0000 0 !step
-$0500 1
+$1C00 1
 @end
 
 @track WireworldBg
 # 0 - vitruvian, 1 - pcb
 $0000 0 !step
-$0500 1
+$1C00 1
+@end
+
+# next spawn frame = (random() & WireworldSpawnMask) + WireworldMinDelay;
+@track WireworldSpawnMask
+$0800 7 !step
+$1C00 15
+@end
+
+@track WireworldMinDelay
+$0800 0 !step
+$1C00 8
+@end
+
+@track WireworldSpawnNow
+$1C10 1 !event
+$1C20 1
+$1C30 1
+$1D00 1
+$1D10 1
+$1D20 1
+$1D30 1
 @end
 
 @track SeaAnemoneVariant
 $0000 1 !event
-$0010 1
-$0020 2
-$0030 1
+$0020 1
 $0100 2
-$0110 3
-$0120 4
+$0120 1
+$0200 2
+$0220 3
+$0310 4
 @end
 
+# available palettes
+# 1 - green
+# 2 - blue
+# 3 - red
+# 4 - gold
 @track SeaAnemonePal
 $0000 1 !event
-$0010 2
-$0020 3
-$0030 2
+$0020 2
 $0100 3
-$0110 1
+$0120 2
+$0200 3
+$0220 1
+$0310 4
 @end
 
 @track SeaAnemoneFadeOut
-$000E 15 !trigger
-$001E 15
-$002E 15
+$001E 15 !trigger
 $003E 15
-$010E 15
 $011E 15
+$013E 15
+$021E 15
+#$033E 15
 @end
 
 @track SeaAnemoneFadeIn
-$0010 15 !trigger
-$0020 15
-$0030 15
+$0020 15 !trigger
 $0100 15
-$0110 15
+$0120 15
+$0200 15
+$0220 15
+$0310 15
 @end
 
 @track SeaAnemoneGradient
-$0013 33 !trigger
-$0019 33
-$0032 33
-$0037 33
+$0023 31 !trigger
+$0039 31
+$0122 31
+$0137 31
 @end
 
 @track SeaAnemonePalPulse
 $0005 30 !trigger
-$000A 30
-$0015 30
-$001A 30
-$0025 30
-$002A 30
-$0035 30
-$003A 30
-$0105 30
-$010A 30
-$0115 30
-$0120 30
-$0125 30
-$012A 30
-$012E 30
 @end
 
 @track TurmiteBoard
 $0000 1 !event
-$0020 2
-$0100 3
+$0100 2
+$0200 3
 @end
 
 @track TurmiteFadeIn
 $0000 15 !trigger
-$0020 15
 $0100 15
+$0200 15
 @end
 
 @track TurmiteFadeOut
-$001E 15 !trigger
-$003E 15
+$003E 15 !trigger
+$013E 15
+$023E 15
 @end
 
 @track TurmitePal

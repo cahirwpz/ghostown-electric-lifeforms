@@ -25,7 +25,8 @@ extern EffectT SeaAnemoneEffect;
 extern EffectT WireworldEffect;
 extern EffectT GameOfLifeEffect;
 extern EffectT VitruvianEffect;
-extern EffectT UVMapEffect;
+extern EffectT UVGutEffect;
+extern EffectT UVTitEffect;
 
 short frameFromStart;
 short frameTillEnd;
@@ -43,7 +44,8 @@ static EffectT *AllEffects[] = {
   &WireworldEffect,
   &GameOfLifeEffect,
   &VitruvianEffect,
-  &UVMapEffect,
+  &UVGutEffect,
+  &UVTitEffect,
   NULL,
 };
 
@@ -100,7 +102,7 @@ short UpdateFrameCount(void) {
   return t;
 }
 
-#define SYNCPOS(pos) (((((pos) & 0xff00) >> 2) | ((pos) & 0x3f)) * 6)
+#define SYNCPOS(pos) (((((pos) & 0xff00) >> 2) | ((pos) & 0x3f)) * 3)
 
 static void RunEffects(void) {
   /* Set the beginning of intro. Useful for effect synchronization! */

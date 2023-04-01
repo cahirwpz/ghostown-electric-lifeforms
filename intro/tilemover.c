@@ -38,7 +38,6 @@
 
 static __code BitmapT *screen;
 static __code int active = 0;
-static __code short prev_active = 0;
 static CopListT *cp;
 static CopInsT *bplptr[DEPTH + 1];
 
@@ -55,21 +54,16 @@ static short tiles[NFLOWFIELDS][NTILES];
 #include "data/tilemover-drops.c"
 #include "data/tilemover-block.c"
 
-#include "data/pal-blue.c"
-#include "data/pal-green.c"
-#include "data/pal-red.c"
+#include "palettes.h"
 
-typedef const PaletteT *TilemoverPalT[8];
+typedef const PaletteT *TilemoverPalT[5];
 
 static TilemoverPalT tilemover_palettes = {
   NULL,
-  &pal_blue,    // static
-  &pal_blue,    // kitchen sink
-  &pal_blue,    // soundwave
-  &pal_red,     // windmills 
-  &pal_green,   // rolling tube
-  &pal_red,     // funky soundwave
-  &pal_blue,    // static
+  &pal_blue,    
+  &pal_red,     
+  &pal_green,
+  &pal_gold
 };
 
 static __code short lightLevel = 0;
@@ -79,6 +73,7 @@ static const short blip_sequence[] = {
 
 extern const BitmapT ghostown_logo;
 extern TrackT TileMoverNumber;
+extern TrackT TileMoverPal;
 extern TrackT TileMoverBlit;
 extern TrackT TileMoverBgBlip;
 
@@ -221,13 +216,27 @@ static void BlitSimple(void *sourceA, void *sourceB, void *sourceC,
   custom->bltsize = bltsize;
 }
 
+// It's just a dirty temporary "fix" - without SRCA in minterms during the first blit 
+// (logo in Init()), the logo never shows up. I added this ugly if just to record video
+// for Slayer, need to fix it properly.
+short blitA = true;
 static void BlitBitmap(short x, short y, const BitmapT *blit) {
   short i;
   short j = active;
   BlitterCopySetup(screen, MARGIN + x, MARGIN + y, blit);
   /* monkeypatch minterms to perform screen1 = screen1 | blit */
-  custom->bltcon0 = (SRCB | SRCC | DEST) | (ABC | ANBC | ABNC);
-
+  if (blitA) {
+    custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (ABC | ANBC | ABNC);
+    blitA = false;
+  } else {
+    custom->bltcon0 = (SRCB | SRCC | DEST) | (ABC | ANBC | ABNC) ; 
+  }
+  
+  // This mask fixes some graphical glitches with blits, but causes others,
+  // need to think about it some more.
+  //custom->bltafwm = 0xFFFF;
+  //custom->bltalwm = 0xFFFF;
+  
   for (i = DEPTH - 1; i >= 0; i--) {
     BlitterCopyStart(j, 0);
     j--;
@@ -284,7 +293,7 @@ extern void KillLogo(void);
 static void Init(void) {
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1);  
   EnableDMA(DMAF_BLITTER);
-  BlitBitmap(S_WIDTH / 2 - 96 - 6, S_HEIGHT / 2 - 66, logo_blit);
+  BlitBitmap(S_WIDTH / 2 - 96 - 8, S_HEIGHT / 2 - 66, logo_blit);
   WaitBlitter();
   DisableDMA(DMAF_BLITTER);
   SetupPlayfield(MODE_LORES, DEPTH, X(MARGIN), Y((256 - S_HEIGHT) / 2),
@@ -294,6 +303,7 @@ static void Init(void) {
   KillLogo();
 
   TrackInit(&TileMoverNumber);
+  TrackInit(&TileMoverPal);
   TrackInit(&TileMoverBlit);
   TrackInit(&TileMoverBgBlip);
 
@@ -418,13 +428,18 @@ static void BlitShape(short val) {
 PROFILE(TileMover);
 
 static void Render(void) {
+  short current_pal = TrackValueGet(&TileMoverPal, frameCount);
   short current_ff = TrackValueGet(&TileMoverNumber, frameCount);
   short current_blip = TrackValueGet(&TileMoverBgBlip, frameCount);
   short val;
   
-  if (current_ff != prev_active) {
-    prev_active = current_ff;
-    LoadPalette(tilemover_palettes[current_ff], 0);
+  if (current_pal) {
+    LoadPalette(tilemover_palettes[current_pal], 0);
+    // Spinning torus needs to have screen cleared out to avoid
+    // ugly visual artifacts.
+    if (current_ff == 5) {
+      BitmapClear(screen);
+    }
   }
 
   if (current_blip)
