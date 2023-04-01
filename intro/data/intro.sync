@@ -256,21 +256,6 @@ $2C3E 3
 $0405 12 !event
 @end
 
-@track GOLPaletteH
-$0000 0 !linear
-$002a 255
-@end
-
-@track GOLPaletteS
-$0000 128 !linear
-$0010 255
-$002a 128
-@end
-
-@track GOLPaletteV
-$0000 255 !step
-@end
-
 @track GOLGame
 # classic gol
 $0A00 0 !step
@@ -285,6 +270,33 @@ $0B20 3
 $2000 2
 # classic
 $2100 0
+@end
+
+@track GOLCellColor
+$2000 0 !step
+$2020 2
+@end
+
+@track GOLLogoColor
+$2000 0 !step
+$2020 1
+@end
+
+@track GOLLogoFade
+$2000 0 !smooth
+$2010 0
+$2020 15
+$2030 0
+$2100 0
+$2110 15
+@end
+
+# logo bitmap:
+# 0 - ELECTRIC
+# 1 - LIFEFORMS
+@track GOLLogoType
+$2000 0 !step
+$2100 1
 @end
 
 @track WireworldDisplayBg
