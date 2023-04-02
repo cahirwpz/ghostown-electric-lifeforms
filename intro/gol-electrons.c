@@ -1,11 +1,17 @@
 // frame at which to spawn specific electron next - counting from stepCount
 static short next_spawn[128];
 
-static const ElectronArrayT *cur_electrons;
-
 extern TrackT WireworldSpawnMask;
 extern TrackT WireworldMinDelay;
 extern TrackT WireworldSpawnNow;
+
+#define ELPOS(x, y) \
+  ((x) + EXT_WIDTH_LEFT + (((y) + EXT_HEIGHT_TOP) * EXT_BOARD_WIDTH))
+
+#include "data/wireworld-vitruvian-electrons.c"
+#include "data/wireworld-fullscreen-electrons.c"
+
+static const ElectronArrayT *cur_electrons;
 
 static void InitSpawnFrames(const ElectronArrayT *electrons, short spawn_mask) {
   short i;
@@ -19,7 +25,7 @@ static void SpawnElectrons(const ElectronArrayT *electrons,
 {
   u_char *bpl_heads = board_heads->planes[0];
   u_char *bpl_tails = board_tails->planes[0];
-  char *pts = (char *)electrons->points;
+  short *pts = electrons->points;
   short *spawn = next_spawn;
   short n = electrons->num_electrons - 1;
   short spawn_mask = TrackValueGet(&WireworldSpawnMask, frameCount);
@@ -30,12 +36,8 @@ static void SpawnElectrons(const ElectronArrayT *electrons,
     return;
   do {
     if (manual_override || *spawn <= stepCount) {
-      short hx = (*pts++) + EXT_WIDTH_LEFT;
-      short hy = (*pts++) + EXT_HEIGHT_TOP;
-      short tx = (*pts++) + EXT_WIDTH_LEFT;
-      short ty = (*pts++) + EXT_HEIGHT_TOP;
-      int posh = EXT_BOARD_WIDTH * hy + hx;
-      int post = EXT_BOARD_WIDTH * ty + tx;
+      short posh = (*pts++);
+      short post = posh + (*pts++);
       bset(bpl_heads + (posh >> 3), ~posh);
       bset(bpl_tails + (post >> 3), ~post);
       *spawn++ += (random() & spawn_mask) + min_delay;

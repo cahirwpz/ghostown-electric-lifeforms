@@ -43,8 +43,8 @@ def generate_array(electrons, name):
     print('#ifndef ELECTRONS_T')
     print('#define ELECTRONS_T')
     print('typedef struct ElectronArray {')
-    print('  char num_electrons;')
-    print('  char points[0];')
+    print('  short num_electrons;')
+    print('  short points[0];')
     print('} ElectronArrayT;')
     print('#endif\n')
 
@@ -54,7 +54,7 @@ def generate_array(electrons, name):
     for head, tail in electrons:
         hx, hy = head
         tx, ty = tail
-        print(f'    {hx}, {hy}, {tx}, {ty},')
+        print(f'    ELPOS({hx}, {hy}), ELPOS({tx-hx}, {ty-hy}),')
     print('  }')
     print('};')
 
