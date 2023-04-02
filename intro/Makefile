@@ -78,7 +78,7 @@ PNG2C.wireworld-fullscreen := --bitmap wireworld_pcb,160x128x1,+limit_depth
 ELECTRONS2C.wireworld-vitruvian := --name vitruvian_electrons
 PNG2C.wireworld-vitruvian := --bitmap wireworld_vitruvian,160x128x1,+limit_depth
 PNG2C.chip := --sprite wireworld_chip,64,4,+attached --palette wireworld_chip_pal,16
-PNG2C.wireworld-pcb-pal := --pixmap wireworld_pcb_pal,4x32x12
+PNG2C.wireworld-pcb-pal := --pixmap wireworld_pcb_pal,4x32x12,+onlydata
 PNG2C.loader := --bitmap loader,64x64x1 --palette loader_pal,2
 PNG2C.electric := --bitmap electric_logo,160x64x1
 PNG2C.lifeforms := --bitmap lifeforms_logo,160x64x1
@@ -145,9 +145,9 @@ PNG2C.tilemover-drops := --bitmap tilemover_drops,16x16x1
 PNG2C.tilemover-block := --bitmap tilemover_block,96x80x1
 PNG2C.tilemover-bg-pal := --palette tilemover_bg_pal,6
 
-PNG2C.texture-inside := --pixmap texture_in,64x64x8 --palette texture_pal,16
-PNG2C.texture-outside := --pixmap texture_out,64x64x8
-PNG2C.gradient := --pixmap gradient,16x16x12
+PNG2C.texture-inside := --pixmap texture_in,64x64x8,+onlydata --palette texture_pal,16
+PNG2C.texture-outside := --pixmap texture_out,64x64x8,+onlydata
+PNG2C.gradient := --pixmap gradient,16x16x12,+onlydata
 
 CPPFLAGS += -DINTRO -DVQ=$(VQ) -DDELTA=$(DELTA) -DKLANG=$(KLANG) -I.
 
