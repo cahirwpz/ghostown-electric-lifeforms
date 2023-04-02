@@ -53,6 +53,8 @@ typedef enum {
 
 typedef struct Effect {
   const char *name;
+  /* extra data that can be associated with the effect */
+  void *data;
   EffectStateT state;
   /*
    * Executed in background task when other effect is running.
@@ -79,6 +81,11 @@ typedef struct Effect {
    * Renders single frame of an effect.
    */
   void (*Render)(void);
+  /*
+   * Called each frame during VBlank interrupt.
+   * Effect::data will be passed as the argument.
+   */
+  void (*ForEachFrame)(void *);
 } EffectT;
 
 void EffectLoad(EffectT *effect);
@@ -92,15 +99,17 @@ void EffectRun(EffectT *effect);
 #define ALIAS(a, b)
 #endif
 
-#define EFFECT(NAME, L, U, I, K, R)                                            \
+#define EFFECT(NAME, L, U, I, K, R, F)                                         \
   EffectT NAME##Effect = {                                                     \
     .name = #NAME,                                                             \
+    .data = NULL,                                                              \
     .state = 0,                                                                \
     .Load = (L),                                                               \
     .UnLoad = (U),                                                             \
     .Init = (I),                                                               \
     .Kill = (K),                                                               \
     .Render = (R),                                                             \
+    .ForEachFrame = (F)                                                        \
   };                                                                           \
   ALIAS(NAME##Effect, Effect);
 
