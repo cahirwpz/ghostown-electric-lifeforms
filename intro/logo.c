@@ -91,4 +91,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(Logo, NULL, NULL, Init, NULL, Render);
+EFFECT(Logo, NULL, NULL, Init, NULL, Render, NULL);

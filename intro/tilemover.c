@@ -481,4 +481,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(TileMover, Load, UnLoad, Init, Kill, Render);
+EFFECT(TileMover, Load, UnLoad, Init, Kill, Render, NULL);

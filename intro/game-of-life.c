@@ -573,5 +573,5 @@ static void Render(void) {
 }
 #endif
 
-EFFECT(Wireworld, Load, NULL, InitWireworld, Kill, Render);
-EFFECT(GameOfLife, Load, NULL, InitGameOfLife, Kill, Render);
+EFFECT(Wireworld, Load, NULL, InitWireworld, Kill, Render, NULL);
+EFFECT(GameOfLife, Load, NULL, InitGameOfLife, Kill, Render, NULL);
