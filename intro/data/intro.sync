@@ -479,3 +479,24 @@ $0228 0b1101
 $0230 0b1110
 $0238 0b1111
 @end
+
+@track TreeVariant
+$0000 1 !event
+$0100 2
+$0200 1
+$0300 2
+@end
+
+@track TreeFadeOut
+$003E 15 !trigger
+$013E 15
+$023E 15
+$033E 15
+@end
+
+@track TreeFadeIn
+$0000 15 !trigger
+$0100 15
+$0200 15
+$0300 15
+@end
