@@ -1,6 +1,9 @@
+#!/usr/bin/env python3
+
 from math import ceil, log
 from PIL import Image
 from collections import namedtuple
+from contextlib import redirect_stdout
 from itertools import product
 import argparse
 
@@ -12,20 +15,6 @@ import argparse
 HEAD_COLOR_IDX = 3
 TAIL_COLOR_IDX = 5
 
-header = "#include <gfx.h>\n\n\
-#ifndef ELECTRONS_T\n\
-#define ELECTRONS_T\n\
-typedef struct ElectronT {\n\
-  Point2D head;\n\
-  Point2D tail;\n\
-} ElectronT;\n\
-\n\
-typedef struct ElectronArrayT {\n\
-  const int num_electrons;\n\
-  const ElectronT points[0];\n\
-} ElectronArrayT;\n\
-#endif\n\n"
-
 Electron = namedtuple('Electron', ['head', 'tail'])
 
 
@@ -36,37 +25,38 @@ def pixels_around(x, y):
 
 
 def get_positions(infile):
-    with Image.open(infile) as im:
-        if im.mode != 'P':
-            raise SystemExit('Only palette images supported.')
+    width, height = im.size
 
-        width, height = im.size
+    px = im.load()
+    electrons = []
+    for hx, hy in product(range(width), range(height)):
+        if px[hx, hy] == HEAD_COLOR_IDX:
+            for tx, ty in pixels_around(hx, hy):
+                if px[tx, ty] == TAIL_COLOR_IDX:
+                    electrons.append(Electron((hx, hy), (tx, ty)))
+                    break
 
-        px = im.load()
-        electrons = []
-        for hx, hy in product(range(width), range(height)):
-            if px[hx, hy] == HEAD_COLOR_IDX:
-                for tx, ty in pixels_around(hx, hy):
-                    if px[tx, ty] == TAIL_COLOR_IDX:
-                        electrons.append(Electron((hx, hy), (tx, ty)))
-                        break
-
-        return electrons
+    return electrons
 
 
 def generate_array(electrons, name):
-    res = ""
-    res += "static const __data ElectronArrayT {} = {{\n".format(name)
-    res += "  .num_electrons = {},\n".format(len(electrons))
-    res += "  .points = {\n"
+    print('#ifndef ELECTRONS_T')
+    print('#define ELECTRONS_T')
+    print('typedef struct ElectronArray {')
+    print('  char num_electrons;')
+    print('  char points[0];')
+    print('} ElectronArrayT;')
+    print('#endif\n')
+
+    print('static const __data ElectronArrayT %s = {' % name)
+    print('  .num_electrons = %d,' % len(electrons))
+    print('  .points = {')
     for head, tail in electrons:
         hx, hy = head
         tx, ty = tail
-        res += "    {{ .head = {{ .x = {}, .y = {} }},".format(hx, hy)
-        res += ".tail = {{ .x = {}, .y = {} }} }},\n".format(tx, ty)
-    res += "  }\n"
-    res += "};\n\n"
-    return res
+        print(f'    {hx}, {hy}, {tx}, {ty},')
+    print('  }')
+    print('};')
 
 
 if __name__ == "__main__":
@@ -79,8 +69,11 @@ if __name__ == "__main__":
                         help="Name of the array with electron coordinates")
     args = parser.parse_args()
 
-    electrons = get_positions(args.infile)
+    with Image.open(args.infile) as im:
+        if im.mode != 'P':
+            raise SystemExit('Only palette images supported.')
+        electrons = get_positions(im)
 
-    with open(args.outfile, "w") as out:
-        out.write(header)
-        out.write(generate_array(electrons, args.name))
+    with open(args.outfile, "w") as f:
+        with redirect_stdout(f):
+            generate_array(electrons, args.name)

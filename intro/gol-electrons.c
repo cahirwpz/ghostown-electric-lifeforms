@@ -19,7 +19,7 @@ static void SpawnElectrons(const ElectronArrayT *electrons,
 {
   u_char *bpl_heads = board_heads->planes[0];
   u_char *bpl_tails = board_tails->planes[0];
-  short *pts = (short *)electrons->points;
+  char *pts = (char *)electrons->points;
   short *spawn = next_spawn;
   short n = electrons->num_electrons - 1;
   short spawn_mask = TrackValueGet(&WireworldSpawnMask, frameCount);
