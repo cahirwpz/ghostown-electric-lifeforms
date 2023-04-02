@@ -25,7 +25,8 @@ LIBS := libpt
 
 BUILD-FILES := audiovq
 
-CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
+CLEAN-FILES := main.o \
+	data/bar.c data/bar-*.c data/stripes.c data/stripes-*.c \
 	data/$(MODULE)*.o data/$(MODULE).{smp,trk}* data/text-scroll-font.c \
 	data/intro.c data/electric-lifeforms-0[1-2].c \
 	data/fruit-*.c data/anemone-gradient.c data/anemone-gradient-data.c \
@@ -37,12 +38,13 @@ CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
 	data/wireworld-vitruvian.c \
 	data/wireworld-vitruvian-electrons.c \
 	data/turmite-credits-[1-3].c \
-	data/electric.c \
+	data/electric.c data/lifeforms.c \
 	data/circles.c data/squares.c data/whirl.c \
-	data/grass-[1-2].c data/loader.c \
+	data/grass.c data/loader.c \
 	data/texture-{in,out}side.c data/gradient.c data/gradient.png \
 	data/tilemover-*.c data/chip.c data/wireworld-pcb-pal.c \
-	data/pal-gold*.c data/pal-green*.c data/pal-red*.c data/pal-blue*.c
+	data/pal-gold*.c data/pal-green*.c data/pal-red*.c data/pal-blue*.c \
+	data/tree-pal-*.c
 
 SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   tilemover.c sea-anemone.c game-of-life.c vitruvian.c uvmap.c \
@@ -61,10 +63,11 @@ PNG2C.turmite-credits-2 := --bitmap turmite_credits_2,256x256x1,+onlydata,-displ
 PNG2C.turmite-credits-3 := --bitmap turmite_credits_3,256x256x1,+onlydata,-displayable
 PNG2C.electric-lifeforms-01 := --pixmap electric_lifeforms,320x256x4,+onlydata --palette electric_lifeforms_1_pal,8
 PNG2C.electric-lifeforms-02 := --palette electric_lifeforms_2_pal,8
-PNG2C.fruit-1 := --bitmap fruit_1,16x16x2,+onlydata --palette fruit_1_pal,4
-PNG2C.fruit-2 := --bitmap fruit_2,16x16x2,+onlydata --palette fruit_2_pal,4
-PNG2C.grass-1 := --sprite grass_1,32,8 --palette grass_1_pal,4
-PNG2C.grass-2 := --sprite grass_2,32,8 --palette grass_2_pal,4
+PNG2C.tree-pal-organic := --palette tree_pal_organic,32
+PNG2C.tree-pal-electric := --palette tree_pal_electric,32
+PNG2C.fruit-1 := --bitmap fruit_1,16x16x2,+onlydata
+PNG2C.fruit-2 := --bitmap fruit_2,16x16x2,+onlydata
+PNG2C.grass := --sprite grass,32,8
 PNG2C.tilemover-pal := --palette tilemover_pal,16
 PNG2C.ghostown-logo-crop := --pixmap ghostown_logo,192x131x4,+onlydata,+displayable
 PNG2C.ghostown-logo-01 := --palette ghostown_logo_1_pal,8

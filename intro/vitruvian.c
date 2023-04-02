@@ -86,4 +86,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(Vitruvian, Load, NULL, Init, Kill, Render);
+EFFECT(Vitruvian, Load, NULL, Init, Kill, Render, NULL);

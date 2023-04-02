@@ -6,22 +6,31 @@
 #include <line.h>
 #include <sprite.h>
 #include <stdlib.h>
+#include <sync.h>
 #include <system/memory.h>
+#include <system/interrupt.h>
 
 #define WIDTH 320
 #define HEIGHT 256
 #define DEPTH 3
 #define NSPRITES 8
 
+extern TrackT TreeVariant;
+extern TrackT TreeFadeOut;
+extern TrackT TreeFadeIn;
+
 static CopListT *cp;
 static CopInsT *bplptr[DEPTH];
 static BitmapT *screen;
 static CopInsT *sprptr[8];
 
+static u_short nrPal = 0;
+
+#include "data/tree-pal-organic.c"
+#include "data/tree-pal-electric.c"
 #include "data/fruit-1.c"
 #include "data/fruit-2.c"
-#include "data/grass-1.c"
-#include "data/grass-2.c"
+#include "data/grass.c"
 
 typedef struct Branch {
   short pos_x, pos_y; // Q12.4
@@ -109,37 +118,6 @@ static inline int fastrand(void) {
 
 #define random fastrand
 
-static u_short nrPal = 0;
-static void setTreePalette(void) {
-  const u_short *fruit_cols;
-  const PaletteT *grass_pal;
-  SpriteT *grass;
-  short i;
-  if (nrPal) {
-    fruit_cols = &fruit_2_pal.colors[1],
-    grass_pal = &grass_2_pal;
-    grass = grass_2;
-    SetColor(0, 0x123);
-    SetColor(1, 0x068);
-  } else {
-    fruit_cols = &fruit_1_pal.colors[1],
-    grass_pal = &grass_1_pal;
-    grass = grass_1;
-    SetColor(0, 0xfdb);
-    SetColor(1, 0x653);
-  }
-  for (i = 0; i < 3; i++) {
-    u_short c = *fruit_cols++;
-    SetColor(2 + i * 2, c);
-    SetColor(3 + i * 2, c);
-  }
-  for (i = 16; i < 32; i += 4)
-    LoadPalette(grass_pal, i);
-  for (i = 0; i < NSPRITES; i++)
-    CopInsSetSprite(sprptr[i], &grass[i]);
-  nrPal ^= 1;
-}
-
 static GreetsT *GreetsFetch(void) {
   static __code GreetsT **greetsDataPtr = greetsArray;
 
@@ -166,8 +144,24 @@ static void GreetsNextTrack(void) {
   fastrand_a = fastrand_b = 0;
 }
 
+static void VBlank(void) {
+  short val;
+
+  UpdateFrameCount();
+
+  if ((val = TrackValueGet(&TreeFadeOut, frameFromStart))) 
+    FadeBlack(nrPal ? &tree_pal_electric : &tree_pal_organic, 0, val);
+
+  if ((val = TrackValueGet(&TreeFadeIn, frameFromStart))) 
+    FadeBlack(nrPal ? &tree_pal_electric : &tree_pal_organic, 0, 16 - val);
+}
+
 static void Init(void) {
   short i;
+
+  TrackInit(&TreeVariant);
+  TrackInit(&TreeFadeIn);
+  TrackInit(&TreeFadeOut);
 
   branches = MemAlloc(sizeof(BranchT) * MAXBRANCHES, MEMF_PUBLIC);
   lastBranch = branches;
@@ -178,8 +172,7 @@ static void Init(void) {
 
   for (i = 0; i < NSPRITES; i++) {
     short hp = X(i * 16 + (WIDTH - 16 * NSPRITES) / 2);
-    SpriteUpdatePos(&grass_1[i], hp, Y(HEIGHT - grass_1_height));
-    SpriteUpdatePos(&grass_2[i], hp, Y(HEIGHT - grass_2_height));
+    SpriteUpdatePos(&grass[i], hp, Y(HEIGHT - grass_height));
   }
 
   /* Move sprites into background. */
@@ -190,9 +183,6 @@ static void Init(void) {
   CopSetupBitplanes(cp, bplptr, screen, DEPTH);
   CopSetupSprites(cp, sprptr);
   CopEnd(cp);
-
-  setTreePalette();
-  GreetsNextTrack();
 
   CopListActivate(cp);
 
@@ -476,21 +466,27 @@ void GrowingTree(BranchT *branches, BranchT **lastp) {
 
 PROFILE(GrowTree);
 
-static short waitFrame = 0;
-
 static void Render(void) {
+  static short waitFrame = 0;
+  short val;
+
+  if ((val = TrackValueGet(&TreeVariant, frameFromStart))) {
+    short i;
+    nrPal = val - 1;
+    BitmapClear(screen);
+    GreetsNextTrack();
+    waitFrame = 0;
+
+    for (i = 0; i < NSPRITES; i++)
+      CopInsSetSprite(sprptr[i], &grass[i]);
+  }
+
   if (waitFrame > 0) {
     if (frameCount - waitFrame < 100) {
       TaskWaitVBlank();
       HandleDrawingGreets();
       return;
     }
-
-    waitFrame = 0;
-    BitmapClear(screen);
-    setTreePalette();
-
-    GreetsNextTrack();
   }
 
   if (lastBranch == branches) {
@@ -511,4 +507,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(GrowingTree, NULL, NULL, Init, Kill, Render);
+EFFECT(GrowingTree, NULL, NULL, Init, Kill, Render, VBlank);

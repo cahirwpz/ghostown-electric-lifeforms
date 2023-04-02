@@ -218,7 +218,8 @@ static void BlitSimple(void *sourceA, void *sourceB, void *sourceC,
 // It's just a dirty temporary "fix" - without SRCA in minterms during the first blit 
 // (logo in Init()), the logo never shows up. I added this ugly if just to record video
 // for Slayer, need to fix it properly.
-short blitA = true;
+static short blitA = true;
+
 static void BlitBitmap(short x, short y, const BitmapT *blit) {
   short i;
   short j = active;
@@ -480,4 +481,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(TileMover, Load, UnLoad, Init, Kill, Render);
+EFFECT(TileMover, Load, UnLoad, Init, Kill, Render, NULL);

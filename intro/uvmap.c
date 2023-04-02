@@ -456,5 +456,5 @@ static void Render(void) {
   active ^= 1;
 }
 
-EFFECT(UVGut, Load, NULL, InitGut, Kill, Render);
-EFFECT(UVTit, Load, NULL, InitTit, Kill, Render);
+EFFECT(UVGut, Load, NULL, InitGut, Kill, Render, NULL);
+EFFECT(UVTit, Load, NULL, InitTit, Kill, Render, NULL);
