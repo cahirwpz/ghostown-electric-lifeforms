@@ -322,7 +322,7 @@ static void ChunkyToPlanar(void) {
 }
 
 static void MakeCopperList(CopListT *cp) {
-  short *pixels = gradient.pixels;
+  short *pixels = gradient_pixels;
   short i, j;
 
   CopInit(cp);
