@@ -10,7 +10,6 @@
 #include <sync.h>
 #include <system/memory.h>
 #include <system/interrupt.h>
-#include "palettes.h"
 
 #define WIDTH 320
 #define HEIGHT 256
