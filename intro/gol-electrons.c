@@ -42,7 +42,7 @@ static void SpawnElectrons(const ElectronArrayT *electrons,
       bset(bpl_tails + (post >> 3), ~post);
       *spawn++ += (random() & spawn_mask) + min_delay;
     } else {
-      pts += 4;
+      pts += 2;
       spawn++;
     }
   } while (--n != -1);
