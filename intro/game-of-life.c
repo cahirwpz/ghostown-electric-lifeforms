@@ -92,9 +92,7 @@
 #define NUM_SCENES 4
 
 #include "data/wireworld-vitruvian.c"
-#include "data/wireworld-vitruvian-electrons.c"
 #include "data/wireworld-fullscreen.c"
-#include "data/wireworld-fullscreen-electrons.c"
 #include "data/chip.c"
 #include "data/wireworld-pcb-pal.c"
 #include "data/electric.c"
