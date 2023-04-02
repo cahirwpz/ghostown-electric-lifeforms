@@ -25,7 +25,8 @@ LIBS := libpt
 
 BUILD-FILES := audiovq
 
-CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
+CLEAN-FILES := main.o \
+	data/bar.c data/bar-*.c data/stripes.c data/stripes-*.c \
 	data/$(MODULE)*.o data/$(MODULE).{smp,trk}* data/text-scroll-font.c \
 	data/intro.c data/electric-lifeforms-0[1-2].c \
 	data/fruit-*.c data/anemone-gradient.c data/anemone-gradient-data.c \
@@ -37,7 +38,7 @@ CLEAN-FILES := main.o data/bar.c data/stripes.c data/colors.c \
 	data/wireworld-vitruvian.c \
 	data/wireworld-vitruvian-electrons.c \
 	data/turmite-credits-[1-3].c \
-	data/electric.c \
+	data/electric.c data/lifeforms.c \
 	data/circles.c data/squares.c data/whirl.c \
 	data/grass.c data/loader.c \
 	data/texture-{in,out}side.c data/gradient.c data/gradient.png \

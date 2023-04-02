@@ -24,12 +24,12 @@ if __name__ == '__main__':
         with redirect_stdout(f):
             print('#define anemone_gradient_length %d\n' % len(gradient))
 
-            print('static const u_char anemone_gradient_y[] = {')
+            print('static const __data u_char anemone_gradient_y[] = {')
             for y, _ in gradient:
                 print('  %d,' % y)
             print('};\n')
 
-            print('static const u_char anemone_gradient_color[] = {')
+            print('static const __data u_char anemone_gradient_color[] = {')
             for _, col in gradient:
                 print('  %d,' % col)
             print('};\n')
