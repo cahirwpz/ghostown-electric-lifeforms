@@ -1,15 +1,13 @@
-#include <effect.h>
+#include <intro.h>
 #include <blitter.h>
 #include <copper.h>
 #include <color.h>
-#include <intro.h>
 #include <fx.h>
 #include <gfx.h>
 #include <line.h>
 #include <stdlib.h>
 #include <sprite.h>
 #include <sync.h>
-#include <system/interrupt.h>
 
 #define WIDTH 320
 #define HEIGHT 256
@@ -313,7 +311,7 @@ static void ArmMove(ArmT *arm, short angle) {
   arm->diameter--;
 }
 
-static int ForEachFrame(void) {
+static void VBlank(void) {
   short val;
 
   UpdateFrameCount();
@@ -326,11 +324,7 @@ static int ForEachFrame(void) {
 
   if ((val = TrackValueGet(&SeaAnemoneFadeIn, frameFromStart))) 
     FadeBlack(sea_anemone_palettes[activePalIndex], 0, 16 - val);
-
-  return 0;
 }
-
-INTSERVER(ForEachFrameInterrupt, 0, (IntFuncT)ForEachFrame, NULL);
 
 static void MakeCopperList(CopListT *cp, CopInsT **bplptr, CopInsT **sprptr,
                            CopInsT **insptr)
@@ -406,12 +400,9 @@ static void Init(void) {
     custom->bltcon1 = 0;
     custom->bltafwm = -1;
   }
-
-  AddIntServer(INTB_VERTB, ForEachFrameInterrupt);
 }
 
 static void Kill(void) {
-  RemIntServer(INTB_VERTB, ForEachFrameInterrupt);
   DisableDMA(DMAF_COPPER | DMAF_BLITTER | DMAF_RASTER | DMAF_BLITHOG);
   ResetSprites();
 
@@ -587,4 +578,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(SeaAnemone, Load, NULL, Init, Kill, Render, NULL);
+EFFECT(SeaAnemone, Load, NULL, Init, Kill, Render, VBlank);

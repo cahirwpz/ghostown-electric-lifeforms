@@ -1,9 +1,8 @@
-#include <effect.h>
+#include <intro.h>
 #include <blitter.h>
 #include <copper.h>
 #include <fx.h>
 #include <gfx.h>
-#include <intro.h>
 #include <line.h>
 #include <sprite.h>
 #include <stdlib.h>
@@ -145,7 +144,7 @@ static void GreetsNextTrack(void) {
   fastrand_a = fastrand_b = 0;
 }
 
-static int ForEachFrame(void) {
+static void VBlank(void) {
   short val;
 
   UpdateFrameCount();
@@ -155,11 +154,7 @@ static int ForEachFrame(void) {
 
   if ((val = TrackValueGet(&TreeFadeIn, frameFromStart))) 
     FadeBlack(nrPal ? &tree_pal_electric : &tree_pal_organic, 0, 16 - val);
-
-  return 0;
 }
-
-INTSERVER(ForEachFrameInterrupt, 0, (IntFuncT)ForEachFrame, NULL);
 
 static void Init(void) {
   short i;
@@ -192,12 +187,9 @@ static void Init(void) {
   CopListActivate(cp);
 
   EnableDMA(DMAF_RASTER | DMAF_SPRITE | DMAF_BLITTER);
-
-  AddIntServer(INTB_VERTB, ForEachFrameInterrupt);
 }
 
 static void Kill(void) {
-  RemIntServer(INTB_VERTB, ForEachFrameInterrupt);
   DisableDMA(DMAF_COPPER | DMAF_BLITTER | DMAF_RASTER | DMAF_SPRITE);
 
   MemFree(branches);
@@ -515,4 +507,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(GrowingTree, NULL, NULL, Init, Kill, Render, NULL);
+EFFECT(GrowingTree, NULL, NULL, Init, Kill, Render, VBlank);
