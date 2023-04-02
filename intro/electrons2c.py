@@ -54,7 +54,7 @@ def generate_array(electrons, name):
     for head, tail in electrons:
         hx, hy = head
         tx, ty = tail
-        print(f'    ELPOS({hx}, {hy}), ELPOS({tx-hx}, {ty-hy}),')
+        print(f'    ELPOS({hx}, {hy}), ELPOS({tx}, {ty}) - ELPOS({hx}, {hy}),')
     print('  }')
     print('};')
 
