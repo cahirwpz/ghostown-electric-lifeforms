@@ -6,6 +6,8 @@
 #include <palette.h>
 #include <sync.h>
 #include <system/task.h>
+#include <system/interrupt.h>
+
 #include "intro.h"
 
 #define _SYSTEM
@@ -102,6 +104,16 @@ short UpdateFrameCount(void) {
   return t;
 }
 
+static volatile EffectFuncT VBlankHandler = NULL;
+
+static int VBlankISR(void) {
+  if (VBlankHandler)
+    VBlankHandler();
+  return 0;
+}
+
+INTSERVER(VBlankInterrupt, 0, (IntFuncT)VBlankISR, NULL);
+
 #define SYNCPOS(pos) (((((pos) & 0xff00) >> 2) | ((pos) & 0x3f)) * 3)
 
 static void RunEffects(void) {
@@ -110,9 +122,11 @@ static void RunEffects(void) {
 
   frameCount = SYNCPOS(pos);
   SetFrameCounter(frameCount);
-  PtData.mt_SongPos = pos >> 8;
-  PtData.mt_PatternPos = (pos & 0x3f) << 4;
+  PtSongPos = pos >> 8;
+  PtPatternPos = (pos & 0x3f) << 4;
   PtEnable = -1;
+
+  AddIntServer(INTB_VERTB, VBlankInterrupt);
 
   for (;;) {
     static short prev = -1;
@@ -122,12 +136,14 @@ static void RunEffects(void) {
 
     if (prev != curr) {
       if (prev >= 0) {
+        VBlankHandler = NULL;
         EffectKill(AllEffects[prev]);
         ShowMemStats();
       }
       if (curr == -1)
         break;
       EffectInit(AllEffects[curr]);
+      VBlankHandler = AllEffects[curr]->VBlank;
       ShowMemStats();
       Log("[Effect] Transition to %s took %d frames!\n",
           AllEffects[curr]->name, ReadFrameCounter() - lastFrameCount);
@@ -144,6 +160,8 @@ static void RunEffects(void) {
 
     prev = curr;
   }
+
+  RemIntServer(INTB_VERTB, VBlankInterrupt);
 }
 
 extern void InitSamples(void);

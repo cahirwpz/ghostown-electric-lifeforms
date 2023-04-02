@@ -9,7 +9,6 @@
 #include <color.h>
 #include <sync.h>
 #include <system/memory.h>
-#include <system/interrupt.h>
 
 extern TrackT WeaveBarPulse;
 extern TrackT WeaveStripePulse;
@@ -356,7 +355,7 @@ static void LoadColorArray(const u_short *col, short ncols, u_int start) {
   } while (--n != -1);
 }
 
-static int ForEachFrame(void) {
+static void VBlank(void) {
   short val;
   short i, m;
 
@@ -397,11 +396,7 @@ static int ForEachFrame(void) {
       }
     }
   }
-
-  return 0;
 }
-
-INTSERVER(ForEachFrameInterrupt, 0, (IntFuncT)ForEachFrame, NULL);
 
 static void Init(void) {
   short i;
@@ -448,14 +443,10 @@ static void Init(void) {
 #endif
 
   EnableDMA(DMAF_RASTER);
-
-  AddIntServer(INTB_VERTB, ForEachFrameInterrupt);
 }
 
 static void Kill(void) {
   short i;
-
-  RemIntServer(INTB_VERTB, ForEachFrameInterrupt);
 
   ResetSprites();
   DisableDMA(DMAF_RASTER | DMAF_COPPER);
@@ -604,4 +595,4 @@ static void Render(void) {
   active ^= 1;
 }
 
-EFFECT(Weave, Load, NULL, Init, Kill, Render);
+EFFECT(Weave, Load, NULL, Init, Kill, Render, VBlank);
