@@ -179,7 +179,6 @@ static void Init(void) {
   for (i = 0; i < NSPRITES; i++) {
     short hp = X(i * 16 + (WIDTH - 16 * NSPRITES) / 2);
     SpriteUpdatePos(&grass[i], hp, Y(HEIGHT - grass_height));
-    //SpriteUpdatePos(&grass_2[i], hp, Y(HEIGHT - grass_2_height));
   }
 
   /* Move sprites into background. */
