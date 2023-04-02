@@ -56,7 +56,7 @@ def get_positions(infile):
 
 def generate_array(electrons, name):
     res = ""
-    res += "static const ElectronArrayT {} = {{\n".format(name)
+    res += "static const __data ElectronArrayT {} = {{\n".format(name)
     res += "  .num_electrons = {},\n".format(len(electrons))
     res += "  .points = {\n"
     for head, tail in electrons:
