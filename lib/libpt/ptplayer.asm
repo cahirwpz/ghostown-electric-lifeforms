@@ -679,7 +679,7 @@ mt_reset:
 ; a4 must be initialised with base register
 
 	; reset speed and counters
-	move.b	#6,mt_Speed(a4)
+	move.b	#3,mt_Speed(a4)                 ; [cahirwpz] hotfix for EL
 	clr.b	mt_Counter(a4)
 	clr.w	mt_PatternPos(a4)
 
