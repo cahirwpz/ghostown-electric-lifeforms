@@ -533,8 +533,8 @@ static void ControlStripes(void) {
   }
 }
 
-static short shakeStripe[21] = {
-  0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1, 1,
+static short shakeStripe[16] = {
+  0, 0, 1, 1, 2, 2, 3, 3, 3, 3, 2, 2, 1, 1, 0, 0,
 };
 
 static void Render(void) {
