@@ -12,6 +12,7 @@
 
 extern TrackT WeaveBarPulse;
 extern TrackT WeaveStripePulse;
+extern TrackT WeaveShake;
 
 #include "data/bar.c"
 #include "data/bar-dark.c"
@@ -53,11 +54,12 @@ typedef struct StateFull {
   CopListT *cp;
   CopInsT *sprite;
   /* for each line five horizontal positions */
+  short ampl;
   u_short *stripes[HEIGHT];
 } StateFullT;
 
 static int active = 1;
-static short sintab8[128 * 4];
+static short sintab8[4][128 * 4];
 static StateFullT *stateFull;
 static StateBarT *stateBars;
 static SpriteT stripe[NSPRITES];
@@ -257,7 +259,7 @@ static void UpdateStripeState(StateFullT *state) {
   for (i = 0; i < STRIPES * 8; i += 8) {
     u_int phase = (u_char)*phasep;
     u_short **stripesp = state->stripes;
-    short *st = &sintab8[phase];
+    short *st = &sintab8[state->ampl][phase];
     short hp_off = *offsetp++;
     short n = HEIGHT / 8 - 1;
 
@@ -315,13 +317,15 @@ static void CopySpriteTiles(int t) {
 }
 
 static void Load(void) {
-  int i, j;
+  int i, j, k;
 
-  for (i = 0, j = 0; i < 128; i++, j += 32)
-    sintab8[i] = (sintab[j] + 512) >> 10;
+  for (k = 0; k < 4; k++) {
+    for (i = 0, j = 0; i < 128; i++, j += 32)
+      sintab8[k][i] = (k * (sintab[j] + 512)) >> 12;
 
-  memcpy(&sintab8[128], &sintab8[0], 128 * sizeof(u_short));
-  memcpy(&sintab8[256], &sintab8[0], 256 * sizeof(u_short));
+    memcpy(&sintab8[k][128], &sintab8[k][0], 128 * sizeof(u_short));
+    memcpy(&sintab8[k][256], &sintab8[k][0], 256 * sizeof(u_short));
+  }
 }
 
 static const PaletteT *barPalArray[] = {
@@ -471,12 +475,10 @@ static const short BarY[4] = { BY0, BY1, BY2, BY3 };
 
 static void ControlBarsIn(StateBarT *bars) {
   short t = frameFromStart;
-  short b = 3;
+  short b;
 
-  bars->bar_y[0] = -100;
-  bars->bar_y[1] = -100;
-  bars->bar_y[2] = -100;
-  bars->bar_y[3] = -100;
+  for (b = 3; b >= 0; b--)
+    bars->bar_y[b] = -100;
 
   for (b = 3; b >= 0; b--) {
     if (t < 16) {
@@ -491,12 +493,10 @@ static void ControlBarsIn(StateBarT *bars) {
 
 static void ControlBarsOut(StateBarT *bars) {
   short t = 64 - frameTillEnd;
-  short b = 3;
+  short b;
 
-  bars->bar_y[0] = BarY[0];
-  bars->bar_y[1] = BarY[1];
-  bars->bar_y[2] = BarY[2];
-  bars->bar_y[3] = BarY[3];
+  for (b = 3; b >= 0; b--)
+    bars->bar_y[b] = BarY[b];
 
   for (b = 3; b >= 0; b--) {
     if (t < 16) {
@@ -533,6 +533,10 @@ static void ControlStripes(void) {
   }
 }
 
+static short shakeStripe[21] = {
+  0, 1, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 2, 2, 2, 2, 1, 1, 1, 1,
+};
+
 static void Render(void) {
   if (frameFromStart < 64 || frameTillEnd < 64) {
     StateBarT *bars = &stateBars[active];
@@ -544,6 +548,13 @@ static void Render(void) {
     CopListRun(bars->cp);
   } else {
     StateFullT *state = &stateFull[active];
+    
+    {
+      short val = TrackValueGet(&WeaveShake, frameFromStart);
+
+      stateFull[0].ampl = shakeStripe[val];
+      stateFull[1].ampl = shakeStripe[val];
+    }
 
     EnableDMA(DMAF_SPRITE);
     ControlStripes();
