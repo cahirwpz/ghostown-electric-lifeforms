@@ -346,10 +346,6 @@ static void MakeCopperList(CopListT *cp) {
 }
 
 static void Init(void) {
-  TrackInit(&UvmapTransition);
-  TrackInit(&UvmapSrcTexture);
-  TrackInit(&UvmapDstTexture);
-
   screen[0] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH);
   screen[1] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH);
 
