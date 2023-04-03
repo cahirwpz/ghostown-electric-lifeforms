@@ -516,31 +516,20 @@ static void ControlBars(StateBarT *bars) {
     ControlBarsOut(bars);
 }
 
+static __code short phaseIn = 0;
+static __code short phaseOut = 0;
+
 static void ControlStripes(void) {
   if (frameFromStart <= 224) {
-    static __code short phase = 0;
-
     short t = frameFromStart - 64;
 
-    if ((t >= 0 && phase == 0) ||
-        (t >= 33 && phase == 1) ||
-        (t >= 65 && phase == 2) ||
-        (t >= 97 && phase == 3) ||
-        (t >= 129 && phase == 4)) {
-      CopySpriteTiles(phase++);
-    }
+    if (t >= 1 + 32 * phaseIn)
+      CopySpriteTiles(phaseIn++);
   } else if (frameTillEnd <= 224) {
-    static __code short phase = 0;
-
     short t = 224 - frameTillEnd;
 
-    if ((t >= 1 && phase == 0) ||
-        (t >= 33 && phase == 1) ||
-        (t >= 65 && phase == 2) ||
-        (t >= 97 && phase == 3) ||
-        (t >= 129 && phase == 4)) {
-      ZeroSpriteTiles(phase++);
-    }
+    if (t >= 1 + 32 * phaseOut)
+      ZeroSpriteTiles(phaseOut++);
   }
 }
 
