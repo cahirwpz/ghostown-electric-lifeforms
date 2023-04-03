@@ -230,7 +230,7 @@ static void MakeCopperList(CopListT *cp) {
   for (i = 0; i < 8; i++) {
     SpriteT *spr = &wireworld_chip[i];
     SpriteUpdatePos(spr,
-                    X(DISP_WIDTH / 2 + (i / 2) * 16 - 32),
+                    X(DISP_WIDTH / 2 + (i / 2) * 16 - 33),
                     Y(DISP_HEIGHT / 2 - spr->height / 2));
     if (wireworld && TrackValueGet(&WireworldBg, frameCount) == 1) {
       CopInsSetSprite(sprptr[i], spr);
