@@ -56,9 +56,9 @@ _AK_ProgressLen:
 
 AK_USE_PROGRESS			equ 1
 AK_FINE_PROGRESS		equ 1
-AK_FINE_PROGRESS_LEN	equ 246552
-AK_SMP_LEN				equ 184042
-AK_EXT_SMP_LEN			equ 9079
+AK_FINE_PROGRESS_LEN	equ 239956
+AK_SMP_LEN				equ 177446
+AK_EXT_SMP_LEN			equ 6762
 
 AK_Generate:
 
@@ -671,229 +671,17 @@ AK_Generate:
 				endif
 
 ;----------------------------------------------------------------------------
-; Instrument 7 - ELF_arp
+; Empty Instrument
 ;----------------------------------------------------------------------------
 
-				moveq	#0,d0
-				bsr		AK_ResetVars
-				moveq	#0,d7
+				addq.w	#2,a0
 				ifne	AK_USE_PROGRESS
 					ifeq	AK_FINE_PROGRESS
 						addq.b	#1,(a3)
+					else
+						addq.l	#2,(a3)
 					endif
 				endif
-.Inst7Loop
-				; v1 = imported_sample(smp,0)
-				moveq	#0,d0
-				cmp.l	AK_ExtSmpLen+0(a5),d7
-				bge.s	.NoClone_7_1
-				move.l	AK_ExtSmpAddr+0(a5),a4
-				move.b	(a4,d7.l),d0
-				asl.w	#8,d0
-.NoClone_7_1
-
-				; v1 = reverb(v1, 80, 39)
-				move.l	d7,-(sp)
-				sub.l	a6,a6
-				move.l	a1,a4
-				move.w	AK_OpInstance+0(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#80,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_7_2_0
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_7_2_0
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#557<<1,d5
-				ble.s	.NoReverbReset_7_2_0
-				moveq	#0,d5
-.NoReverbReset_7_2_0
-				move.w  d5,AK_OpInstance+0(a5)
-				move.w	d4,d7
-				muls	#39,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				lea		4096(a1),a4
-				move.w	AK_OpInstance+2(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#80,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_7_2_1
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_7_2_1
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#593<<1,d5
-				ble.s	.NoReverbReset_7_2_1
-				moveq	#0,d5
-.NoReverbReset_7_2_1
-				move.w  d5,AK_OpInstance+2(a5)
-				move.w	d4,d7
-				muls	#39,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				lea		8192(a1),a4
-				move.w	AK_OpInstance+4(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#80,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_7_2_2
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_7_2_2
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#641<<1,d5
-				ble.s	.NoReverbReset_7_2_2
-				moveq	#0,d5
-.NoReverbReset_7_2_2
-				move.w  d5,AK_OpInstance+4(a5)
-				move.w	d4,d7
-				muls	#39,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				lea		12288(a1),a4
-				move.w	AK_OpInstance+6(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#80,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_7_2_3
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_7_2_3
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#677<<1,d5
-				ble.s	.NoReverbReset_7_2_3
-				moveq	#0,d5
-.NoReverbReset_7_2_3
-				move.w  d5,AK_OpInstance+6(a5)
-				move.w	d4,d7
-				muls	#39,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				lea		16384(a1),a4
-				move.w	AK_OpInstance+8(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#80,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_7_2_4
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_7_2_4
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#709<<1,d5
-				ble.s	.NoReverbReset_7_2_4
-				moveq	#0,d5
-.NoReverbReset_7_2_4
-				move.w  d5,AK_OpInstance+8(a5)
-				move.w	d4,d7
-				muls	#39,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				lea		20480(a1),a4
-				move.w	AK_OpInstance+10(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#80,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_7_2_5
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_7_2_5
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#743<<1,d5
-				ble.s	.NoReverbReset_7_2_5
-				moveq	#0,d5
-.NoReverbReset_7_2_5
-				move.w  d5,AK_OpInstance+10(a5)
-				move.w	d4,d7
-				muls	#39,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				lea		24576(a1),a4
-				move.w	AK_OpInstance+12(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#80,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_7_2_6
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_7_2_6
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#787<<1,d5
-				ble.s	.NoReverbReset_7_2_6
-				moveq	#0,d5
-.NoReverbReset_7_2_6
-				move.w  d5,AK_OpInstance+12(a5)
-				move.w	d4,d7
-				muls	#39,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				lea		28672(a1),a4
-				move.w	AK_OpInstance+14(a5),d5
-				move.w	(a4,d5.w),d4
-				muls	#80,d4
-				asr.l	#7,d4
-				add.w	d0,d4
-				bvc.s	.ReverbAddNoClamp_7_2_7
-				spl		d4
-				ext.w	d4
-				eor.w	#$7fff,d4
-.ReverbAddNoClamp_7_2_7
-				move.w	d4,(a4,d5.w)
-				addq.w	#2,d5
-				cmp.w	#809<<1,d5
-				ble.s	.NoReverbReset_7_2_7
-				moveq	#0,d5
-.NoReverbReset_7_2_7
-				move.w  d5,AK_OpInstance+14(a5)
-				move.w	d4,d7
-				muls	#39,d7
-				asr.l	#7,d7
-				add.w	d7,a6
-				move.l	a6,d7
-				cmp.l	#32767,d7
-				ble.s	.NoReverbMax_7_2
-				move.w	#32767,d7
-				bra.s	.NoReverbMin_7_2
-.NoReverbMax_7_2
-				cmp.l	#-32768,d7
-				bge.s	.NoReverbMin_7_2
-				move.w	#-32768,d7
-.NoReverbMin_7_2
-				move.w	d7,d0
-				move.l	(sp)+,d7
-
-				asr.w	#8,d0
-				move.b	d0,(a0)+
-				ifne	AK_USE_PROGRESS
-					ifne	AK_FINE_PROGRESS
-						addq.l	#1,(a3)
-					endif
-				endif
-				addq.l	#1,d7
-				cmp.l	AK_SmpLen+24(a5),d7
-				blt		.Inst7Loop
 
 ;----------------------------------------------------------------------------
 ; Empty Instrument
@@ -938,7 +726,7 @@ AK_Generate:
 ; Instrument 11 - kixx
 ;----------------------------------------------------------------------------
 
-				moveq	#8,d0
+				moveq	#0,d0
 				bsr		AK_ResetVars
 				moveq	#0,d7
 				ifne	AK_USE_PROGRESS
@@ -4630,7 +4418,7 @@ AK_Vars:
 				dc.l	$00003000		; Instrument 4 Length 
 				dc.l	$00003000		; Instrument 5 Length 
 				dc.l	$00000002		; Instrument 6 Length 
-				dc.l	$000019c6		; Instrument 7 Length 
+				dc.l	$00000002		; Instrument 7 Length 
 				dc.l	$00000002		; Instrument 8 Length 
 				dc.l	$00000002		; Instrument 9 Length 
 				dc.l	$00000002		; Instrument 10 Length 
@@ -4655,7 +4443,7 @@ AK_Vars:
 				dc.l	$00001eee		; Instrument 29 Length 
 				dc.l	$00001b7e		; Instrument 30 Length 
 				dc.l	$00000516		; Instrument 31 Length 
-				dc.l	$0000090d		; External Sample 1 Length 
+				dc.l	$00000000		; External Sample 1 Length 
 				dc.l	$00001592		; External Sample 2 Length 
 				dc.l	$00000000		; External Sample 3 Length 
 				dc.l	$00000000		; External Sample 4 Length 
