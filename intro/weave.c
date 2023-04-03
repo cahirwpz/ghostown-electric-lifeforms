@@ -322,9 +322,6 @@ static void Load(void) {
 
   memcpy(&sintab8[128], &sintab8[0], 128 * sizeof(u_short));
   memcpy(&sintab8[256], &sintab8[0], 256 * sizeof(u_short));
-
-  TrackInit(&WeaveBarPulse);
-  TrackInit(&WeaveStripePulse);
 }
 
 static const PaletteT *barPalArray[] = {

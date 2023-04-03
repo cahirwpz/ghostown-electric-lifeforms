@@ -38,8 +38,6 @@ static void Init(void) {
       SetColor(i, electric_lifeforms_1_pal.colors[0]);
   }
 
-  TrackInit(&ElectricLifeformsLogoPal);
-
   cp = NewCopList(40);
   CopInit(cp);
   CopSetupBitplanes(cp, NULL, screen, DEPTH);

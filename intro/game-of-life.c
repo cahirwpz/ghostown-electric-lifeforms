@@ -305,26 +305,6 @@ static void GameOfLife(void *boards) {
 
 static short scene_count = 0;
 
-static void Load(void) {
-  static bool loaded = false;
-
-  if (loaded)
-    return;
-
-  TrackInit(&GOLGame);
-  TrackInit(&WireworldDisplayBg);
-  TrackInit(&WireworldBg);
-  TrackInit(&WireworldSpawnMask);
-  TrackInit(&WireworldMinDelay);
-  TrackInit(&WireworldSpawnNow);
-  TrackInit(&GOLCellColor);
-  TrackInit(&GOLLogoColor);
-  TrackInit(&GOLLogoFade);
-  TrackInit(&GOLLogoType);
-
-  loaded = true;
-}
-
 static void LoadBackground(const BitmapT *bg, u_short x, u_short y, short idx) {
     BitmapT *tmp = NewBitmap(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH);
     BitmapCopy(tmp, x, y, bg);
@@ -571,5 +551,5 @@ static void Render(void) {
 }
 #endif
 
-EFFECT(Wireworld, Load, NULL, InitWireworld, Kill, Render, NULL);
-EFFECT(GameOfLife, Load, NULL, InitGameOfLife, Kill, Render, NULL);
+EFFECT(Wireworld, NULL, NULL, InitWireworld, Kill, Render, NULL);
+EFFECT(GameOfLife, NULL, NULL, InitGameOfLife, Kill, Render, NULL);

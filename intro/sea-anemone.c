@@ -345,15 +345,6 @@ static void MakeCopperList(CopListT *cp, CopInsT **bplptr, CopInsT **sprptr,
   CopEnd(cp);
 }
 
-static void Load(void) {
-  TrackInit(&SeaAnemoneVariant);
-  TrackInit(&SeaAnemonePal);
-  TrackInit(&SeaAnemonePalPulse);
-  TrackInit(&SeaAnemoneGradient);
-  TrackInit(&SeaAnemoneFadeOut);
-  TrackInit(&SeaAnemoneFadeIn);
-}
-
 static __code u_short gradient[anemone_gradient_pal_count];
 
 static void GradientUpdate(CopInsT **insptr, short step) {
@@ -578,4 +569,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(SeaAnemone, Load, NULL, Init, Kill, Render, VBlank);
+EFFECT(SeaAnemone, NULL, NULL, Init, Kill, Render, VBlank);
