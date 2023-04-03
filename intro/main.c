@@ -175,7 +175,12 @@ int main(void) {
   PtInstallCIA();
   PtInit(Module, Samples, 0);
 
-  TrackInit(&EffectNumber);
+  {
+    TrackT **trkp = AllTracks;
+    while (*trkp)
+      TrackInit(*trkp++);
+  }
+
   LoadEffects(AllEffects);
 
   RunEffects();

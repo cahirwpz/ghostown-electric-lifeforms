@@ -47,8 +47,6 @@ static void Init(void) {
   WaitBlitter();
   DisableDMA(DMAF_BLITTER);
 
-  TrackInit(&GhostownLogoPal);
-
   cp = NewCopList(40);
   CopInit(cp);
   CopSetupBitplanes(cp, NULL, screen, DEPTH);
