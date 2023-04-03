@@ -522,46 +522,24 @@ static void ControlStripes(void) {
 
     short t = frameFromStart - 64;
 
-    if (t >= 0 && phase == 0) {
-      CopySpriteTiles(0);
-      ZeroSpriteTiles(1);
-      ZeroSpriteTiles(2);
-      ZeroSpriteTiles(3);
-      ZeroSpriteTiles(4);
-      phase++;
-    } else if (t >= 33 && phase == 1) {
-      CopySpriteTiles(1);
-      phase++;
-    } else if (t >= 65 && phase == 2) {
-      CopySpriteTiles(2);
-      phase++;
-    } else if (t >= 97 && phase == 3) {
-      CopySpriteTiles(3);
-      phase++;
-    } else if (t >= 129 && phase == 4) {
-      CopySpriteTiles(4);
-      phase++;
+    if ((t >= 0 && phase == 0) ||
+        (t >= 33 && phase == 1) ||
+        (t >= 65 && phase == 2) ||
+        (t >= 97 && phase == 3) ||
+        (t >= 129 && phase == 4)) {
+      CopySpriteTiles(phase++);
     }
   } else if (frameTillEnd <= 224) {
     static __code short phase = 0;
 
     short t = 224 - frameTillEnd;
 
-    if (t >= 1 && phase == 0) {
-      ZeroSpriteTiles(0);
-      phase++;
-    } else if (t >= 33 && phase == 1) {
-      ZeroSpriteTiles(1);
-      phase++;
-    } else if (t >= 65 && phase == 2) {
-      ZeroSpriteTiles(2);
-      phase++;
-    } else if (t >= 97 && phase == 3) {
-      ZeroSpriteTiles(3);
-      phase++;
-    } else if (t >= 129 && phase == 4) {
-      ZeroSpriteTiles(4);
-      phase++;
+    if ((t >= 1 && phase == 0) ||
+        (t >= 33 && phase == 1) ||
+        (t >= 65 && phase == 2) ||
+        (t >= 97 && phase == 3) ||
+        (t >= 129 && phase == 4)) {
+      ZeroSpriteTiles(phase++);
     }
   }
 }
