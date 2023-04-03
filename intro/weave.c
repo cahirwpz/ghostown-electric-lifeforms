@@ -1,17 +1,25 @@
-#include "effect.h"
-
-#include "custom.h"
-#include "copper.h"
-#include "blitter.h"
-#include "bitmap.h"
-#include "sprite.h"
-#include "fx.h"
+#include <intro.h>
+#include <custom.h>
+#include <copper.h>
+#include <blitter.h>
+#include <bitmap.h>
+#include <sprite.h>
+#include <fx.h>
 #include <strings.h>
-#include <system/memory.h>
 #include <color.h>
+#include <sync.h>
+#include <system/memory.h>
+
+extern TrackT WeaveBarPulse;
+extern TrackT WeaveStripePulse;
+extern TrackT WeaveShake;
 
 #include "data/bar.c"
+#include "data/bar-dark.c"
+#include "data/bar-bright.c"
 #include "data/stripes.c"
+#include "data/stripes-dark.c"
+#include "data/stripes-bright.c"
 
 #define bar_bplmod ((bar_width - WIDTH) / 8 - 2)
 
@@ -46,11 +54,12 @@ typedef struct StateFull {
   CopListT *cp;
   CopInsT *sprite;
   /* for each line five horizontal positions */
+  short ampl;
   u_short *stripes[HEIGHT];
 } StateFullT;
 
 static int active = 1;
-static short sintab8[128 * 4];
+static short sintab8[4][128 * 4];
 static StateFullT *stateFull;
 static StateBarT *stateBars;
 static SpriteT stripe[NSPRITES];
@@ -193,36 +202,6 @@ static void MakeCopperListBars(StateBarT *bars) {
   CopEnd(cp);
 }
 
-/* TODO: Calculate all of that upfront, so we don't use precious cycles. */
-static void UpdateBarColor(StateBarT *bars, short step) {
-  u_char *_colortab = colortab;
-  short i;
-
-  for (i = 0; i < BARS; i++) {
-    CopInsT *pal = bars->palette[i] + 1;
-    const u_short *col = &bar_pal.colors[(i & 1 ? 16 : 0) + 1];
-    short k;
-    
-    for (k = 1; k < 16; k++) {
-      u_short from = *col++;
-      u_short c;
-#if 0
-      c = ColorTransition(from, 0xfff, step);
-#else
-      short r = (from & 0xf00) | 0x0f0 | step;
-      short g = ((from << 4) & 0xf00) | 0x0f0 | step;
-      short b = ((from << 8) & 0xf00) | 0x0f0 | step;
-      r = _colortab[r];
-      g = _colortab[g];
-      b = _colortab[b];
-      c = (r << 4) | g | (b >> 4);
-#endif
-
-      CopInsSet16(pal++, c);
-    }
-  }
-}
-
 static void UpdateBarState(StateBarT *bars) {
   short w = (bar_width - WIDTH) / 2;
   short f = frameCount * 16;
@@ -280,7 +259,7 @@ static void UpdateStripeState(StateFullT *state) {
   for (i = 0; i < STRIPES * 8; i += 8) {
     u_int phase = (u_char)*phasep;
     u_short **stripesp = state->stripes;
-    short *st = &sintab8[phase];
+    short *st = &sintab8[state->ampl][phase];
     short hp_off = *offsetp++;
     short n = HEIGHT / 8 - 1;
 
@@ -338,13 +317,86 @@ static void CopySpriteTiles(int t) {
 }
 
 static void Load(void) {
-  int i, j;
+  int i, j, k;
 
-  for (i = 0, j = 0; i < 128; i++, j += 32)
-    sintab8[i] = (sintab[j] + 512) >> 10;
+  for (k = 0; k < 4; k++) {
+    for (i = 0, j = 0; i < 128; i++, j += 32)
+      sintab8[k][i] = (k * (sintab[j] + 512)) >> 12;
 
-  memcpy(&sintab8[128], &sintab8[0], 128 * sizeof(u_short));
-  memcpy(&sintab8[256], &sintab8[0], 256 * sizeof(u_short));
+    memcpy(&sintab8[k][128], &sintab8[k][0], 128 * sizeof(u_short));
+    memcpy(&sintab8[k][256], &sintab8[k][0], 256 * sizeof(u_short));
+  }
+}
+
+static const PaletteT *barPalArray[] = {
+  &bar_bright_pal,
+  &bar_pal,
+  &bar_dark_pal,
+};
+
+static const PaletteT *stripePalArray[] = {
+  &stripes_bright_pal,
+  &stripes_pal,
+  &stripes_dark_pal,
+};
+
+static const short palIdxSeq[] = {
+  -1, 2, 2, 2, 2, 2, 1, 1, 1, 1, 1, 0, 0, 0, 0, 0, 1, 1, 1, 1, 1, -1
+};
+
+static short barPalIdx[4];
+static short stripePalIdx[4];
+
+static void LoadColorArray(const u_short *col, short ncols, u_int start) {
+  short n = ncols - 1;
+  volatile u_short *colreg = custom->color + start;
+
+  do {
+    *colreg++ = *col++;
+  } while (--n != -1);
+}
+
+static void VBlank(void) {
+  short val;
+  short i, m;
+
+  UpdateFrameCount();
+
+  if ((val = TrackValueGet(&WeaveStripePulse, frameFromStart))) {
+    for (i = 3; i >= 0; i--, val >>= 1) {
+      if (val & 1)
+        stripePalIdx[i] = 1;
+    }
+  }
+
+  for (i = 0, m = 0; i < 4; i++, m += 4) {
+    short palIdx = palIdxSeq[stripePalIdx[i]];
+    if (palIdx < 0)
+      continue;
+    stripePalIdx[i]++;
+    LoadColorArray(&stripePalArray[palIdx]->colors[m], 4, 16 + m);
+  }
+
+  if ((val = TrackValueGet(&WeaveBarPulse, frameFromStart))) {
+    for (i = 3; i >= 0; i--, val >>= 1) {
+      if (val & 1)
+        barPalIdx[i] = 1;
+    }
+  }
+
+  for (i = 0; i < 4; i++) {
+    short palIdx = palIdxSeq[barPalIdx[i]];
+    if (palIdx < 0)
+      continue;
+    barPalIdx[i]++;
+    {
+      CopInsT *ins = stateFull[active ^ 1].bars.palette[i];
+      const u_short *col = &barPalArray[palIdx]->colors[(i & 1) ? 16 : 0];
+      for (m = 0; m < 16; m++) {
+        CopInsSet16(ins++, *col++);
+      }
+    }
+  }
 }
 
 static void Init(void) {
@@ -423,12 +475,10 @@ static const short BarY[4] = { BY0, BY1, BY2, BY3 };
 
 static void ControlBarsIn(StateBarT *bars) {
   short t = frameFromStart;
-  short b = 3;
+  short b;
 
-  bars->bar_y[0] = -100;
-  bars->bar_y[1] = -100;
-  bars->bar_y[2] = -100;
-  bars->bar_y[3] = -100;
+  for (b = 3; b >= 0; b--)
+    bars->bar_y[b] = -100;
 
   for (b = 3; b >= 0; b--) {
     if (t < 16) {
@@ -443,12 +493,10 @@ static void ControlBarsIn(StateBarT *bars) {
 
 static void ControlBarsOut(StateBarT *bars) {
   short t = 64 - frameTillEnd;
-  short b = 3;
+  short b;
 
-  bars->bar_y[0] = BarY[0];
-  bars->bar_y[1] = BarY[1];
-  bars->bar_y[2] = BarY[2];
-  bars->bar_y[3] = BarY[3];
+  for (b = 3; b >= 0; b--)
+    bars->bar_y[b] = BarY[b];
 
   for (b = 3; b >= 0; b--) {
     if (t < 16) {
@@ -468,55 +516,26 @@ static void ControlBars(StateBarT *bars) {
     ControlBarsOut(bars);
 }
 
+static __code short phaseIn = 0;
+static __code short phaseOut = 0;
+
 static void ControlStripes(void) {
   if (frameFromStart <= 224) {
-    static __code short phase = 0;
-
     short t = frameFromStart - 64;
 
-    if (t >= 0 && phase == 0) {
-      CopySpriteTiles(0);
-      ZeroSpriteTiles(1);
-      ZeroSpriteTiles(2);
-      ZeroSpriteTiles(3);
-      ZeroSpriteTiles(4);
-      phase++;
-    } else if (t >= 33 && phase == 1) {
-      CopySpriteTiles(1);
-      phase++;
-    } else if (t >= 65 && phase == 2) {
-      CopySpriteTiles(2);
-      phase++;
-    } else if (t >= 97 && phase == 3) {
-      CopySpriteTiles(3);
-      phase++;
-    } else if (t >= 129 && phase == 4) {
-      CopySpriteTiles(4);
-      phase++;
-    }
+    if (t >= 1 + 32 * phaseIn)
+      CopySpriteTiles(phaseIn++);
   } else if (frameTillEnd <= 224) {
-    static __code short phase = 0;
-
     short t = 224 - frameTillEnd;
 
-    if (t >= 1 && phase == 0) {
-      ZeroSpriteTiles(0);
-      phase++;
-    } else if (t >= 33 && phase == 1) {
-      ZeroSpriteTiles(1);
-      phase++;
-    } else if (t >= 65 && phase == 2) {
-      ZeroSpriteTiles(2);
-      phase++;
-    } else if (t >= 97 && phase == 3) {
-      ZeroSpriteTiles(3);
-      phase++;
-    } else if (t >= 129 && phase == 4) {
-      ZeroSpriteTiles(4);
-      phase++;
-    }
+    if (t >= 1 + 32 * phaseOut)
+      ZeroSpriteTiles(phaseOut++);
   }
 }
+
+static short shakeStripe[16] = {
+  0, 0, 1, 1, 2, 2, 3, 3, 3, 3, 2, 2, 1, 1, 0, 0,
+};
 
 static void Render(void) {
   if (frameFromStart < 64 || frameTillEnd < 64) {
@@ -529,11 +548,17 @@ static void Render(void) {
     CopListRun(bars->cp);
   } else {
     StateFullT *state = &stateFull[active];
+    
+    {
+      short val = TrackValueGet(&WeaveShake, frameFromStart);
+
+      stateFull[0].ampl = shakeStripe[val];
+      stateFull[1].ampl = shakeStripe[val];
+    }
 
     EnableDMA(DMAF_SPRITE);
     ControlStripes();
     ProfilerStart(UpdateStripeState);
-    UpdateBarColor(&state->bars, (frameCount >> 2) & 3);
     UpdateBarState(&state->bars);
     UpdateSpriteState(state);
     UpdateStripeState(state);
@@ -545,4 +570,4 @@ static void Render(void) {
   active ^= 1;
 }
 
-EFFECT(Weave, Load, NULL, Init, Kill, Render);
+EFFECT(Weave, Load, NULL, Init, Kill, Render, VBlank);

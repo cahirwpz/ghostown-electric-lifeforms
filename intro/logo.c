@@ -47,8 +47,6 @@ static void Init(void) {
   WaitBlitter();
   DisableDMA(DMAF_BLITTER);
 
-  TrackInit(&GhostownLogoPal);
-
   cp = NewCopList(40);
   CopInit(cp);
   CopSetupBitplanes(cp, NULL, screen, DEPTH);
@@ -91,4 +89,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(Logo, NULL, NULL, Init, NULL, Render);
+EFFECT(Logo, NULL, NULL, Init, NULL, Render, NULL);

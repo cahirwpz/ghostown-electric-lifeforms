@@ -1,15 +1,12 @@
-#include "effect.h"
-
-#include "custom.h"
-#include "copper.h"
-#include "blitter.h"
-#include "bitmap.h"
-#include "sprite.h"
-#include "intro.h"
-#include "fx.h"
+#include <intro.h>
+#include <custom.h>
+#include <copper.h>
+#include <blitter.h>
+#include <bitmap.h>
+#include <sprite.h>
+#include <fx.h>
 #include <sync.h>
 #include <system/memory.h>
-#include <system/interrupt.h>
 
 #include "data/turmite-credits-1.c"
 #include "data/turmite-credits-2.c"
@@ -577,7 +574,7 @@ static void ChooseTurmiteBoard(short i) {
   active_pal = turmite_pal[i];
 }
 
-static int ForEachFrame(void) {
+static void ForEachFrame(void) {
   short val;
 
   UpdateFrameCount();
@@ -590,11 +587,7 @@ static int ForEachFrame(void) {
 
   if ((val = TrackValueGet(&TurmiteFadeIn, frameFromStart))) 
     FadeBlack(turmite_palettes[active_pal_index], 0, 16 - val);
-
-  return 0;
 }
-
-INTSERVER(ForEachFrameInterrupt, 0, (IntFuncT)ForEachFrame, NULL);
 
 static void Init(void) {
   board = MemAlloc(WIDTH * HEIGHT, MEMF_PUBLIC|MEMF_CLEAR);
@@ -606,11 +599,6 @@ static void Init(void) {
   SetupMode(MODE_LORES, DEPTH);
   LoadPalette(&pal_gold, 0);
 
-  TrackInit(&TurmiteBoard);
-  TrackInit(&TurmitePal);
-  TrackInit(&TurmiteFadeIn);
-  TrackInit(&TurmiteFadeOut);
-  
   EnableDMA(DMAF_BLITTER);
   ChooseTurmiteBoard(1);
 
@@ -621,12 +609,9 @@ static void Init(void) {
   CopListActivate(cp);
 
   EnableDMA(DMAF_RASTER);
-
-  AddIntServer(INTB_VERTB, ForEachFrameInterrupt);
 }
 
 static void Kill(void) {
-  RemIntServer(INTB_VERTB, ForEachFrameInterrupt);
   DisableDMA(DMAF_RASTER|DMAF_COPPER);
   DeleteCopList(cp);
   DeleteBitmap(screen);
@@ -649,4 +634,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(Turmite, Load, NULL, Init, Kill, Render);
+EFFECT(Turmite, Load, NULL, Init, Kill, Render, ForEachFrame);

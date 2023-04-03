@@ -196,7 +196,8 @@ def do_bitmap(im, desc):
     if onlydata:
         return
 
-    print('%sconst BitmapT %s = {' % ('' if shared else 'static ', name))
+    print('%sconst __data BitmapT %s = {' %
+          ('' if shared else 'static ', name))
     print(f'  .width = {width},')
     print(f'  .height = {height},')
     print(f'  .depth = {depth},')
@@ -258,7 +259,7 @@ def do_sprite(im, desc):
     stride = ((width + 15) & ~15) // 16
     bpl = planar(pix, width, height, depth)
 
-    print(f'static const short {name}_height = {height};')
+    print(f'#define {name}_height {height}')
     print('')
 
     n = width // 16
@@ -295,7 +296,7 @@ def do_sprite(im, desc):
         sprites.append((sprite, attached_str))
 
     if n > 1:
-        print(f'static SpriteT {name}[{n}] = {{')
+        print(f'static __data SpriteT {name}[{n}] = {{')
         for sprite, attached_str in sprites:
             print('  {')
             print(f'    .sprdat = &{sprite}_sprdat,')
@@ -304,7 +305,7 @@ def do_sprite(im, desc):
             print('  },')
         print('};')
     else:
-        print(f'static SpriteT {name} = {{')
+        print(f'static __data SpriteT {name} = {{')
         print(f'  .sprdat = &{name}_sprdat,')
         print(f'  .height = {height},')
         print(f'  .attached = false,')
@@ -380,7 +381,7 @@ def do_pixmap(im, desc):
     print('')
 
     if not onlydata:
-        print('static const PixmapT %s = {' % name)
+        print('static const __data PixmapT %s = {' % name)
         print('  .type = %s,' % pixeltype)
         print('  .width = %d,' % width)
         print('  .height = %d,' % height)
@@ -418,7 +419,10 @@ def do_palette(im, desc):
 
     cmap = [pal[i * 3:(i + 1) * 3] for i in range(colors)]
 
-    print('%sconst PaletteT %s = {' % ('' if shared else 'static ', name))
+    print("#define %s_count %d\n" % (name, len(cmap)))
+
+    print('%sconst __data PaletteT %s = {' %
+          ('' if shared else 'static ', name))
     print('  .count = %d,' % len(cmap))
     print('  .colors = {')
     for r, g, b in cmap:

@@ -322,7 +322,7 @@ static void ChunkyToPlanar(void) {
 }
 
 static void MakeCopperList(CopListT *cp) {
-  short *pixels = gradient.pixels;
+  short *pixels = gradient_pixels;
   short i, j;
 
   CopInit(cp);
@@ -346,10 +346,6 @@ static void MakeCopperList(CopListT *cp) {
 }
 
 static void Init(void) {
-  TrackInit(&UvmapTransition);
-  TrackInit(&UvmapSrcTexture);
-  TrackInit(&UvmapDstTexture);
-
   screen[0] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH);
   screen[1] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH);
 
@@ -456,5 +452,5 @@ static void Render(void) {
   active ^= 1;
 }
 
-EFFECT(UVGut, Load, NULL, InitGut, Kill, Render);
-EFFECT(UVTit, Load, NULL, InitTit, Kill, Render);
+EFFECT(UVGut, Load, NULL, InitGut, Kill, Render, NULL);
+EFFECT(UVTit, Load, NULL, InitTit, Kill, Render, NULL);
