@@ -22,6 +22,7 @@ extern TrackT WeaveShake;
 #include "data/stripes-bright.c"
 
 #define bar_bplmod ((bar_width - WIDTH) / 8 - 2)
+#define bar_bytesPerRow (bar_width / 8)
 
 #define WIDTH (320 - 32)
 #define HEIGHT 256
@@ -63,6 +64,7 @@ static short sintab8[4][128 * 4];
 static StateFullT *stateFull;
 static StateBarT *stateBars;
 static SpriteT stripe[NSPRITES];
+static BitmapT bar;
 
 /* These numbers must be even due to optimizations. */
 static char StripePhase[STRIPES] = { 4, 24, 16, 2, 10 };
@@ -318,6 +320,8 @@ static void CopySpriteTiles(int t) {
 
 static void Load(void) {
   int i, j, k;
+
+  PixmapToBitmap(&bar, bar_width, bar_height, 4, bar_pixels);
 
   for (k = 0; k < 4; k++) {
     for (i = 0, j = 0; i < 128; i++, j += 32)

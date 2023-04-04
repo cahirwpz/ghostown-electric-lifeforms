@@ -1,4 +1,4 @@
-#include <effect.h>
+#include <intro.h>
 #include <blitter.h>
 #include <copper.h>
 #include <stdlib.h>
@@ -71,7 +71,6 @@ static const short blip_sequence[] = {
   0, 0, 1, 2, 3, 4, 5, 5, 5, 4, 3, 2, 1
 };
 
-extern const BitmapT ghostown_logo;
 extern TrackT TileMoverNumber;
 extern TrackT TileMoverPal;
 extern TrackT TileMoverBlit;

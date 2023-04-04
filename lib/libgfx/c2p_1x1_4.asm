@@ -13,6 +13,8 @@
 ; a0	chunkybuffer
 ; a1	bitplanes
 
+; [cahir] modified to take buffer of two nibbles per byte
+
 _c2p_1x1_4
 	movem.l	d2-d7/a2-a6,-(sp)
 
@@ -20,7 +22,7 @@ _c2p_1x1_4
 	
 	move.w	d1,d2
 	mulu.w	d0,d2
-        lsl.l   #3,d2
+        lsl.l   #2,d2
 	lea	(a0,d2.l),a2
 
 	move.l	a1,a3
@@ -29,22 +31,48 @@ _c2p_1x1_4
 	lea	(a1,d5.l),a5
 	lea	(a4,d5.l),a6
 
-	move.l	#$0f0f0f0f,d4
+        move.l  #$0f0f0f0f,d4
 	move.l	#$00ff00ff,d5
 
-	move.l	(a0)+,d0
-	move.l	(a0)+,d2
-	move.l	(a0)+,d1
-	move.l	(a0)+,d3
+; read the words
 
-	and.l	d4,d0
-	and.l	d4,d1
+        move.w  (a0)+,d0
+        move.w  (a0)+,d1
+        swap    d0
+        swap    d1
+        move.w  (a0)+,d0
+        move.w  (a0)+,d1
+
+; abcd ijkl
+; efgh mnop
+
+	move.l	d1,d2
+	lsr.l	#4,d2
+	eor.l	d0,d2
 	and.l	d4,d2
-	and.l	d4,d3
-	lsl.l	#4,d0
-	lsl.l	#4,d1
-	or.l	d2,d0
-	or.l	d3,d1
+	eor.l	d2,d0
+	lsl.l	#4,d2
+	eor.l	d2,d1
+
+; aecg imko
+; bfdh jnlp
+
+	move.l	d1,d2
+	lsr.l	#8,d2
+	eor.l	d0,d2
+	and.l	d5,d2
+	eor.l	d2,d0
+	lsl.l	#8,d2
+	eor.l	d2,d1
+
+; aebf imjn
+; cgdh kolp
+
+        swap    d1
+        eor.w   d0,d1
+        eor.w   d1,d0
+        eor.w   d0,d1
+        swap    d1
 
 ; a3a2a1a0e3e2e1e0 b3b2b1b0f3f2f1f0 c3c2c1c0g3g2g1g0 d3d2d1d0h3h2h1h0
 ; i3i2i1i0m3m2m1m0 j3j2j1j0n3n2n1n0 k3k2k1k0o3o2o1o0 l3l2l1l0p3p2p1p0
@@ -85,22 +113,48 @@ _c2p_1x1_4
 	bra.s	.start
 
 .pix16
-	move.l	(a0)+,d0
-	move.l	(a0)+,d2
-	move.l	(a0)+,d1
-	move.l	(a0)+,d3
-
 	move.w	d6,(a5)+
 	swap	d6
 
-	and.l	d4,d0
-	and.l	d4,d1
-	and.l	d4,d2
-	and.l	d4,d3
-	lsl.l	#4,d0
-	lsl.l	#4,d1
-	or.l	d2,d0
-	or.l	d3,d1
+; read the words
+
+        move.w  (a0)+,d0
+        move.w  (a0)+,d1
+        swap    d0
+        swap    d1
+        move.w  (a0)+,d0
+        move.w  (a0)+,d1
+
+; abcd ijkl
+; efgh mnop
+
+        move.l	d1,d2
+        lsr.l	#4,d2
+        eor.l	d0,d2
+        and.l	d4,d2
+        eor.l	d2,d0
+        lsl.l	#4,d2
+        eor.l	d2,d1
+
+; aecg imko
+; bfdh jnlp
+
+        move.l	d1,d2
+        lsr.l	#8,d2
+        eor.l	d0,d2
+        and.l	d5,d2
+        eor.l	d2,d0
+        lsl.l	#8,d2
+        eor.l	d2,d1
+
+; aebf imjn
+; cgdh kolp
+
+        swap    d1
+        eor.w   d0,d1
+        eor.w   d1,d0
+        eor.w   d0,d1
+        swap    d1
 
 ; a3a2a1a0e3e2e1e0 b3b2b1b0f3f2f1f0 c3c2c1c0g3g2g1g0 d3d2d1d0h3h2h1h0
 ; i3i2i1i0m3m2m1m0 j3j2j1j0n3n2n1n0 k3k2k1k0o3o2o1o0 l3l2l1l0p3p2p1p0
@@ -160,7 +214,7 @@ _c2p_1x1_4
 	move.l	d1,d7
 
 	cmp.l	a0,a2
-	bne.s	.pix16
+	bne.w	.pix16
 
 	move.w	d6,(a5)+
 	swap	d6
