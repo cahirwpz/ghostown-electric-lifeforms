@@ -286,6 +286,12 @@ $2000 0 !step
 $2100 1
 @end
 
+@track GOLGradientTrans
+$0A20 15 !event
+$0A30 15
+$0B20 15
+@end
+
 @track WireworldDisplayBg
 # 0 - hide bg, 1 - show bg
 # must happen before wireworld effect change

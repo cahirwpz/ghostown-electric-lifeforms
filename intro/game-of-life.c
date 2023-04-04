@@ -387,7 +387,6 @@ static void SharedPostInit(void) {
 static void InitWireworld(void) {
   short i;
   const BitmapT *desired_bg;
-  const PaletteT *pal;
   short display_bg = TrackValueGet(&WireworldDisplayBg, frameCount);
   short bg_idx = TrackValueGet(&WireworldBg, frameCount);
 
@@ -396,11 +395,10 @@ static void InitWireworld(void) {
   prev_states_depth = display_bg ? 4 : 5;
   desired_bg = bg_idx ? &wireworld_pcb : &wireworld_vitruvian;
   cur_electrons = bg_idx ? &pcb_electrons : &vitruvian_electrons;
-  pal = bg_idx ? &palette_pcb : &palette_vitruvian;
 
   SharedPreInit();
-  for (i = 0; i < pal->count; i++)
-    CopInsSet16(&palptr[i], pal->colors[i]);
+  for (i = 0; i < 16; i++)
+    CopInsSet16(&palptr[i], palette_vitruvian[i]);
   InitSpawnFrames(cur_electrons, TrackValueGet(&WireworldSpawnMask, frameCount));
 
   if (display_bg) {
@@ -419,11 +417,16 @@ static void InitWireworld(void) {
 }
 
 static void InitGameOfLife(void) {
+  short i;
   current_game = &games[0];
   wireworld = false;
   prev_states_depth = 4;
 
   SharedPreInit();
+
+  LoadCompressedPal(gol_transitions_pixels, palette_gol + 1);
+  for (i = 0; i < 16; i++)
+    CopInsSet16(&palptr[i], palette_gol[i]);
 
   LoadBackground(&electric_logo, 0, 32, 0);
   LoadBackground(&lifeforms_logo, 0, 32, 1);
@@ -515,7 +518,8 @@ static void GolStep(void) {
   } else {
     short logo_idx = TrackValueGet(&GOLLogoType, frameCount);
     CopInsSet32(bplptr[3], background[logo_idx]->planes[0]);
-    ColorFadingStep();
+    TransitionPal(palette_gol + 1);
+    ColorFadingStep(palette_gol);
   }
 
   stepCount++;

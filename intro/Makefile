@@ -147,6 +147,7 @@ PNG2C.tilemover-bg-pal := --palette tilemover_bg_pal,6
 PNG2C.texture-inside := --pixmap texture_in,64x64x8,+onlydata --palette texture_pal,16
 PNG2C.texture-outside := --pixmap texture_out,64x64x8,+onlydata
 PNG2C.gradient := --pixmap gradient,16x16x12,+onlydata
+PNG2C.gol-transitions := --pixmap gol_transitions,3x46x12,+onlydata
 
 CPPFLAGS += -DINTRO -DVQ=$(VQ) -DDELTA=$(DELTA) -DKLANG=$(KLANG) -I.
 
@@ -206,6 +207,11 @@ data/%.png: data/%.rle
 data/gradient.png: $(GRADIENT) data/texture-inside.png
 	@echo "[GEN] $@"
 	$(PYTHON3) $(GRADIENT) load $(word 2,$^) copy hue 0.4 save $@
+
+data/gol-transitions.png: $(GRADIENT)
+	@echo "[GEN] $@"
+	$(PYTHON3) $(GRADIENT) load data/gol-pal-1.png load data/gol-pal-2.png \
+	load data/gol-pal-3.png load data/gol-pal-4.png save $@
 
 audiovq: audiovq.c
 	@echo "[HOSTCC] $(DIR)$< -> $(DIR)$@"
