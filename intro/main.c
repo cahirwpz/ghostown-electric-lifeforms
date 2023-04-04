@@ -53,7 +53,8 @@ static EffectT *AllEffects[] = {
 };
 
 static void ShowMemStats(void) {
-  Log("[Memory] CHIP: %d FAST: %d\n", MemAvail(MEMF_CHIP), MemAvail(MEMF_FAST));
+  Log("[Memory] CHIP: %d FAST: %d\n",
+      MemAvail(MEMF_CHIP), MemAvail(MEMF_PUBLIC));
 }
 
 void PixmapToBitmap(BitmapT *bm, short width, short height, short depth,
