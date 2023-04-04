@@ -52,7 +52,6 @@ static short tiles[NFLOWFIELDS][NTILES];
 #include "data/tilemover-windmills.c"
 #include "data/tilemover-wave.c"
 #include "data/tilemover-drops.c"
-#include "data/tilemover-block.c"
 #include "data/electric.c"
 #include "data/lifeforms.c"
 
@@ -122,8 +121,8 @@ static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
        */
       short vx = 0;
       short vy = 0;
-      int mag = 
-          isqrt((int)px_real * (int)px_real + (int)py_real * (int)py_real);
+      int mag =
+         isqrt((int)px_real * (int)px_real + (int)py_real * (int)py_real);
       //int mag_sin = div16((int)(mag << 16), TWO_PI) >> 4;
 
       switch (field_idx) {
