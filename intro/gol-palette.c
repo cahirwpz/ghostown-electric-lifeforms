@@ -3,6 +3,7 @@
 extern TrackT GOLGradientTrans;
 extern TrackT GOLLogoType;
 
+// taken from the wireworld palette
 static short palette_vitruvian[16] = {
    0x000,
    0x3bf,
@@ -36,16 +37,19 @@ static short* LoadCompressedPal(short *from, short *to) {
 }
 
 static void TransitionPal(short *target_pal) {
-    short val;
+    u_short val, start, steps;
+    static u_short *pal;
     static short phase = 0;
-    static u_short *pal = gol_transitions_pixels;
 
     val = TrackValueGet(&GOLGradientTrans, frameCount);
-    if (val)
-      phase = val;
+    start = (val & 0xff) * gol_transitions_width;
+    steps = (val & 0xff00) >> 8;
+    if (steps > 0) {
+      phase = steps;
+      pal = gol_transitions_pixels + start;
+    }
     if (phase) {
       pal = LoadCompressedPal(pal, target_pal);
       phase--;
-      Log("%d\n", phase);
     }
 }

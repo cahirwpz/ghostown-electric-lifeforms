@@ -424,7 +424,7 @@ static void InitGameOfLife(void) {
 
   SharedPreInit();
 
-  LoadCompressedPal(gol_transitions_pixels, palette_gol + 1);
+  TransitionPal(palette_gol + 1);
   for (i = 0; i < 16; i++)
     CopInsSet16(&palptr[i], palette_gol[i]);
 
