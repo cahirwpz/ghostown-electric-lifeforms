@@ -159,10 +159,6 @@ static void VBlank(void) {
 static void Init(void) {
   short i;
 
-  TrackInit(&TreeVariant);
-  TrackInit(&TreeFadeIn);
-  TrackInit(&TreeFadeOut);
-
   branches = MemAlloc(sizeof(BranchT) * MAXBRANCHES, MEMF_PUBLIC);
   lastBranch = branches;
 

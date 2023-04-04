@@ -599,11 +599,6 @@ static void Init(void) {
   SetupMode(MODE_LORES, DEPTH);
   LoadPalette(&pal_gold, 0);
 
-  TrackInit(&TurmiteBoard);
-  TrackInit(&TurmitePal);
-  TrackInit(&TurmiteFadeIn);
-  TrackInit(&TurmiteFadeOut);
-  
   EnableDMA(DMAF_BLITTER);
   ChooseTurmiteBoard(1);
 

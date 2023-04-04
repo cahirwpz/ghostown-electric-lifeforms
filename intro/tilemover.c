@@ -302,11 +302,6 @@ static void Init(void) {
 
   KillLogo();
 
-  TrackInit(&TileMoverNumber);
-  TrackInit(&TileMoverPal);
-  TrackInit(&TileMoverBlit);
-  TrackInit(&TileMoverBgBlip);
-
   cp = NewCopList(100);
   CopInit(cp);
   CopSetupBitplanes(cp, bplptr, screen, DEPTH);

@@ -92,9 +92,7 @@
 #define NUM_SCENES 4
 
 #include "data/wireworld-vitruvian.c"
-#include "data/wireworld-vitruvian-electrons.c"
 #include "data/wireworld-fullscreen.c"
-#include "data/wireworld-fullscreen-electrons.c"
 #include "data/chip.c"
 #include "data/wireworld-pcb-pal.c"
 #include "data/electric.c"
@@ -232,7 +230,7 @@ static void MakeCopperList(CopListT *cp) {
   for (i = 0; i < 8; i++) {
     SpriteT *spr = &wireworld_chip[i];
     SpriteUpdatePos(spr,
-                    X(DISP_WIDTH / 2 + (i / 2) * 16 - 32),
+                    X(DISP_WIDTH / 2 + (i / 2) * 16 - 33),
                     Y(DISP_HEIGHT / 2 - spr->height / 2));
     if (wireworld && TrackValueGet(&WireworldBg, frameCount) == 1) {
       CopInsSetSprite(sprptr[i], spr);
@@ -306,26 +304,6 @@ static void GameOfLife(void *boards) {
 }
 
 static short scene_count = 0;
-
-static void Load(void) {
-  static bool loaded = false;
-
-  if (loaded)
-    return;
-
-  TrackInit(&GOLGame);
-  TrackInit(&WireworldDisplayBg);
-  TrackInit(&WireworldBg);
-  TrackInit(&WireworldSpawnMask);
-  TrackInit(&WireworldMinDelay);
-  TrackInit(&WireworldSpawnNow);
-  TrackInit(&GOLCellColor);
-  TrackInit(&GOLLogoColor);
-  TrackInit(&GOLLogoFade);
-  TrackInit(&GOLLogoType);
-
-  loaded = true;
-}
 
 static void LoadBackground(const BitmapT *bg, u_short x, u_short y, short idx) {
     BitmapT *tmp = NewBitmap(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH);
@@ -573,5 +551,5 @@ static void Render(void) {
 }
 #endif
 
-EFFECT(Wireworld, Load, NULL, InitWireworld, Kill, Render, NULL);
-EFFECT(GameOfLife, Load, NULL, InitGameOfLife, Kill, Render, NULL);
+EFFECT(Wireworld, NULL, NULL, InitWireworld, Kill, Render, NULL);
+EFFECT(GameOfLife, NULL, NULL, InitGameOfLife, Kill, Render, NULL);
