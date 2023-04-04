@@ -14,6 +14,7 @@
 
 static CopListT *cp;
 static BitmapT *screen;
+static BitmapT electric_lifeforms;
 
 static const PaletteT *electric_lifeforms_pal[] = {
   NULL,
@@ -23,11 +24,16 @@ static const PaletteT *electric_lifeforms_pal[] = {
 
 extern TrackT ElectricLifeformsLogoPal;
 
+static void Load(void) {
+  PixmapToBitmap(&electric_lifeforms, electric_lifeforms_width,
+                 electric_lifeforms_height, 3, electric_lifeforms_pixels);
+}
+
 static void Init(void) {
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH);
 
   memcpy(screen->planes[0], electric_lifeforms.planes[0],
-         electric_lifeforms_size);
+         WIDTH * HEIGHT * DEPTH / 8);
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
 
@@ -78,4 +84,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(Vitruvian, NULL, NULL, Init, Kill, Render, NULL);
+EFFECT(Vitruvian, Load, NULL, Init, Kill, Render, NULL);

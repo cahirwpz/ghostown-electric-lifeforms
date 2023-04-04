@@ -51,7 +51,7 @@ SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   samples.c palettes.c
 MAIN := #
 
-PNG2C.bar := --bitmap bar,480x67x4,+limit_depth --palette bar_pal,32
+PNG2C.bar := --pixmap bar,480x67x4,+limit_bpp,+onlydata,+displayable --palette bar_pal,32
 PNG2C.bar-dark := --palette bar_dark_pal,32
 PNG2C.bar-bright := --palette bar_bright_pal,32
 PNG2C.stripes := --bitmap stripes,128x64x2,+limit_depth,+interleaved,-displayable --palette stripes_pal,16
@@ -61,7 +61,7 @@ PNG2C.text-scroll-font := --bitmap font,768x8x1,-displayable --palette font_pal,
 PNG2C.turmite-credits-1 := --bitmap turmite_credits_1,256x256x1,+onlydata,-displayable
 PNG2C.turmite-credits-2 := --bitmap turmite_credits_2,256x256x1,+onlydata,-displayable
 PNG2C.turmite-credits-3 := --bitmap turmite_credits_3,256x256x1,+onlydata,-displayable
-PNG2C.electric-lifeforms-01 := --bitmap electric_lifeforms,320x256x3,-displayable --palette electric_lifeforms_1_pal,8
+PNG2C.electric-lifeforms-01 := --pixmap electric_lifeforms,320x256x4,+onlydata --palette electric_lifeforms_1_pal,8
 PNG2C.electric-lifeforms-02 := --palette electric_lifeforms_2_pal,8
 PNG2C.tree-pal-organic := --palette tree_pal_organic,32
 PNG2C.tree-pal-electric := --palette tree_pal_electric,32
@@ -69,7 +69,7 @@ PNG2C.fruit-1 := --bitmap fruit_1,16x16x2,+onlydata
 PNG2C.fruit-2 := --bitmap fruit_2,16x16x2,+onlydata
 PNG2C.grass := --sprite grass,32,8
 PNG2C.tilemover-pal := --palette tilemover_pal,16
-PNG2C.ghostown-logo-crop := --bitmap ghostown_logo,192x131x3,+shared
+PNG2C.ghostown-logo-crop := --pixmap ghostown_logo,192x131x4,+onlydata,+displayable
 PNG2C.ghostown-logo-01 := --palette ghostown_logo_1_pal,8
 PNG2C.ghostown-logo-02 := --palette ghostown_logo_2_pal,8
 PNG2C.ghostown-logo-03 := --palette ghostown_logo_3_pal,8

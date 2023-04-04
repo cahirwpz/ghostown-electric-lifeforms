@@ -5,6 +5,7 @@
 #include <copper.h>
 #include <palette.h>
 #include <sync.h>
+#include <c2p_1x1_4.h>
 #include <system/task.h>
 #include <system/interrupt.h>
 
@@ -53,6 +54,29 @@ static EffectT *AllEffects[] = {
 
 static void ShowMemStats(void) {
   Log("[Memory] CHIP: %d FAST: %d\n", MemAvail(MEMF_CHIP), MemAvail(MEMF_FAST));
+}
+
+void PixmapToBitmap(BitmapT *bm, short width, short height, short depth,
+                    void *pixels)
+{
+  short bytesPerRow = ((short)(width + 15) & ~15) / 8;
+  int bplSize = bytesPerRow * height;
+
+  bm->width = width;
+  bm->height = height;
+  bm->depth = depth;
+  bm->bytesPerRow = bytesPerRow;
+  bm->bplSize = bplSize;
+  bm->flags = BM_DISPLAYABLE | BM_STATIC;
+
+  BitmapSetPointers(bm, pixels);
+
+  {
+    void *planes = MemAlloc(bplSize * 4, MEMF_PUBLIC);
+    c2p_1x1_4(pixels, planes, width, height, bplSize);
+    memcpy(pixels, planes, bplSize * 4);
+    MemFree(planes);
+  }
 }
 
 static void LoadEffects(EffectT **effects) {

@@ -18,6 +18,7 @@
 static __code bool cleanup;
 static CopListT *cp;
 static BitmapT *screen;
+BitmapT ghostown_logo;
 
 static const PaletteT *ghostown_logo_pal[] = {
   NULL,
@@ -28,10 +29,14 @@ static const PaletteT *ghostown_logo_pal[] = {
 
 extern TrackT GhostownLogoPal;
 
+static void Load(void) {
+  PixmapToBitmap(&ghostown_logo, ghostown_logo_width, ghostown_logo_height, 3,
+                 ghostown_logo_pixels);
+}
+
 static void Init(void) {
   cleanup = true;
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH);
-
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
 
   {
@@ -58,12 +63,15 @@ static void Init(void) {
 }
 
 void KillLogo(void) {
-  if (cleanup) {
+  static __code bool enabled = false;
+
+  if (enabled) {
     DisableDMA(DMAF_RASTER);
     DeleteCopList(cp);
 
     DeleteBitmap(screen);
-    cleanup = false;
+  } else {
+    enabled = true;
   }
 }
 
@@ -89,4 +97,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(Logo, NULL, NULL, Init, NULL, Render, NULL);
+EFFECT(Logo, Load, NULL, Init, NULL, Render, NULL);
