@@ -53,6 +53,8 @@ static short tiles[NFLOWFIELDS][NTILES];
 #include "data/tilemover-wave.c"
 #include "data/tilemover-drops.c"
 #include "data/tilemover-block.c"
+#include "data/electric.c"
+#include "data/lifeforms.c"
 
 #include "palettes.h"
 
@@ -120,30 +122,26 @@ static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
        */
       short vx = 0;
       short vy = 0;
-      int mag =
-        isqrt((int)px_real * (int)px_real + (int)py_real * (int)py_real);
+      int mag = 
+          isqrt((int)px_real * (int)px_real + (int)py_real * (int)py_real);
       //int mag_sin = div16((int)(mag << 16), TWO_PI) >> 4;
 
       switch (field_idx) {
-        // STATIC
-        case 1:
+        case 1: // STATIC
           vx = 0;
           vy = 0;
           break;
-        // KITCHEN SINK
-        case 2:
-          /* {-PI/4, PI/4, -PI, PI} */
-          vx = py >> 10;
-          vy = px >> 10;
+        case 2: // LOGO TEARING
+          /* {-SIN_PI/3, SIN_PI/3, -SIN_PI/3, SIN_PI/3} */
+          vx = SIN(py + px - 60) >> 10;
+          vy = SIN(px) >> 10;
           break;
-        // SOUND WAVE
-        case 3:
+        case 3: // SOUND WAVE
           /* -SIN_PI/2, SIN_PI/2, 0, SIN_PI/2 */
           vx = min(py_real, normfx(px_real * py_real)) >> 9;
           vy = mag >> 9;
           break;
-        // WINDMILLS
-        case 4:
+        case 4: // WINDMILLS
           /*
            * -SIN_PI/3, SIN_PI/3, -SIN_PI/3, SIN_PI/3
            * this is also good with range:
@@ -152,23 +150,20 @@ static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
           vx = SIN(py * 6) >> 10;
           vy = SIN(px * 6) >> 10;
           break;
-        // ROLLING TUBE
-        case 5:
+        case 5: // ROLLING TUBE
           /* {-PI / 4, PI / 4, -PI, PI} */
           vx = SIN(px) >> 10;
           vy = COS(px) >> 15;
           break;
-        // FUNKY SOUND WAVE
-        case 6:
+        case 6: // FUNKY SOUND WAVE
           /* {-2*SIN_PI, 2*SIN_PI, -SIN_PI, SIN_PI} */
           vx = px >> 9;
-          vy = COS(px + 127) >> 9;
+          vy = COS(px) >> 9;
           break;
-        // SLOW KITCHEN SINK
-        case 7:
-          /* {-PI/4, PI/4, -PI, PI} */
-          vx = py >> 11;
-          vy = px >> 11;
+        case 7: // SNAIL
+          /* {-SIN_PI/2, SIN_PI/2, 0, SIN_PI/2} */
+          vx = SIN(py+px) >> 9;
+          vy = SIN(px) >> 9;
           break;
         default:
       }
@@ -186,12 +181,12 @@ static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
 static short ranges[NFLOWFIELDS][4] = {
   {0, 0, 0, 0},                               // unused
   {0, 0, 0, 0},                               // static
-  {-PI/4, PI/4, -PI, PI},                     // kitchen sink
+  {-SIN_PI/3, SIN_PI/3, -SIN_PI/3, SIN_PI/3}, // logo tearing
   {-SIN_PI/2, SIN_PI/2, 0, SIN_PI/2},         // sound wave
   {-SIN_PI/3, SIN_PI/3, -SIN_PI/3, SIN_PI/3}, // windmills
   {-PI/4, PI/4, -PI, PI},                     // rolling tube
   {-2*SIN_PI, 2*SIN_PI, -SIN_PI, SIN_PI},     // funky soundwave
-  {-PI/4, PI/4, -PI, PI},                     // slow kitchen sink
+  {-SIN_PI/2, SIN_PI/2, 0, SIN_PI/2},         // snail
 };
 
 static void BlitSimple(void *sourceA, void *sourceB, void *sourceC,
@@ -219,7 +214,6 @@ static void BlitSimple(void *sourceA, void *sourceB, void *sourceC,
 // (logo in Init()), the logo never shows up. I added this ugly if just to record video
 // for Slayer, need to fix it properly.
 static short blitA = true;
-
 static void BlitBitmap(short x, short y, const BitmapT *blit) {
   short i;
   short j = active;
@@ -397,12 +391,12 @@ static void BlitShape(short val) {
   short i;
 
   switch (val) {
-    case 2: /* Noise for kitchen sink */
-      BlitBitmap(170, 1, &tilemover_block);
-      break;
+    case 2: /* Double pseudo soundwave */ 
+      BlitBitmap(10, 10, &tilemover_wave);
+      BlitBitmap(10, 165, &tilemover_wave);
 
     case 3: /* Pseudo soundwave */
-      BlitBitmap(10, 170, &tilemover_wave);
+      BlitBitmap(10, 165, &tilemover_wave);
       break;
 
     case 4: /* Windmills */
@@ -417,6 +411,14 @@ static void BlitShape(short val) {
       for (i = 0; i < 3; i++)
         BlitBitmap(105 + (random() & 9), random() & 100, &tilemover_drops);
       break;
+
+    case 8: /* Electric*/
+      BlitBitmap(60, 70, &electric_logo);
+      break;
+    
+    case 9: /* Lifeforms  */
+      BlitBitmap(60, 70, &lifeforms_logo);
+      break;
   }
 }
 
@@ -430,6 +432,7 @@ static void Render(void) {
   
   if (current_pal) {
     LoadPalette(tilemover_palettes[current_pal], 0);
+    SetColor(0, 0x012);
     // Spinning torus needs to have screen cleared out to avoid
     // ugly visual artifacts.
     if (current_ff == 5) {

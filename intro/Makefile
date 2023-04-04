@@ -142,7 +142,6 @@ PNG2C.anemone-gradient-pal := --palette anemone_gradient_pal,16
 PNG2C.tilemover-windmills := --bitmap tilemover_windmills,32x32x1
 PNG2C.tilemover-wave := --bitmap tilemover_wave,192x64x1
 PNG2C.tilemover-drops := --bitmap tilemover_drops,16x16x1
-PNG2C.tilemover-block := --bitmap tilemover_block,96x80x1
 PNG2C.tilemover-bg-pal := --palette tilemover_bg_pal,6
 
 PNG2C.texture-inside := --pixmap texture_in,64x64x8,+onlydata --palette texture_pal,16
