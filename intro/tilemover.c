@@ -24,6 +24,8 @@
 #define COLORS 16
 #define NFLOWFIELDS 8
 
+#define BGCOLOR 0x012
+
 #define MARGIN (2 * TILESIZE)
 #define WIDTH (S_WIDTH + MARGIN * 2)
 #define HEIGHT (S_HEIGHT + MARGIN * 2)
@@ -52,10 +54,9 @@ static short tiles[NFLOWFIELDS][NTILES];
 #include "data/tilemover-windmills.c"
 #include "data/tilemover-wave.c"
 #include "data/tilemover-drops.c"
-#include "data/electric.c"
-#include "data/lifeforms.c"
 
 #include "palettes.h"
+#include "bitmaps.h"
 
 typedef const PaletteT *TilemoverPalT[5];
 
@@ -122,7 +123,7 @@ static void CalculateTiles(short *tile, short range[4], u_short field_idx) {
       short vx = 0;
       short vy = 0;
       int mag =
-         isqrt((int)px_real * (int)px_real + (int)py_real * (int)py_real);
+       isqrt((int)px_real * (int)px_real + (int)py_real * (int)py_real);
       //int mag_sin = div16((int)(mag << 16), TWO_PI) >> 4;
 
       switch (field_idx) {
@@ -210,9 +211,9 @@ static void BlitSimple(void *sourceA, void *sourceB, void *sourceC,
 }
 
 // It's just a dirty temporary "fix" - without SRCA in minterms during the first blit 
-// (logo in Init()), the logo never shows up. I added this ugly if just to record video
-// for Slayer, need to fix it properly.
+// (logo in Init()), the logo never shows up.
 static short blitA = true;
+
 static void BlitBitmap(short x, short y, const BitmapT *blit) {
   short i;
   short j = active;
@@ -284,6 +285,11 @@ INTSERVER(BlipBackgroundInterrupt, 0, (IntFuncT)BgBlip, NULL);
 extern void KillLogo(void);
 
 static void Init(void) {
+  short i;
+
+  for (i = 0; i < 16; i++)
+    SetColor(i, BGCOLOR);
+
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1);  
   EnableDMA(DMAF_BLITTER);
   BlitBitmap(S_WIDTH / 2 - 96 - 8, S_HEIGHT / 2 - 66, logo_blit);
@@ -291,7 +297,6 @@ static void Init(void) {
   DisableDMA(DMAF_BLITTER);
   SetupPlayfield(MODE_LORES, DEPTH, X(MARGIN), Y((256 - S_HEIGHT) / 2),
                  S_WIDTH, S_HEIGHT);
-  LoadPalette(&pal_blue, 0);
 
   KillLogo();
 
@@ -393,6 +398,7 @@ static void BlitShape(short val) {
     case 2: /* Double pseudo soundwave */ 
       BlitBitmap(10, 10, &tilemover_wave);
       BlitBitmap(10, 165, &tilemover_wave);
+      break;
 
     case 3: /* Pseudo soundwave */
       BlitBitmap(10, 165, &tilemover_wave);
@@ -431,7 +437,7 @@ static void Render(void) {
   
   if (current_pal) {
     LoadPalette(tilemover_palettes[current_pal], 0);
-    SetColor(0, 0x012);
+    SetColor(0, BGCOLOR);
     // Spinning torus needs to have screen cleared out to avoid
     // ugly visual artifacts.
     if (current_ff == 5) {

@@ -95,8 +95,8 @@
 #include "data/wireworld-fullscreen.c"
 #include "data/chip.c"
 #include "data/wireworld-pcb-pal.c"
-#include "data/electric.c"
-#include "data/lifeforms.c"
+
+#include "bitmaps.h"
 
 extern TrackT GOLGame;
 extern TrackT WireworldDisplayBg;
