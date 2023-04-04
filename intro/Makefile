@@ -208,6 +208,10 @@ data/gradient.png: $(GRADIENT) data/texture-inside.png
 	@echo "[GEN] $@"
 	$(PYTHON3) $(GRADIENT) load $(word 2,$^) copy hue 0.4 save $@
 
+%.exe.packed: %.exe
+	@echo "[PACK] $(DIR)$< -> $(DIR)$@"
+	Shrinkler -o -f 0xdff180 $< $@
+
 audiovq: audiovq.c
 	@echo "[HOSTCC] $(DIR)$< -> $(DIR)$@"
 	cc -O2 -march=native -Wall -o $@ $^ -lm
