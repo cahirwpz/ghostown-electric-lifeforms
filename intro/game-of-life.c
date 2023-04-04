@@ -95,8 +95,8 @@
 #include "data/wireworld-fullscreen.c"
 #include "data/chip.c"
 #include "data/wireworld-pcb-pal.c"
-#include "data/electric.c"
-#include "data/lifeforms.c"
+
+#include "bitmaps.h"
 
 extern TrackT GOLGame;
 extern TrackT WireworldDisplayBg;
@@ -306,7 +306,8 @@ static void GameOfLife(void *boards) {
 static short scene_count = 0;
 
 static void LoadBackground(const BitmapT *bg, u_short x, u_short y, short idx) {
-    BitmapT *tmp = NewBitmap(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH);
+    BitmapT *tmp = NewBitmapCustom(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH, BM_DISPLAYABLE);
+    BitmapClear(tmp); // comment for cool effects!
     BitmapCopy(tmp, x, y, bg);
     WaitBlitter();
     PixelDouble(tmp->planes[0], background[idx]->planes[0], double_pixels);
@@ -320,24 +321,24 @@ static void SharedPreInit(void) {
 
   scene_count++;
   if (!allocated) {
-    for (i = 0; i < BOARD_COUNT; i++)
-      boards[i] = NewBitmap(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH);
-
-    for (i = 0; i < PREV_STATES_DEPTH; i++) {
-      // only needs half the vertical resolution, other half
-      // achieved via copper line doubling
-      prev_states[i] = NewBitmap(DISP_WIDTH, DISP_HEIGHT / 2, BOARD_DEPTH);
-    }
-
-    for (i = 0; i < 2; i++)
-      background[i] = NewBitmap(DISP_WIDTH, DISP_HEIGHT / 2, BOARD_DEPTH);
-
     MakeDoublePixels();
     PixelDouble = MemAlloc(PixelDoubleSize, MEMF_PUBLIC);
     MakePixelDoublingCode();
 
     allocated = true;
   }
+
+  for (i = 0; i < BOARD_COUNT; i++)
+    boards[i] = NewBitmapCustom(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH, BM_DISPLAYABLE);
+
+  for (i = 0; i < PREV_STATES_DEPTH; i++) {
+    // only needs half the vertical resolution, other half
+    // achieved via copper line doubling
+    prev_states[i] = NewBitmapCustom(DISP_WIDTH, DISP_HEIGHT / 2, BOARD_DEPTH, BM_DISPLAYABLE);
+  }
+
+  for (i = 0; i < 2; i++)
+    background[i] = NewBitmapCustom(DISP_WIDTH, DISP_HEIGHT / 2, BOARD_DEPTH, BM_DISPLAYABLE);
 
   SetupPlayfield(MODE_LORES, DISP_DEPTH, X(0), Y(0), DISP_WIDTH, DISP_HEIGHT);
 
@@ -353,10 +354,14 @@ static void SharedPreInit(void) {
 
   states_head = 0;
   current_board = boards[0];
-  for (i = 0; i < PREV_STATES_DEPTH; i++) {
-    BitmapClear(prev_states[i]);
-  }
   stepCount = 0;
+
+  for (i = 0; i < PREV_STATES_DEPTH; i++)
+    BitmapClear(prev_states[i]);
+  // these two bitmaps need to be cleared to prevent graphical bugs
+  // ideally only their borders need to be cleared but this is simpler
+  BitmapClear(boards[2]);
+  BitmapClear(boards[3]);
 }
 
 static void SharedPostInit(void) {
@@ -441,19 +446,18 @@ static void Kill(void) {
   KeyboardKill();
 #endif
 
+  for (i = 0; i < BOARD_COUNT; i++)
+    DeleteBitmap(boards[i]);
+
+  for (i = 0; i < PREV_STATES_DEPTH; i++)
+    DeleteBitmap(prev_states[i]);
+
+  for (i = 0; i < 2; i++)
+    DeleteBitmap(background[i]);
+
   // last time we show the effect - deallocate
-  if (scene_count == NUM_SCENES) {
-    for (i = 0; i < BOARD_COUNT; i++)
-      DeleteBitmap(boards[i]);
-
-    for (i = 0; i < PREV_STATES_DEPTH; i++)
-      DeleteBitmap(prev_states[i]);
-
-    for (i = 0; i < 2; i++)
-      DeleteBitmap(background[i]);
-
+  if (scene_count == NUM_SCENES)
     MemFree(PixelDouble);
-  }
 
   DeleteCopList(cp);
 }
