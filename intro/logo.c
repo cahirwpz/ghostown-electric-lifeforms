@@ -30,8 +30,13 @@ static const PaletteT *ghostown_logo_pal[] = {
 extern TrackT GhostownLogoPal;
 
 static void Load(void) {
-  PixmapToBitmap(&ghostown_logo, ghostown_logo_width, ghostown_logo_height, 3,
-                 ghostown_logo_pixels);
+  static __code short done = false;
+
+  if (!done) {
+    PixmapToBitmap(&ghostown_logo, ghostown_logo_width, ghostown_logo_height, 3,
+                   ghostown_logo_pixels);
+    done = true;
+  }
 }
 
 static void Init(void) {
@@ -62,14 +67,18 @@ static void Init(void) {
   EnableDMA(DMAF_RASTER);
 }
 
+static void Kill(void) {
+  DisableDMA(DMAF_RASTER);
+  DeleteCopList(cp);
+
+  DeleteBitmap(screen);
+}
+
 void KillLogo(void) {
   static __code bool enabled = false;
 
   if (enabled) {
-    DisableDMA(DMAF_RASTER);
-    DeleteCopList(cp);
-
-    DeleteBitmap(screen);
+    Kill();
   } else {
     enabled = true;
   }
@@ -97,4 +106,5 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(Logo, Load, NULL, Init, NULL, Render, NULL);
+EFFECT(LogoIn, Load, NULL, Init, NULL, Render, NULL);
+EFFECT(LogoOut, Load, NULL, Init, Kill, Render, NULL);

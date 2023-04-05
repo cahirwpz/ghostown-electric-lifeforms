@@ -30,7 +30,7 @@ $2900 5
 # scrolling text
 $2D00 1
 # logo 
-$3000 0
+$3000 12
 # end
 $3200 -1
 @end
