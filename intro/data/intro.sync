@@ -253,10 +253,14 @@ $0A30 2
 # Diamoeba
 $0B20 3
 #---second time---#
-# maze
-$2000 2
 # classic
-$2100 0
+$2000 0
+# stains
+$2020 4
+# day and night
+$2100 5
+# Diamoeba
+$2130 3
 @end
 
 @track GOLCellColor
@@ -266,7 +270,7 @@ $2020 2
 
 @track GOLLogoColor
 $2000 0 !step
-$2020 1
+$211a 1
 @end
 
 @track GOLLogoFade
@@ -274,8 +278,8 @@ $2000 0 !smooth
 $2010 0
 $2020 15
 $2030 0
-$2100 0
-$2110 15
+$211a 0
+$212a 15
 @end
 
 # logo bitmap:
@@ -283,7 +287,19 @@ $2110 15
 # 1 - LIFEFORMS
 @track GOLLogoType
 $2000 0 !step
-$2100 1
+@end
+
+# encoding: 0x[steps][start]
+# e.g. 0x0f01 - start at gradient row 1 and do 15 transition steps
+@track GOLGradientTrans
+# load
+$0A00 0x0100 !event
+$0A20 0x0f01
+$0A30 0x0f10
+$0B20 0x0f1f
+# load
+$2000 0x011f
+$2020 0x0f1f
 @end
 
 @track WireworldDisplayBg
