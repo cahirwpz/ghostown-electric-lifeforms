@@ -67,7 +67,8 @@ static void CopyTexture(const u_char *data, u_short *hi0, u_short *lo0,
 
   {
     int start = step * TW;
-    data += start;
+    if (data)
+      data += start;
     hi0 += start;
     lo0 += start;
     hi1 = hi0 + TW * TH;
@@ -76,14 +77,23 @@ static void CopyTexture(const u_char *data, u_short *hi0, u_short *lo0,
 
   n = (lastStep - step) * TW;
 
-  while (--n >= 0) {
-    int c = *data++;
-    short hi = PixelHi[c];
-    short lo = PixelLo[c];
-    *hi0++ = hi;
-    *hi1++ = hi;
-    *lo0++ = lo;
-    *lo1++ = lo;
+  if (data) {
+    while (--n >= 0) {
+      int c = *data++;
+      short hi = PixelHi[c];
+      short lo = PixelLo[c];
+      *hi0++ = hi;
+      *hi1++ = hi;
+      *lo0++ = lo;
+      *lo1++ = lo;
+    } 
+  } else {
+    while (--n >= 0) {
+      *hi0++ = 0;
+      *hi1++ = 0;
+      *lo0++ = 0;
+      *lo1++ = 0;
+    } 
   }
 }
 
@@ -409,6 +419,31 @@ static void Kill(void) {
   DeleteBitmap(screen[1]);
 }
 
+static void ControlTexture(void) {
+  short step;
+
+  if ((step = TrackValueGet(&UvmapTransition, frameCount)) || lastStep) {
+    short texSrcIdx = TrackValueGet(&UvmapSrcTexture, frameCount);
+    short texDstIdx = TrackValueGet(&UvmapDstTexture, frameCount);
+
+    u_short *dstHi = texDstIdx ? texSndHi : texFstHi;
+    u_short *dstLo = texDstIdx ? texSndLo : texFstLo;
+    const u_char *src = NULL;
+
+    if (texSrcIdx >= 0)
+      src = texSrcIdx ? texture_in_pixels : texture_out_pixels;
+    else
+      step *= 4;
+
+    CopyTexture(src, dstHi, dstLo, step);
+
+    if (lastStep == 0)
+      step = 64;
+
+    lastStep = step;
+  }
+}
+
 PROFILE(UVMap);
 
 static void Render(void) {
@@ -419,21 +454,7 @@ static void Render(void) {
   /* screen's bitplane #0 is used as a chunky buffer */
   ProfilerStart(UVMap);
 
-  {
-    short val;
-
-    if ((val = TrackValueGet(&UvmapTransition, frameFromStart)) || lastStep) {
-      short texSrcIdx = TrackValueGet(&UvmapSrcTexture, frameFromStart);
-      short texDstIdx = TrackValueGet(&UvmapDstTexture, frameFromStart);
-      short step = val / 2;
-
-      CopyTexture(texSrcIdx ? texture_in_pixels : texture_out_pixels,
-                  texDstIdx ? texSndHi : texFstHi,
-                  texDstIdx ? texSndLo : texFstLo, step);
-
-      lastStep = step;
-    }
-  }
+  ControlTexture();
 
   {
     u_short *chunky = screen[active]->planes[0] + WIDTH * HEIGHT / 2;
