@@ -39,17 +39,13 @@ static void Load(void) {
   }
 }
 
-static void Init(void) {
+static void SharedInit(bool out) {
+  short i;
+
   cleanup = true;
+
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH);
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
-
-  {
-    short i = 0;
-
-    for (i = 0; i < (1 << DEPTH); i++)
-      SetColor(i, ghostown_logo_1_pal.colors[0]);
-  }
 
   EnableDMA(DMAF_BLITTER);
   BitmapCopy(screen, (WIDTH - ghostown_logo_width) / 2,
@@ -64,7 +60,19 @@ static void Init(void) {
 
   CopListActivate(cp);
 
+  for (i = 0; i < (1 << DEPTH); i++)
+    SetColor(i, out ? ghostown_logo_3_pal.colors[i]
+                    : ghostown_logo_1_pal.colors[0]);
+
   EnableDMA(DMAF_RASTER);
+}
+
+static void InitIn(void) {
+  SharedInit(0);
+}
+
+static void InitOut(void) {
+  SharedInit(1);
 }
 
 static void Kill(void) {
@@ -84,17 +92,18 @@ void KillLogo(void) {
   }
 }
 
-static void Render(void) {
+static void Render(bool out) {
   short num = TrackValueGet(&GhostownLogoPal, frameCount);
-  short frame = FromCurrKeyFrame(&GhostownLogoPal);
+  short frame = out ? TillNextKeyFrame(&GhostownLogoPal)
+                    : FromCurrKeyFrame(&GhostownLogoPal);
 
-  if (num > 0) {
+  if (num) {
     if (frame < 16) {
       short i;
 
       for (i = 0; i < (1 << DEPTH); i++) {
         short prev = (num == 1) ? ghostown_logo_1_pal.colors[0]
-          : ghostown_logo_pal[num - 1]->colors[i];
+                                : ghostown_logo_pal[num - 1]->colors[i];
         short curr = ghostown_logo_pal[num]->colors[i];
         SetColor(i, ColorTransition(prev, curr, frame));
       }
@@ -106,5 +115,13 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(LogoIn, Load, NULL, Init, NULL, Render, NULL);
-EFFECT(LogoOut, Load, NULL, Init, Kill, Render, NULL);
+static void RenderIn(void) {
+  Render(0);
+}
+
+static void RenderOut(void) {
+  Render(1);
+}
+
+EFFECT(LogoIn, Load, NULL, InitIn, NULL, RenderIn, NULL);
+EFFECT(LogoOut, Load, NULL, InitOut, Kill, RenderOut, NULL);
