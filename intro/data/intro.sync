@@ -32,7 +32,7 @@ $2D00 1
 # logo 
 $3000 0
 # end
-$3300 -1
+$3200 -1
 @end
 
 @track GhostownLogoPal
@@ -389,7 +389,6 @@ $0200 15
 @track TurmiteFadeOut
 $003E 15 !trigger
 $013E 15
-$023E 15
 @end
 
 @track TurmitePal
@@ -410,23 +409,23 @@ $012E 10
 
 @track UvmapTransition
 $0000 128 !trigger
-$0020 128
 $0100 128
-$0120 128
+$0200 128
+$0300 128
 @end
 
 @track UvmapSrcTexture
 $0000 1 !step
-$0020 0
 $0100 0
-$0120 1
+$0200 0
+$0300 1
 @end
 
 @track UvmapDstTexture
 $0000 1 !step
-$0020 0
-$0100 1
-$0120 0
+$0100 0
+$0200 1
+$0300 0
 @end
 
 @track WeaveBarPulse
