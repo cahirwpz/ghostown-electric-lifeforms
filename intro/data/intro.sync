@@ -451,6 +451,16 @@ $2500 0
 $2538 1 
 @end
 
+@track UvmapSprite
+$2200 -1 !event
+$2300 1
+$231C -1
+$231D 1
+$231E -1
+$231F 1
+$2320 -1
+@end
+
 @track WeaveBarPulse
 $0100 0b0000 !event
 $0108 0b0001
