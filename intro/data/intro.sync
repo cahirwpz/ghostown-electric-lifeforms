@@ -256,11 +256,11 @@ $0B20 3
 # classic
 $2000 0
 # stains
-$2020 4
+$2030 4
 # day and night
 $2100 5
 # Diamoeba
-$2130 3
+$2120 6
 @end
 
 @track GOLCellColor
