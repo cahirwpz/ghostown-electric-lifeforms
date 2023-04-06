@@ -219,11 +219,11 @@ $0B20 3
 # classic
 $2000 0
 # stains
-$2020 4
+$2030 4
 # day and night
 $2100 5
 # Diamoeba
-$2130 3
+$2120 6
 @end
 
 @track GOLCellColor
@@ -306,7 +306,7 @@ $0100 2
 $0120 1
 $0200 2
 $0220 3
-$0310 4
+$0300 4
 @end
 
 # available palettes
@@ -321,53 +321,54 @@ $0100 1
 $0120 2
 $0200 3
 $0220 1
-$0310 4
+$0300 4
 @end
 
-@track SeaAnemoneFadeOut
-$001E 15 !trigger
-$003E 15
-$011E 15
-$013E 15
-$021E 15
-#$033E 15
-@end
-
-@track SeaAnemoneFadeIn
-$0020 15 !trigger
-$0100 15
-$0120 15
-$0200 15
-$0220 15
-$0310 15
+@track SeaAnemoneFade
+$0c00 0
+$0c20 0
+$0d00 0
+$0d20 0
+$0e00 0
+$0e20 0
+$0f00 0
+$1000 0
 @end
 
 @track SeaAnemoneGradient
-$0023 31 !trigger
-$0039 31
-$0122 31
-$0137 31
+# takes 30 frames (10 protracker rows); pos $28 & $38
+$0025 31 !trigger
+$0035 31
+$0125 31
+$0135 31
 @end
 
 @track SeaAnemonePalPulse
-$0005 30 !trigger
+$0007 15 !trigger
+$0017 15 !trigger
+$0107 15 !trigger
+$0117 15 !trigger
+$0207 15 !trigger
+$0217 15 !trigger
+$0227 15 !trigger
+$0237 15 !trigger
+$0307 15 !trigger
+$0317 15 !trigger
+$0327 15 !trigger
+$0337 15 !trigger
 @end
 
 @track TurmiteBoard
-$0000 1 !event
-$0100 2
-$0200 3
+$2400 1 !event
+$2500 2
+$2600 3
 @end
 
-@track TurmiteFadeIn
-$0000 15 !trigger
-$0100 15
-$0200 15
-@end
-
-@track TurmiteFadeOut
-$003E 15 !trigger
-$013E 15
+@track TurmiteFade
+$2400 0 !step
+$2500 0
+$2600 0
+$2900 0
 @end
 
 @track TurmitePal
@@ -384,6 +385,19 @@ $0120 10
 $0125 10
 $012A 10
 $012E 10
+$020A 10
+$0215 10
+$022A 10
+$022E 10
+$030E 10
+$0310 10
+$0315 10
+$031A 10
+$031E 10
+$0320 10
+$0325 10
+$032A 10
+$032E 10
 @end
 
 @track UvmapTransition
