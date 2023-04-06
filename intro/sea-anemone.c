@@ -137,10 +137,9 @@ static const SeaAnemonePalT *sea_anemone_pal[5] = {
 
 static const SeaAnemonePalT *active_pal = &anemone1_pal;
 static const short blip_sequence[] = {
-  0,
-  2, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-  3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+  0, 2,
+  1, 1, 1, 1, 1, 1, 1,
+  3, 3, 3, 3, 3, 3, 3,
 };
 
 static const short gradient_envelope[] = {
