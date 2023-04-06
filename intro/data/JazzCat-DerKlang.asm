@@ -56,9 +56,9 @@ _AK_ProgressLen:
 
 AK_USE_PROGRESS			equ 1
 AK_FINE_PROGRESS		equ 1
-AK_FINE_PROGRESS_LEN	equ 239956
-AK_SMP_LEN				equ 177446
-AK_EXT_SMP_LEN			equ 6762
+AK_FINE_PROGRESS_LEN	equ 245674
+AK_SMP_LEN				equ 183164
+AK_EXT_SMP_LEN			equ 9254
 
 AK_Generate:
 
@@ -1894,7 +1894,7 @@ AK_Generate:
 				asl.w	#8,d0
 .NoClone_21_1
 
-				; v1 = reverb(v1, 68, 37)
+				; v1 = reverb(v1, 68, 30)
 				move.l	d7,-(sp)
 				sub.l	a6,a6
 				move.l	a1,a4
@@ -1916,7 +1916,7 @@ AK_Generate:
 .NoReverbReset_21_2_0
 				move.w  d5,AK_OpInstance+0(a5)
 				move.w	d4,d7
-				muls	#37,d7
+				muls	#30,d7
 				asr.l	#7,d7
 				add.w	d7,a6
 				lea		4096(a1),a4
@@ -1938,7 +1938,7 @@ AK_Generate:
 .NoReverbReset_21_2_1
 				move.w  d5,AK_OpInstance+2(a5)
 				move.w	d4,d7
-				muls	#37,d7
+				muls	#30,d7
 				asr.l	#7,d7
 				add.w	d7,a6
 				lea		8192(a1),a4
@@ -1960,7 +1960,7 @@ AK_Generate:
 .NoReverbReset_21_2_2
 				move.w  d5,AK_OpInstance+4(a5)
 				move.w	d4,d7
-				muls	#37,d7
+				muls	#30,d7
 				asr.l	#7,d7
 				add.w	d7,a6
 				lea		12288(a1),a4
@@ -1982,7 +1982,7 @@ AK_Generate:
 .NoReverbReset_21_2_3
 				move.w  d5,AK_OpInstance+6(a5)
 				move.w	d4,d7
-				muls	#37,d7
+				muls	#30,d7
 				asr.l	#7,d7
 				add.w	d7,a6
 				lea		16384(a1),a4
@@ -2004,7 +2004,7 @@ AK_Generate:
 .NoReverbReset_21_2_4
 				move.w  d5,AK_OpInstance+8(a5)
 				move.w	d4,d7
-				muls	#37,d7
+				muls	#30,d7
 				asr.l	#7,d7
 				add.w	d7,a6
 				lea		20480(a1),a4
@@ -2026,7 +2026,7 @@ AK_Generate:
 .NoReverbReset_21_2_5
 				move.w  d5,AK_OpInstance+10(a5)
 				move.w	d4,d7
-				muls	#37,d7
+				muls	#30,d7
 				asr.l	#7,d7
 				add.w	d7,a6
 				lea		24576(a1),a4
@@ -2048,7 +2048,7 @@ AK_Generate:
 .NoReverbReset_21_2_6
 				move.w  d5,AK_OpInstance+12(a5)
 				move.w	d4,d7
-				muls	#37,d7
+				muls	#30,d7
 				asr.l	#7,d7
 				add.w	d7,a6
 				lea		28672(a1),a4
@@ -2070,7 +2070,7 @@ AK_Generate:
 .NoReverbReset_21_2_7
 				move.w  d5,AK_OpInstance+14(a5)
 				move.w	d4,d7
-				muls	#37,d7
+				muls	#30,d7
 				asr.l	#7,d7
 				add.w	d7,a6
 				move.l	a6,d7
@@ -4432,7 +4432,7 @@ AK_Vars:
 				dc.l	$000012e2		; Instrument 18 Length 
 				dc.l	$000012e2		; Instrument 19 Length 
 				dc.l	$0000225c		; Instrument 20 Length 
-				dc.l	$0000225c		; Instrument 21 Length 
+				dc.l	$000038b2		; Instrument 21 Length 
 				dc.l	$0000301c		; Instrument 22 Length 
 				dc.l	$00000002		; Instrument 23 Length 
 				dc.l	$00000002		; Instrument 24 Length 
@@ -4444,7 +4444,7 @@ AK_Vars:
 				dc.l	$00001b7e		; Instrument 30 Length 
 				dc.l	$00000516		; Instrument 31 Length 
 				dc.l	$00000000		; External Sample 1 Length 
-				dc.l	$00001592		; External Sample 2 Length 
+				dc.l	$00001f4e		; External Sample 2 Length 
 				dc.l	$00000000		; External Sample 3 Length 
 				dc.l	$00000000		; External Sample 4 Length 
 				dc.l	$00000000		; External Sample 5 Length 
