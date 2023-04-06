@@ -215,9 +215,11 @@ static void BlitFunc(const BitmapT *sourceA, const BitmapT *sourceB,
   custom->bltsize = BLTSIZE;
 }
 
-static void MakeCopperList(CopListT *cp) {
+void MakeCopperList(CopListT *cp) {
   short i;
   short *color = wireworld_pcb_pal_pixels;
+  short display_bg = TrackValueGet(&WireworldDisplayBg, frameCount);
+  short pal_start = display_bg ? 8 : 0;
 
   CopInit(cp);
   // initially previous states are empty
@@ -229,8 +231,7 @@ static void MakeCopperList(CopListT *cp) {
   CopSetupSprites(cp, sprptr);
   for (i = 0; i < 8; i++) {
     SpriteT *spr = &wireworld_chip[i];
-    SpriteUpdatePos(spr,
-                    X(DISP_WIDTH / 2 + (i / 2) * 16 - 33),
+    SpriteUpdatePos(spr, X(DISP_WIDTH / 2 + (i / 2) * 16 - 33),
                     Y(DISP_HEIGHT / 2 - spr->height / 2));
     if (wireworld && TrackValueGet(&WireworldBg, frameCount) == 1) {
       CopInsSetSprite(sprptr[i], spr);
@@ -247,15 +248,29 @@ static void MakeCopperList(CopListT *cp) {
   for (i = 1; i <= DISP_HEIGHT; i += 2) {
     // vertical pixel doubling
     if (wireworld && (i - 1) % 8 == 0) {
-      CopSetColor(cp, 8, *color++);
-      CopSetColor(cp, 9, *color++);
-      CopSetColor(cp, 10, *color);
-      CopSetColor(cp, 11, *color++);
-      CopSetColor(cp, 12, *color);
-      CopSetColor(cp, 13, *color);
-      CopSetColor(cp, 14, *color);
-      CopSetColor(cp, 15, *color++);
-    } 
+      // if we're displaying background set its colors without any electrons
+      if (display_bg)
+        CopSetColor(cp, pal_start, *color++);
+      // else background should be black
+
+      // if we're displaying background set its colors with electrons
+      // if we're not displaying background set first half of the color palette
+      CopSetColor(cp, pal_start+1, *color++);
+      CopSetColor(cp, pal_start+2, *color);
+      CopSetColor(cp, pal_start+3, *color++);
+      CopSetColor(cp, pal_start+4, *color);
+      CopSetColor(cp, pal_start+5, *color);
+      CopSetColor(cp, pal_start+6, *color);
+      CopSetColor(cp, pal_start+7, *color++);
+
+      // if we're not displaying background set second half of the color palette
+      if (!display_bg) {
+        short j;
+        for (j = pal_start + 8; j < 16; j++)
+          CopSetColor(cp, j, *color);
+        color++;
+      }
+    }
     CopMove16(cp, bpl1mod, -prev_states[0]->bytesPerRow);
     CopMove16(cp, bpl2mod, -prev_states[0]->bytesPerRow);
     CopWaitSafe(cp, Y(i), 0);
@@ -306,12 +321,13 @@ static void GameOfLife(void *boards) {
 static short scene_count = 0;
 
 static void LoadBackground(const BitmapT *bg, u_short x, u_short y, short idx) {
-    BitmapT *tmp = NewBitmapCustom(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH, BM_DISPLAYABLE);
-    BitmapClear(tmp); // comment for cool effects!
-    BitmapCopy(tmp, x, y, bg);
-    WaitBlitter();
-    PixelDouble(tmp->planes[0], background[idx]->planes[0], double_pixels);
-    DeleteBitmap(tmp);
+  BitmapT *tmp = NewBitmapCustom(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH,
+                                 BM_DISPLAYABLE);
+  BitmapClear(tmp); // comment for cool effects!
+  BitmapCopy(tmp, x, y, bg);
+  WaitBlitter();
+  PixelDouble(tmp->planes[0], background[idx]->planes[0], double_pixels);
+  DeleteBitmap(tmp);
 }
 
 static void SharedPreInit(void) {
@@ -329,20 +345,23 @@ static void SharedPreInit(void) {
   }
 
   for (i = 0; i < BOARD_COUNT; i++)
-    boards[i] = NewBitmapCustom(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH, BM_DISPLAYABLE);
+    boards[i] = NewBitmapCustom(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH,
+                                BM_DISPLAYABLE);
 
   for (i = 0; i < PREV_STATES_DEPTH; i++) {
     // only needs half the vertical resolution, other half
     // achieved via copper line doubling
-    prev_states[i] = NewBitmapCustom(DISP_WIDTH, DISP_HEIGHT / 2, BOARD_DEPTH, BM_DISPLAYABLE);
+    prev_states[i] =
+      NewBitmapCustom(DISP_WIDTH, DISP_HEIGHT / 2, BOARD_DEPTH, BM_DISPLAYABLE);
   }
 
   for (i = 0; i < 2; i++)
-    background[i] = NewBitmapCustom(DISP_WIDTH, DISP_HEIGHT / 2, BOARD_DEPTH, BM_DISPLAYABLE);
+    background[i] =
+      NewBitmapCustom(DISP_WIDTH, DISP_HEIGHT / 2, BOARD_DEPTH, BM_DISPLAYABLE);
 
   SetupPlayfield(MODE_LORES, DISP_DEPTH, X(0), Y(0), DISP_WIDTH, DISP_HEIGHT);
 
-  cp = NewCopList(1820);
+  cp = NewCopList(1310);
   MakeCopperList(cp);
   CopListActivate(cp);
 
@@ -385,9 +404,7 @@ static void SharedPostInit(void) {
 }
 
 static void InitWireworld(void) {
-  short i;
   const BitmapT *desired_bg;
-  const PaletteT *pal;
   short display_bg = TrackValueGet(&WireworldDisplayBg, frameCount);
   short bg_idx = TrackValueGet(&WireworldBg, frameCount);
 
@@ -396,12 +413,10 @@ static void InitWireworld(void) {
   prev_states_depth = display_bg ? 4 : 5;
   desired_bg = bg_idx ? &wireworld_pcb : &wireworld_vitruvian;
   cur_electrons = bg_idx ? &pcb_electrons : &vitruvian_electrons;
-  pal = bg_idx ? &palette_pcb : &palette_vitruvian;
 
   SharedPreInit();
-  for (i = 0; i < pal->count; i++)
-    CopInsSet16(&palptr[i], pal->colors[i]);
-  InitSpawnFrames(cur_electrons, TrackValueGet(&WireworldSpawnMask, frameCount));
+  InitSpawnFrames(cur_electrons,
+                  TrackValueGet(&WireworldSpawnMask, frameCount));
 
   if (display_bg) {
     LoadBackground(desired_bg, 0, 0, 0);
@@ -419,17 +434,24 @@ static void InitWireworld(void) {
 }
 
 static void InitGameOfLife(void) {
+  short i;
+  short display_bg = TrackValueGet(&WireworldDisplayBg, frameCount);
   current_game = &games[0];
   wireworld = false;
   prev_states_depth = 4;
 
   SharedPreInit();
 
+  TransitionPal(palette_gol + 1);
+  for (i = 0; i < 16; i++)
+    CopInsSet16(&palptr[i], palette_gol[i]);
+
   LoadBackground(&electric_logo, 0, 32, 0);
   LoadBackground(&lifeforms_logo, 0, 32, 1);
 
   BitmapClear(boards[0]);
-  BitmapCopy(boards[0], EXT_WIDTH_LEFT, EXT_HEIGHT_TOP, &wireworld_vitruvian);
+  BitmapCopy(boards[0], EXT_WIDTH_LEFT, EXT_HEIGHT_TOP,
+    display_bg ? &wireworld_pcb : &wireworld_vitruvian);
 
   SharedPostInit();
 }
@@ -473,10 +495,10 @@ static void GolStep(void) {
   if (!wireworld)
     current_game = &games[TrackValueGet(&GOLGame, frameCount)];
   if (wireworld) {
-    // For technical reasons wireworld implementation requires 2 separate games to
-    // be ran in alternating fashion, and the switch between them must be done
-    // precisely when the board for a game finishes being calculated or things will
-    // break in ways undebuggable by single-stepping the game state
+    // For technical reasons wireworld implementation requires 2 separate games
+    // to be ran in alternating fashion, and the switch between them must be
+    // done precisely when the board for a game finishes being calculated or
+    // things will break in ways undebuggable by single-stepping the game state
 
     // which wireworld game (0-1) phase are we on
     static __code short wireworld_step = 0;
@@ -486,10 +508,10 @@ static void GolStep(void) {
     wireworld_step ^= 1;
 
     // set pixels on correct board
-    SpawnElectrons(cur_electrons,
-                   boards[wireworld_step ^ 1], boards[wireworld_step]);
+    SpawnElectrons(cur_electrons, boards[wireworld_step ^ 1],
+                   boards[wireworld_step]);
   }
-  
+
   // ----- PIXELDOUBLE-BLITTER SYNCHRONIZATION -----
   // run all blits except the last
   GameOfLife(boards);
@@ -510,12 +532,14 @@ static void GolStep(void) {
   UpdateBitplanePointers();
   if (wireworld) {
     const short cycling_len =
-      sizeof(wireworld_chip_cycling)/sizeof(wireworld_chip_cycling[0]);
-    ColorCyclingStep(&palptr[16], wireworld_chip_cycling, cycling_len, &wireworld_chip_pal);
+      sizeof(wireworld_chip_cycling) / sizeof(wireworld_chip_cycling[0]);
+    ColorCyclingStep(&palptr[16], wireworld_chip_cycling, cycling_len,
+                     &wireworld_chip_pal);
   } else {
     short logo_idx = TrackValueGet(&GOLLogoType, frameCount);
     CopInsSet32(bplptr[3], background[logo_idx]->planes[0]);
-    ColorFadingStep();
+    TransitionPal(palette_gol + 1);
+    ColorFadingStep(palette_gol);
   }
 
   stepCount++;

@@ -1,45 +1,35 @@
-static PaletteT palette_vitruvian = {
-  .count = 16,
-  .colors =
-    {
-      0x000, // 0000
-      0x006, // 0001
-      0x026, // 0010
-      0x026, // 0011
-      0x05B, // 0100
-      0x05B, // 0101
-      0x05B, // 0110
-      0x05B, // 0111
-      0x09F, // 1000
-      0x09F, // 1001
-      0x09F, // 1010
-      0x09F, // 1011
-      0x09F, // 1100
-      0x09F, // 1101
-      0x09F, // 1110
-      0x09F, // 1111
-    },
-};
+#include "data/gol-transitions.c"
 
-static PaletteT palette_pcb = {
-  .count = 16,
-  .colors =
-    {
-      0x000, // 0000
-      0x000, // 0001
-      0x000, // 0010
-      0x000, // 0011
-      0x000, // 0100
-      0x000, // 0101
-      0x000, // 0110
-      0x000, // 0111
-      0x006, // 1000
-      0x009, // 1001
-      0x01c, // 1010
-      0x01c, // 1011
-      0x03f, // 1100
-      0x03f, // 1101
-      0x03f, // 1110
-      0x03f, // 1111
-    },
-};
+extern TrackT GOLGradientTrans;
+extern TrackT GOLLogoType;
+
+static short palette_gol[16] = {0};
+
+static short *LoadCompressedPal(short *from, short *to) {
+  *to++ = *from++;
+  *to++ = *from;
+  *to++ = *from++;
+  *to++ = *from;
+  *to++ = *from;
+  *to++ = *from;
+  *to++ = *from++;
+  return from;
+}
+
+static void TransitionPal(short *target_pal) {
+  u_short val, start, steps;
+  static u_short *pal;
+  static short phase = 0;
+
+  val = TrackValueGet(&GOLGradientTrans, frameCount);
+  start = (val & 0xff) * gol_transitions_width;
+  steps = (val & 0xff00) >> 8;
+  if (steps > 0) {
+    phase = steps;
+    pal = gol_transitions_pixels + start;
+  }
+  if (phase) {
+    pal = LoadCompressedPal(pal, target_pal);
+    phase--;
+  }
+}
