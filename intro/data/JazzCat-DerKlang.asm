@@ -56,9 +56,9 @@ _AK_ProgressLen:
 
 AK_USE_PROGRESS			equ 1
 AK_FINE_PROGRESS		equ 1
-AK_FINE_PROGRESS_LEN	equ 245674
-AK_SMP_LEN				equ 183164
-AK_EXT_SMP_LEN			equ 9254
+AK_FINE_PROGRESS_LEN	equ 239958
+AK_SMP_LEN				equ 177446
+AK_EXT_SMP_LEN			equ 6762
 
 AK_Generate:
 
@@ -1347,6 +1347,55 @@ AK_Generate:
 				cmp.l	AK_SmpLen+64(a5),d7
 				blt		.Inst17Loop
 
+				movem.l a0-a1,-(sp)	;Stash sample base address & large buffer address for loop generator
+
+;----------------------------------------------------------------------------
+; Instrument 17 - Loop Generator (Offset: 4094 Length: 2
+;----------------------------------------------------------------------------
+
+				move.l	#2,d7
+				move.l	AK_SmpAddr+64(a5),a0
+				lea		4094(a0),a0
+				move.l	a0,a1
+				sub.l	d7,a1
+				moveq	#0,d4
+				move.l	#32767<<8,d5
+				move.l	d5,d0
+				divs	d7,d0
+				bvc.s	.LoopGenVC_16
+				moveq	#0,d0
+.LoopGenVC_16
+				moveq	#0,d6
+				move.w	d0,d6
+.LoopGen_16
+				move.l	d4,d2
+				asr.l	#8,d2
+				move.l	d5,d3
+				asr.l	#8,d3
+				move.b	(a0),d0
+				move.b	(a1)+,d1
+				ext.w	d0
+				ext.w	d1
+				muls	d3,d0
+				muls	d2,d1
+				add.l	d1,d0
+				add.l	d0,d0
+				swap	d0
+				move.b	d0,(a0)+
+				add.l	d6,d4
+				sub.l	d6,d5
+
+				ifne	AK_USE_PROGRESS
+					ifne	AK_FINE_PROGRESS
+						addq.l	#1,(a3)
+					endif
+				endif
+
+				subq.l	#1,d7
+				bne.s	.LoopGen_16
+
+				movem.l (sp)+,a0-a1	;Restore sample base address & large buffer address after loop generator
+
 ;----------------------------------------------------------------------------
 ; Instrument 18 - TBlow
 ;----------------------------------------------------------------------------
@@ -1894,7 +1943,7 @@ AK_Generate:
 				asl.w	#8,d0
 .NoClone_21_1
 
-				; v1 = reverb(v1, 68, 30)
+				; v1 = reverb(v1, 68, 37)
 				move.l	d7,-(sp)
 				sub.l	a6,a6
 				move.l	a1,a4
@@ -1916,7 +1965,7 @@ AK_Generate:
 .NoReverbReset_21_2_0
 				move.w  d5,AK_OpInstance+0(a5)
 				move.w	d4,d7
-				muls	#30,d7
+				muls	#37,d7
 				asr.l	#7,d7
 				add.w	d7,a6
 				lea		4096(a1),a4
@@ -1938,7 +1987,7 @@ AK_Generate:
 .NoReverbReset_21_2_1
 				move.w  d5,AK_OpInstance+2(a5)
 				move.w	d4,d7
-				muls	#30,d7
+				muls	#37,d7
 				asr.l	#7,d7
 				add.w	d7,a6
 				lea		8192(a1),a4
@@ -1960,7 +2009,7 @@ AK_Generate:
 .NoReverbReset_21_2_2
 				move.w  d5,AK_OpInstance+4(a5)
 				move.w	d4,d7
-				muls	#30,d7
+				muls	#37,d7
 				asr.l	#7,d7
 				add.w	d7,a6
 				lea		12288(a1),a4
@@ -1982,7 +2031,7 @@ AK_Generate:
 .NoReverbReset_21_2_3
 				move.w  d5,AK_OpInstance+6(a5)
 				move.w	d4,d7
-				muls	#30,d7
+				muls	#37,d7
 				asr.l	#7,d7
 				add.w	d7,a6
 				lea		16384(a1),a4
@@ -2004,7 +2053,7 @@ AK_Generate:
 .NoReverbReset_21_2_4
 				move.w  d5,AK_OpInstance+8(a5)
 				move.w	d4,d7
-				muls	#30,d7
+				muls	#37,d7
 				asr.l	#7,d7
 				add.w	d7,a6
 				lea		20480(a1),a4
@@ -2026,7 +2075,7 @@ AK_Generate:
 .NoReverbReset_21_2_5
 				move.w  d5,AK_OpInstance+10(a5)
 				move.w	d4,d7
-				muls	#30,d7
+				muls	#37,d7
 				asr.l	#7,d7
 				add.w	d7,a6
 				lea		24576(a1),a4
@@ -2048,7 +2097,7 @@ AK_Generate:
 .NoReverbReset_21_2_6
 				move.w  d5,AK_OpInstance+12(a5)
 				move.w	d4,d7
-				muls	#30,d7
+				muls	#37,d7
 				asr.l	#7,d7
 				add.w	d7,a6
 				lea		28672(a1),a4
@@ -2070,7 +2119,7 @@ AK_Generate:
 .NoReverbReset_21_2_7
 				move.w  d5,AK_OpInstance+14(a5)
 				move.w	d4,d7
-				muls	#30,d7
+				muls	#37,d7
 				asr.l	#7,d7
 				add.w	d7,a6
 				move.l	a6,d7
@@ -4432,7 +4481,7 @@ AK_Vars:
 				dc.l	$000012e2		; Instrument 18 Length 
 				dc.l	$000012e2		; Instrument 19 Length 
 				dc.l	$0000225c		; Instrument 20 Length 
-				dc.l	$000038b2		; Instrument 21 Length 
+				dc.l	$0000225c		; Instrument 21 Length 
 				dc.l	$0000301c		; Instrument 22 Length 
 				dc.l	$00000002		; Instrument 23 Length 
 				dc.l	$00000002		; Instrument 24 Length 
@@ -4444,7 +4493,7 @@ AK_Vars:
 				dc.l	$00001b7e		; Instrument 30 Length 
 				dc.l	$00000516		; Instrument 31 Length 
 				dc.l	$00000000		; External Sample 1 Length 
-				dc.l	$00001f4e		; External Sample 2 Length 
+				dc.l	$00001592		; External Sample 2 Length 
 				dc.l	$00000000		; External Sample 3 Length 
 				dc.l	$00000000		; External Sample 4 Length 
 				dc.l	$00000000		; External Sample 5 Length 
