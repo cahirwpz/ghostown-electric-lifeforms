@@ -3,12 +3,6 @@
 extern TrackT GOLGradientTrans;
 extern TrackT GOLLogoType;
 
-// taken from the wireworld palette
-static short palette_vitruvian[16] = {
-  0x000, 0x3bf, 0x9ee, 0x9ee, 0xdff, 0xdff, 0xdff, 0xdff,
-  0xfff, 0xfff, 0xfff, 0xfff, 0xfff, 0xfff, 0xfff, 0xfff,
-};
-
 static short palette_gol[16] = {0};
 
 static short *LoadCompressedPal(short *from, short *to) {
