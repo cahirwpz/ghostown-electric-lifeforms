@@ -68,6 +68,7 @@ PNG2C.tree-pal-electric := --palette tree_pal_electric,32
 PNG2C.fruit-1 := --bitmap fruit_1,16x16x2,+onlydata
 PNG2C.fruit-2 := --bitmap fruit_2,16x16x2,+onlydata
 PNG2C.grass := --sprite grass,32,8
+PNG2C.electric-small := --sprite electric,32,5 --palette electric_pal,16,+store_unused
 PNG2C.tilemover-pal := --palette tilemover_pal,16
 PNG2C.ghostown-logo-crop := --pixmap ghostown_logo,192x131x4,+onlydata,+displayable
 PNG2C.ghostown-logo-01 := --palette ghostown_logo_1_pal,8

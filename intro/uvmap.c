@@ -6,6 +6,7 @@
 #include <sync.h>
 #include <system/interrupt.h>
 #include <system/memory.h>
+#include <sprite.h>
 
 #define WIDTH 160
 #define HEIGHT 100
@@ -24,7 +25,9 @@ static __code short c2p_phase;
 static __code void **c2p_bpl;
 static CopListT *cp;
 static CopInsT *bplptr[DEPTH];
+static CopInsT *sprptr[8];
 
+#include "data/electric-small.c"
 #include "data/texture-inside.c"
 #include "data/texture-outside.c"
 #include "data/uvgut-gradient.c"
@@ -337,6 +340,7 @@ static void MakeCopperList(CopListT *cp, short *pixels) {
 
   CopInit(cp);
   CopSetupBitplanes(cp, bplptr, screen[active], DEPTH);
+  CopSetupSprites(cp, sprptr);
   for (j = 0; j < 16; j++)
     CopSetColor(cp, j, *pixels++);
   for (i = 0; i < HEIGHT * 2; i++) {
@@ -356,6 +360,8 @@ static void MakeCopperList(CopListT *cp, short *pixels) {
 }
 
 static void Init(short var) {
+  short i;
+
   screen[0] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH);
   screen[1] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH);
 
@@ -379,7 +385,17 @@ static void Init(short var) {
   MakeCopperList(cp, var ? uvtit_gradient_pixels : uvgut_gradient_pixels);
   CopListActivate(cp);
 
-  EnableDMA(DMAF_RASTER);
+  if (var) {
+    for (i = 0; i < electric_sprites; i++) {
+      short hp = X(i * 16 + (320 - electric_sprites * 16) / 2);
+      SpriteUpdatePos(&electric[i], hp, Y((256 - electric_height) / 2));
+      CopInsSetSprite(sprptr[i], &electric[i]);
+    }
+
+    LoadPalette(&electric_pal, 16);
+  }
+
+  EnableDMA(DMAF_RASTER | DMAF_SPRITE);
 
   active = 0;
   c2p_bpl = NULL;
@@ -403,6 +419,7 @@ static void InitTit(void) {
 }
 
 static void Kill(void) {
+  ResetSprites();
   DisableDMA(DMAF_COPPER | DMAF_RASTER | DMAF_BLITTER);
 
   DisableINT(INTF_BLIT);
