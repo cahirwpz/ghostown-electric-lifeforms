@@ -359,16 +359,16 @@ $0337 15 !trigger
 @end
 
 @track TurmiteBoard
-$2400 1 !event
-$2500 2
-$2600 3
+$2800 1 !event
+$2900 2
+$2A00 3
 @end
 
 @track TurmiteFade
-$2400 0 !step
-$2500 0
-$2600 0
+$2800 0 !step
 $2900 0
+$2A00 0
+$2C00 0
 @end
 
 @track TurmitePal
