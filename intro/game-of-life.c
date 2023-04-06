@@ -90,6 +90,7 @@
 //
 
 #define NUM_SCENES 4
+#define TILES_N (40*32)
 
 #include "data/wireworld-vitruvian.c"
 #include "data/wireworld-fullscreen.c"
@@ -121,6 +122,8 @@ static CopInsT *sprptr[8];
 static BitmapT *prev_states[PREV_STATES_DEPTH];
 
 static BitmapT *background[2];
+
+static u_char tileShow[TILES_N] = {0};
 
 // states_head % PREV_STATES_DEPTH points to the newest (currently being
 // pixel-doubled, not displayed yet) game state in prev_states
@@ -314,6 +317,49 @@ static void LoadBackground(const BitmapT *bg, u_short x, u_short y, short idx) {
   DeleteBitmap(tmp);
 }
 
+static void InitWireworldFadein(void) {
+  short x, y;
+  for (x = 0; x < 40; x++) {
+    for (y = 0; y < 32; y++) {
+      short dx = x - 20;
+      short dy = y - 16;
+      tileShow[y * 40 + x] = isqrt(dx*dx + dy*dy);
+    }
+  }
+}
+
+static inline void CopyBlock(short pos) {
+  short i;
+  // overall this is cheaper than keeping track of separate x and y because it
+  // only happens 1280 times (40 * 32)
+  short start = (pos / 40) * 160 + (pos % 40);
+  u_char *src = (u_char *)(background[0]->planes[0] + start);
+  u_char *dst = (u_char *)(background[1]->planes[0] + start);
+  for (i = 0; i < 4; i++) {
+    *dst = *src;
+    dst += 40;
+    src += 40;
+  }
+}
+
+static void VBlank(void) {
+  static short phase = 0;
+  u_char *tile = tileShow;
+  short n = TILES_N-1;
+
+  // max distance from the center is 24
+  if (phase >= 24)
+    return;
+  phase++;
+
+  do {
+    *tile = (*tile)--;
+    if (*tile == 0)
+      CopyBlock(n);
+    tile++;
+  } while (--n != -1);
+}
+
 static void SharedPreInit(void) {
   static bool allocated = false;
 
@@ -402,12 +448,12 @@ static void InitWireworld(void) {
   SharedPreInit();
   for (i = 0; i < 16; i++)
     CopInsSet16(&palptr[i], palette_vitruvian[i]);
-  InitSpawnFrames(cur_electrons,
-                  TrackValueGet(&WireworldSpawnMask, frameCount));
+  InitSpawnFrames(cur_electrons);
 
   if (display_bg) {
     LoadBackground(desired_bg, 0, 0, 0);
     CopInsSet32(bplptr[3], background[1]->planes[0]);
+    InitWireworldFadein();
   }
 
   // board 11 is special in case of wireworld - it contains the electron paths
@@ -565,15 +611,6 @@ static void Render(void) {
   GolStep();
 }
 #endif
-
-static void VBlank(void) {
-  static short pos = 0;
-  if (pos >= DISP_WIDTH/8 * (DISP_HEIGHT)/2 )
-    return;
-  UpdateFrameCount();
-  memcpy(background[1]->planes[0] + pos, background[0]->planes[0] + pos, DISP_WIDTH/8);
-  pos += DISP_WIDTH/8;
-}
 
 EFFECT(Wireworld, NULL, NULL, InitWireworld, Kill, Render, VBlank);
 EFFECT(GameOfLife, NULL, NULL, InitGameOfLife, Kill, Render, NULL);

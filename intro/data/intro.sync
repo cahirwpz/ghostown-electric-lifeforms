@@ -323,7 +323,8 @@ $1C00 15
 
 @track WireworldMinDelay
 $0800 0 !step
-$1C00 8
+$1C00 16
+$1C01 8
 @end
 
 @track WireworldSpawnNow
