@@ -265,21 +265,21 @@ $2120 6
 
 @track GOLCellColor
 $2000 0 !step
-$2020 2
+$2010 2
 @end
 
 @track GOLLogoColor
 $2000 0 !step
-$211a 1
+$2030 1
 @end
 
 @track GOLLogoFade
 $2000 0 !smooth
-$2010 0
-$2020 15
+$2008 0
+$2010 15
+$2028 0
 $2030 0
-$211a 0
-$212a 15
+$2110 15
 @end
 
 # logo bitmap:
