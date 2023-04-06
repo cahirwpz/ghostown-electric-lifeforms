@@ -361,23 +361,15 @@ $0220 1
 $0300 4
 @end
 
-@track SeaAnemoneFadeOut
-$001E 15 !trigger
-$003E 15
-$011E 15
-$013E 15
-$021E 15
-$023E 15
-$033E 15
-@end
-
-@track SeaAnemoneFadeIn
-$0020 15 !trigger
-$0100 15
-$0120 15
-$0200 15
-$0220 15
-$0300 15
+@track SeaAnemoneFade
+$0c00 0
+$0c20 0
+$0d00 0
+$0d20 0
+$0e00 0
+$0e20 0
+$0f00 0
+$1000 0
 @end
 
 @track SeaAnemoneGradient

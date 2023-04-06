@@ -87,8 +87,7 @@ extern TrackT SeaAnemoneVariant;
 extern TrackT SeaAnemonePal;
 extern TrackT SeaAnemonePalPulse;
 extern TrackT SeaAnemoneGradient;
-extern TrackT SeaAnemoneFadeOut;
-extern TrackT SeaAnemoneFadeIn;
+extern TrackT SeaAnemoneFade;
 
 typedef const PaletteT *SeaAnemonePalT[5];
 
@@ -318,12 +317,14 @@ static void VBlank(void) {
 
   if ((val = TrackValueGet(&SeaAnemonePalPulse, frameFromStart)))
     LoadPalette((*active_pal)[blip_sequence[val]], 0);
-  
-  if ((val = TrackValueGet(&SeaAnemoneFadeOut, frameFromStart))) 
-    FadeBlack(sea_anemone_palettes[activePalIndex], 0, val);
 
-  if ((val = TrackValueGet(&SeaAnemoneFadeIn, frameFromStart))) 
-    FadeBlack(sea_anemone_palettes[activePalIndex], 0, 16 - val);
+  (void)TrackValueGet(&SeaAnemoneFade, frameCount);
+
+  if ((val = FromCurrKeyFrame(&SeaAnemoneFade)) < 16)
+    FadeBlack(sea_anemone_palettes[activePalIndex], 0, val);
+  
+  if ((val = TillNextKeyFrame(&SeaAnemoneFade)) < 16)
+    FadeBlack(sea_anemone_palettes[activePalIndex], 0, val);
 }
 
 static void MakeCopperList(CopListT *cp, CopInsT **bplptr, CopInsT **sprptr,
