@@ -92,12 +92,10 @@ void KillLogo(void) {
   }
 }
 
-static void Render(bool out) {
-  short num = TrackValueGet(&GhostownLogoPal, frameCount);
-  short frame = out ? TillNextKeyFrame(&GhostownLogoPal)
-                    : FromCurrKeyFrame(&GhostownLogoPal);
+static void Render(short frame) {
+  short num;
 
-  if (num) {
+  if ((num = TrackValueGet(&GhostownLogoPal, frameCount))) {
     if (frame < 16) {
       short i;
 
@@ -116,11 +114,11 @@ static void Render(bool out) {
 }
 
 static void RenderIn(void) {
-  Render(0);
+  Render(FromCurrKeyFrame(&GhostownLogoPal));
 }
 
 static void RenderOut(void) {
-  Render(1);
+  Render(TillNextKeyFrame(&GhostownLogoPal));
 }
 
 EFFECT(LogoIn, Load, NULL, InitIn, NULL, RenderIn, NULL);

@@ -6,6 +6,7 @@
 #include <sync.h>
 #include <system/interrupt.h>
 #include <system/memory.h>
+#include <sprite.h>
 
 #define WIDTH 160
 #define HEIGHT 100
@@ -24,10 +25,13 @@ static __code short c2p_phase;
 static __code void **c2p_bpl;
 static CopListT *cp;
 static CopInsT *bplptr[DEPTH];
+static CopInsT *sprptr[8];
 
+#include "data/electric-small.c"
 #include "data/texture-inside.c"
 #include "data/texture-outside.c"
-#include "data/gradient.c"
+#include "data/uvgut-gradient.c"
+#include "data/uvtit-gradient.c"
 #include "data/uvmap/gut-uv.c"
 #include "data/uvmap/tit-uv.c"
 
@@ -331,12 +335,12 @@ static void ChunkyToPlanar(void) {
   c2p_phase++;
 }
 
-static void MakeCopperList(CopListT *cp) {
-  short *pixels = gradient_pixels;
+static void MakeCopperList(CopListT *cp, short *pixels) {
   short i, j;
 
   CopInit(cp);
   CopSetupBitplanes(cp, bplptr, screen[active], DEPTH);
+  CopSetupSprites(cp, sprptr);
   for (j = 0; j < 16; j++)
     CopSetColor(cp, j, *pixels++);
   for (i = 0; i < HEIGHT * 2; i++) {
@@ -355,7 +359,9 @@ static void MakeCopperList(CopListT *cp) {
   CopEnd(cp);
 }
 
-static void Init(void) {
+static void Init(short var) {
+  short i;
+
   screen[0] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH);
   screen[1] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH);
 
@@ -376,10 +382,20 @@ static void Init(void) {
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(28), WIDTH * 2, HEIGHT * 2);
 
   cp = NewCopList(900 + 256);
-  MakeCopperList(cp);
+  MakeCopperList(cp, var ? uvtit_gradient_pixels : uvgut_gradient_pixels);
   CopListActivate(cp);
 
-  EnableDMA(DMAF_RASTER);
+  if (var) {
+    for (i = 0; i < electric_sprites; i++) {
+      short hp = X(i * 16 + (320 - electric_sprites * 16) / 2);
+      SpriteUpdatePos(&electric[i], hp, Y((256 - electric_height) / 2));
+      CopInsSetSprite(sprptr[i], &electric[i]);
+    }
+
+    LoadPalette(&electric_pal, 16);
+  }
+
+  EnableDMA(DMAF_RASTER | DMAF_SPRITE);
 
   active = 0;
   c2p_bpl = NULL;
@@ -393,16 +409,17 @@ static void Init(void) {
 static void InitGut(void) {
   UVMapRender = MemAlloc(UVMapRenderSize, MEMF_PUBLIC);
   MakeUVMapRenderCode((u_short *)gut);
-  Init();
+  Init(0);
 }
 
 static void InitTit(void) {
   UVMapRender = MemAlloc(UVMapRenderSize, MEMF_PUBLIC);
   MakeUVMapRenderCode((u_short *)tit);
-  Init();
+  Init(1);
 }
 
 static void Kill(void) {
+  ResetSprites();
   DisableDMA(DMAF_COPPER | DMAF_RASTER | DMAF_BLITTER);
 
   DisableINT(INTF_BLIT);

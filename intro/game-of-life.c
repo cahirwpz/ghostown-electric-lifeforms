@@ -422,6 +422,7 @@ static void InitWireworld(void) {
 
 static void InitGameOfLife(void) {
   short i;
+  short display_bg = TrackValueGet(&WireworldDisplayBg, frameCount);
   current_game = &games[0];
   wireworld = false;
   prev_states_depth = 4;
@@ -436,7 +437,8 @@ static void InitGameOfLife(void) {
   LoadBackground(&lifeforms_logo, 0, 32, 1);
 
   BitmapClear(boards[0]);
-  BitmapCopy(boards[0], EXT_WIDTH_LEFT, EXT_HEIGHT_TOP, &wireworld_vitruvian);
+  BitmapCopy(boards[0], EXT_WIDTH_LEFT, EXT_HEIGHT_TOP,
+    display_bg ? &wireworld_pcb : &wireworld_vitruvian);
 
   SharedPostInit();
 }
