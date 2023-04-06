@@ -48,6 +48,10 @@ $3120 0
 
 @track ElectricLifeformsLogoPal
 $0800 1 !step
+$0826 2
+$0828 1
+$0838 2
+$083A 1
 $0900 2
 @end
 
