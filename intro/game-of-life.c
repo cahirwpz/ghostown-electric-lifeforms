@@ -407,7 +407,7 @@ static void InitWireworld(void) {
 
   if (display_bg) {
     LoadBackground(desired_bg, 0, 0, 0);
-    CopInsSet32(bplptr[3], background[0]->planes[0]);
+    CopInsSet32(bplptr[3], background[1]->planes[0]);
   }
 
   // board 11 is special in case of wireworld - it contains the electron paths
@@ -566,5 +566,14 @@ static void Render(void) {
 }
 #endif
 
-EFFECT(Wireworld, NULL, NULL, InitWireworld, Kill, Render, NULL);
+static void VBlank(void) {
+  static short pos = 0;
+  if (pos >= DISP_WIDTH/8 * DISP_HEIGHT/2)
+    return;
+  UpdateFrameCount();
+  memcpy(background[1]->planes[0] + pos, background[0]->planes[0] + pos, EXT_BOARD_WIDTH/8);
+  pos += EXT_BOARD_WIDTH/8;
+}
+
+EFFECT(Wireworld, NULL, NULL, InitWireworld, Kill, Render, VBlank);
 EFFECT(GameOfLife, NULL, NULL, InitGameOfLife, Kill, Render, NULL);
