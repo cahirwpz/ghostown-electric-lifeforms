@@ -372,8 +372,7 @@ static void Init(void) {
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
   LoadPalette(sea_anemone_palettes[activePalIndex], 0);
-  for (i = 16; i < 32; i += 4)
-    LoadPalette(&whirl_pal, i);
+  LoadPalette(&whirl_pal, 16);
 
   cp[0] = NewCopList(50 + 2 * anemone_gradient_length);
   cp[1] = NewCopList(50 + 2 * anemone_gradient_length);
