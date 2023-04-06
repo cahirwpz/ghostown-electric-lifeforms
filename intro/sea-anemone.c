@@ -320,11 +320,15 @@ static void VBlank(void) {
 
   (void)TrackValueGet(&SeaAnemoneFade, frameCount);
 
-  if ((val = FromCurrKeyFrame(&SeaAnemoneFade)) < 16)
+  if ((val = FromCurrKeyFrame(&SeaAnemoneFade)) < 16) {
     FadeBlack(sea_anemone_palettes[activePalIndex], 0, val);
+    FadeBlack(&whirl_pal, 16, val);
+  }
   
-  if ((val = TillNextKeyFrame(&SeaAnemoneFade)) < 16)
+  if ((val = TillNextKeyFrame(&SeaAnemoneFade)) < 16) {
     FadeBlack(sea_anemone_palettes[activePalIndex], 0, val);
+    FadeBlack(&whirl_pal, 16, val);
+  }
 }
 
 static void MakeCopperList(CopListT *cp, CopInsT **bplptr, CopInsT **sprptr,
