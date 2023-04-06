@@ -153,7 +153,7 @@ static const short gradient_envelope[] = {
 };
 
 // For the background gradient
-static __code short activePalIndex = 1;
+static __code short activePalIndex = 3;
 
 static inline int fastrand(void) {
   static int m[2] = { 0x3E50B28C, 0xD461A7F9 };
