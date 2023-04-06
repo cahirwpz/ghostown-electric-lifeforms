@@ -476,7 +476,7 @@ static void GolStep(void) {
   void *src =
     current_board->planes[0] + EXT_BOARD_WIDTH / 8 + EXT_WIDTH_LEFT / 8;
 
-  ProfilerStart(GOLStep);
+
   if (!wireworld)
     current_game = &games[TrackValueGet(&GOLGame, frameCount)];
   if (wireworld) {
@@ -508,6 +508,23 @@ static void GolStep(void) {
   // run the last blit
   BlitGameOfLife(boards, current_game->num_phases - 1);
   // wait for the last blit to finish
+  if (wireworld) {
+    const short cycling_len =
+      sizeof(wireworld_chip_cycling) / sizeof(wireworld_chip_cycling[0]);
+      
+    ColorCyclingStep(&palptr[16], wireworld_chip_cycling, cycling_len,
+                     &wireworld_chip_pal);
+  
+  } else {
+    short logo_idx = TrackValueGet(&GOLLogoType, frameCount);
+    CopInsSet32(bplptr[3], background[logo_idx]->planes[0]);
+    
+    TransitionPal(palette_gol + 1);
+    
+    ProfilerStart(GOLStep);
+    ColorFadingStep(palette_gol);
+    ProfilerStop(GOLStep);
+  }
   while (phase <= current_game->num_phases)
     continue;
   // reset phase counter
@@ -515,21 +532,10 @@ static void GolStep(void) {
   // ----- PIXELDOUBLE-BLITTER SYNCHRONIZATION -----
 
   UpdateBitplanePointers();
-  if (wireworld) {
-    const short cycling_len =
-      sizeof(wireworld_chip_cycling) / sizeof(wireworld_chip_cycling[0]);
-    ColorCyclingStep(&palptr[16], wireworld_chip_cycling, cycling_len,
-                     &wireworld_chip_pal);
-  } else {
-    short logo_idx = TrackValueGet(&GOLLogoType, frameCount);
-    CopInsSet32(bplptr[3], background[logo_idx]->planes[0]);
-    TransitionPal(palette_gol + 1);
-    ColorFadingStep(palette_gol);
-  }
 
   stepCount++;
 
-  ProfilerStop(GOLStep);
+  
 }
 
 #if DEBUG_KBD

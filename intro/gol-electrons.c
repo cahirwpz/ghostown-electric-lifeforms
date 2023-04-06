@@ -13,6 +13,23 @@ extern TrackT WireworldSpawnNow;
 
 static const ElectronArrayT *cur_electrons;
 
+static inline int fastrand(void) {
+  static int m[2] = { 0x3E50B28C, 0xD461A7F9 };
+
+  int a, b;
+
+  // https://www.atari-forum.com/viewtopic.php?p=188000#p188000
+  asm volatile("move.l (%2)+,%0\n"
+               "move.l (%2),%1\n"
+               "swap   %1\n"
+               "add.l  %0,(%2)\n"
+               "add.l  %1,-(%2)\n"
+               : "=d" (a), "=d" (b)
+               : "a" (m));
+  
+  return a;
+}
+
 static void InitSpawnFrames(const ElectronArrayT *electrons, short spawn_mask) {
   short i;
   short *spawn = next_spawn;
@@ -40,7 +57,7 @@ static void SpawnElectrons(const ElectronArrayT *electrons,
       short post = posh + (*pts++);
       bset(bpl_heads + (posh >> 3), ~posh);
       bset(bpl_tails + (post >> 3), ~post);
-      *spawn++ += (random() & spawn_mask) + min_delay;
+      *spawn++ += (fastrand() & spawn_mask) + min_delay;
     } else {
       pts += 2;
       spawn++;
