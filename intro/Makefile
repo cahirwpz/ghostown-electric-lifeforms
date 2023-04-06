@@ -41,7 +41,7 @@ CLEAN-FILES := main.o \
 	data/electric.c data/lifeforms.c \
 	data/circles.c data/squares.c data/whirl.c \
 	data/grass.c data/loader.c \
-	data/texture-{in,out}side.c data/gradient.c data/gradient.png \
+	data/texture-{in,out}side.c data/uv*-gradient.c data/uv*-gradient.png \
 	data/tilemover-*.c data/chip.c data/wireworld-pcb-pal.c \
 	data/pal-gold*.c data/pal-green*.c data/pal-red*.c data/pal-blue*.c \
 	data/tree-pal-*.c
@@ -146,7 +146,8 @@ PNG2C.tilemover-bg-pal := --palette tilemover_bg_pal,6
 
 PNG2C.texture-inside := --pixmap texture_in,64x64x8,+onlydata --palette texture_pal,16
 PNG2C.texture-outside := --pixmap texture_out,64x64x8,+onlydata
-PNG2C.gradient := --pixmap gradient,16x16x12,+onlydata
+PNG2C.uvgut-gradient := --pixmap uvgut_gradient,16x16x12,+onlydata
+PNG2C.uvtit-gradient := --pixmap uvtit_gradient,16x16x12,+onlydata
 PNG2C.gol-transitions := --pixmap gol_transitions,3x46x12,+onlydata
 
 CPPFLAGS += -DINTRO -DVQ=$(VQ) -DDELTA=$(DELTA) -DKLANG=$(KLANG) -I.
@@ -204,7 +205,11 @@ data/%.png: data/%.rle
 	@echo "[RLE] $(DIR)$< -> $(DIR)$@"
 	$(PYTHON3) $(RLE2PNG) $< $@ || (rm -f $@ && exit 1)
 
-data/gradient.png: $(GRADIENT) data/texture-inside.png
+data/uvgut-gradient.png: $(GRADIENT) data/texture-inside.png
+	@echo "[GEN] $@"
+	$(PYTHON3) $(GRADIENT) load $(word 2,$^) copy hue 0.495 save $@
+
+data/uvtit-gradient.png: $(GRADIENT) data/texture-inside.png
 	@echo "[GEN] $@"
 	$(PYTHON3) $(GRADIENT) load $(word 2,$^) copy hue 0.4 save $@
 
