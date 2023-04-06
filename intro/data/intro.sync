@@ -396,20 +396,16 @@ $0337 15 !trigger
 @end
 
 @track TurmiteBoard
-$0000 1 !event
-$0100 2
-$0200 3
+$2400 1 !event
+$2500 2
+$2600 3
 @end
 
-@track TurmiteFadeIn
-$0000 15 !trigger
-$0100 15
-$0200 15
-@end
-
-@track TurmiteFadeOut
-$003E 15 !trigger
-$013E 15
+@track TurmiteFade
+$2400 0 !step
+$2500 0
+$2600 0
+$2900 0
 @end
 
 @track TurmitePal
@@ -426,6 +422,19 @@ $0120 10
 $0125 10
 $012A 10
 $012E 10
+$020A 10
+$0215 10
+$022A 10
+$022E 10
+$030E 10
+$0310 10
+$0315 10
+$031A 10
+$031E 10
+$0320 10
+$0325 10
+$032A 10
+$032E 10
 @end
 
 @track UvmapTransition
