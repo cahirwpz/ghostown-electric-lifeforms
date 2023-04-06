@@ -102,6 +102,7 @@
 extern TrackT GOLGame;
 extern TrackT WireworldDisplayBg;
 extern TrackT WireworldBg;
+extern TrackT WireworldFadeIn;
 
 static CopListT *cp;
 static BitmapT *current_board;
@@ -242,9 +243,9 @@ static void MakeCopperList(CopListT *cp) {
   }
 
   palptr = CopSetColor(cp, 0, 0);
-  for (i = 1; i < 16; i++)
+  for (i = 1; i < 32; i++)
     CopSetColor(cp, i, 0);
-  CopLoadPal(cp, &wireworld_chip_pal, 16);
+  // CopLoadPal(cp, &wireworld_chip_pal, 16);
 
   for (i = 1; i <= DISP_HEIGHT; i += 2) {
     // vertical pixel doubling
@@ -343,21 +344,25 @@ static inline void CopyBlock(short pos) {
 }
 
 static void VBlank(void) {
-  static short phase = 0;
-  u_char *tile = tileShow;
-  short n = TILES_N-1;
-
-  // max distance from the center is 24
-  if (phase >= 24)
-    return;
-  phase++;
-
-  do {
-    *tile = (*tile)--;
-    if (*tile == 0)
-      CopyBlock(n);
-    tile++;
-  } while (--n != -1);
+  short val;
+  UpdateFrameCount();
+  // board fade-in
+  if (TrackValueGet(&WireworldFadeIn, frameCount) & 0xff00) {
+    u_char *tile = tileShow;
+    short n = TILES_N-1;
+    do {
+      *tile = (*tile)--;
+      if (*tile == 0)
+        CopyBlock(n);
+      tile++;
+    } while (--n != -1);
+  }
+  // chip fade-in
+  else if ((val = TrackValueGet(&WireworldFadeIn, frameCount) & 0xff)) {
+    short i;
+    for (i = 16; i < 32; i++)
+      CopInsSet16(palptr + i, ColorTransition(0x000, wireworld_chip_pal.colors[i-16], 15-val));
+  }
 }
 
 static void SharedPreInit(void) {
@@ -566,8 +571,9 @@ static void GolStep(void) {
   if (wireworld) {
     const short cycling_len =
       sizeof(wireworld_chip_cycling) / sizeof(wireworld_chip_cycling[0]);
-    ColorCyclingStep(&palptr[16], wireworld_chip_cycling, cycling_len,
-                     &wireworld_chip_pal);
+    if (TrackValueGet(&WireworldFadeIn, frameCount) == 0)
+      ColorCyclingStep(&palptr[16], wireworld_chip_cycling, cycling_len,
+                      &wireworld_chip_pal);
   } else {
     short logo_idx = TrackValueGet(&GOLLogoType, frameCount);
     CopInsSet32(bplptr[3], background[logo_idx]->planes[0]);

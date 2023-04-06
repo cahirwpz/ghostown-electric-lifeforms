@@ -323,18 +323,20 @@ $1C00 15
 
 @track WireworldMinDelay
 $0800 0 !step
-$1C00 16
+$1C00 32
 $1C01 8
 @end
 
 @track WireworldSpawnNow
-$1C10 1 !event
-$1C20 1
-$1C30 1
-$1D00 1
+$1D00 1 !event
 $1D10 1
 $1D20 1
 $1D30 1
+@end
+
+@track WireworldFadeIn
+$1C00 0x1800 !trigger
+$1C18 15
 @end
 
 @track SeaAnemoneVariant
