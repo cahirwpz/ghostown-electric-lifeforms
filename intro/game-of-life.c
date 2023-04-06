@@ -568,11 +568,11 @@ static void Render(void) {
 
 static void VBlank(void) {
   static short pos = 0;
-  if (pos >= DISP_WIDTH/8 * (DISP_HEIGHT-1)/2)
+  if (pos >= DISP_WIDTH/8 * (DISP_HEIGHT)/2 )
     return;
   UpdateFrameCount();
-  memcpy(background[1]->planes[0] + pos, background[0]->planes[0] + pos, EXT_BOARD_WIDTH/8);
-  pos += EXT_BOARD_WIDTH/8;
+  memcpy(background[1]->planes[0] + pos, background[0]->planes[0] + pos, DISP_WIDTH/8);
+  pos += DISP_WIDTH/8;
 }
 
 EFFECT(Wireworld, NULL, NULL, InitWireworld, Kill, Render, VBlank);
