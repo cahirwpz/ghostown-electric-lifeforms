@@ -228,21 +228,28 @@ $2120 6
 
 @track GOLCellColor
 $2000 0 !step
-$2020 2
+$2010 2
+$2110 0
 @end
 
 @track GOLLogoColor
 $2000 0 !step
-$211a 1
+$2030 1
 @end
 
 @track GOLLogoFade
 $2000 0 !smooth
-$2010 0
-$2020 15
+$2008 0
+$2010 15
+$2028 0
 $2030 0
-$211a 0
-$212a 15
+$2110 15
+$2118 0
+$2120 10
+$2128 0
+$2130 5
+$2138 0
+$2200 3
 @end
 
 # logo bitmap:
@@ -290,13 +297,30 @@ $1C00 8
 @end
 
 @track WireworldSpawnNow
-$1C10 1 !event
-$1C20 1
-$1C30 1
-$1D00 1
-$1D10 1
-$1D20 1
-$1D30 1
+$1E00 1 !event
+$1E08 1
+$1E10 1
+$1E18 1
+$1E20 1
+$1E28 1
+$1E30 1
+$1E38 1
+$1F00 1
+$1F08 1
+$1F10 1
+$1F18 1
+$1F20 1
+$1F28 1
+$1F30 1
+$1F33 1
+$1F37 1
+$1F3a 1
+$1F3e 1
+@end
+
+@track WireworldFadeIn
+$1C00 0x1800 !trigger
+$1C10 15
 @end
 
 @track SeaAnemoneVariant
