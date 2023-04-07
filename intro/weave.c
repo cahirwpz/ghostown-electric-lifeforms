@@ -188,7 +188,7 @@ static void MakeCopperListBars(StateBarT *bars) {
       for (i = 0; i < DEPTH; i++)
         CopMove32(cp, bplpt[i], NULL);
       CopMove16(cp, bplcon1, 0);
-      CopLoadColorArray(cp, &bar_pal.colors[(b & 1) ? 16 : 0], 16, 0);
+      CopLoadColorArray(cp, &bar_pal.colors[0], 16, 0);
     } else if (y == by) {
       /* Advance bitplane pointers to display consecutive lines. */
       CopMove16(cp, bpl1mod, bar_bplmod);
@@ -202,6 +202,20 @@ static void MakeCopperListBars(StateBarT *bars) {
   }
 
   CopEnd(cp);
+}
+
+static void UpdateBarColor(StateBarT *bars, short step) {
+  CopInsT *ins1 = bars->palette[1];
+  CopInsT *ins3 = bars->palette[3];
+  const u_short *from = &bar_pal.colors[0];
+  const u_short *to = &bar_pal.colors[16];
+  short i;
+
+  for (i = 0; i < 16; i++) {
+    u_short col = ColorTransition(*from++, *to++, step);
+    CopInsSet16(ins1++, col);
+    CopInsSet16(ins3++, col);
+  }
 }
 
 static void UpdateBarState(StateBarT *bars) {
@@ -296,6 +310,9 @@ static void UpdateStripeState(StateFullT *state) {
 static void ZeroSpriteTiles(int t) {
   short i;
 
+  if (t > 4)
+    return;
+
   for (i = 0; i < NSPRITES; i++) {
     SprWordT *dst = TILEPTR(i, t);
     bzero(dst, stripes_height * sizeof(SprWordT));
@@ -304,6 +321,9 @@ static void ZeroSpriteTiles(int t) {
 
 static void CopySpriteTiles(int t) {
   short i, j;
+
+  if (t > 4)
+    return;
 
   for (i = 0; i < NSPRITES; i++) {
     u_short *src = &_stripes_bpl[i];
@@ -523,14 +543,22 @@ static void ControlBars(StateBarT *bars) {
 static __code short phaseIn = 0;
 static __code short phaseOut = 0;
 
+#define BARIN 64
+#define BARPAL 64
+#define BAROUT 64
+
+#define FRAMEOUT (HEIGHT - BAROUT)
+#define FRAMEINDELAY (BARIN + BARPAL)
+#define FRAMEIN (HEIGHT + FRAMEINDELAY)
+
 static void ControlStripes(void) {
-  if (frameFromStart <= 224) {
-    short t = frameFromStart - 64;
+  if (frameFromStart <= FRAMEIN) {
+    short t = frameFromStart - FRAMEINDELAY;
 
     if (t >= 1 + 32 * phaseIn)
       CopySpriteTiles(phaseIn++);
-  } else if (frameTillEnd <= 224) {
-    short t = 224 - frameTillEnd;
+  } else if (frameTillEnd <= FRAMEOUT) {
+    short t = FRAMEOUT - frameTillEnd;
 
     if (t >= 1 + 32 * phaseOut)
       ZeroSpriteTiles(phaseOut++);
@@ -542,7 +570,7 @@ static short shakeStripe[16] = {
 };
 
 static void Render(void) {
-  if (frameFromStart < 64 || frameTillEnd < 64) {
+  if (frameFromStart < BARIN || frameTillEnd < BAROUT) {
     StateBarT *bars = &stateBars[active];
 
     ResetSprites();
@@ -550,6 +578,13 @@ static void Render(void) {
     MakeCopperListBars(bars);
     UpdateBarState(bars);
     CopListRun(bars->cp);
+  } else if (frameFromStart >= BARIN && frameFromStart < BARIN + BARPAL) {
+    StateFullT *state = &stateFull[active];
+
+    ResetSprites();
+    UpdateBarColor(&state->bars, (frameFromStart - BARIN) / 4);
+    UpdateBarState(&state->bars);
+    CopListRun(state->cp);
   } else {
     StateFullT *state = &stateFull[active];
     
