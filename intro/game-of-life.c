@@ -411,21 +411,11 @@ static void SharedPreInit(void) {
     background[i] =
       NewBitmapCustom(DISP_WIDTH, DISP_HEIGHT / 2, BOARD_DEPTH, BM_DISPLAYABLE);
 
-  SetupPlayfield(MODE_LORES, DISP_DEPTH, X(0), Y(0), DISP_WIDTH, DISP_HEIGHT);
-
-  cp = NewCopList(1310);
-  MakeCopperList(cp);
-  CopListActivate(cp);
-
-#if DEBUG_KBD
-  KeyboardInit();
-#endif
-
-  EnableDMA(DMAF_RASTER | DMAF_BLITTER | DMAF_SPRITE | DMAF_COPPER);
-
   states_head = 0;
   current_board = boards[0];
   stepCount = 0;
+
+  EnableDMA(DMAF_BLITTER);
 
   for (i = 0; i < PREV_STATES_DEPTH; i++)
     BitmapClear(prev_states[i]);
@@ -433,6 +423,10 @@ static void SharedPreInit(void) {
   // ideally only their borders need to be cleared but this is simpler
   BitmapClear(boards[2]);
   BitmapClear(boards[3]);
+
+#if DEBUG_KBD
+  KeyboardInit();
+#endif
 }
 
 static void SharedPostInit(void) {
@@ -450,6 +444,14 @@ static void SharedPostInit(void) {
   custom->bltdmod = 0;
 
   phase = 0;
+
+  SetupPlayfield(MODE_LORES, DISP_DEPTH, X(0), Y(0), DISP_WIDTH, DISP_HEIGHT);
+
+  cp = NewCopList(1310);
+  MakeCopperList(cp);
+  CopListActivate(cp);
+
+  EnableDMA(DMAF_RASTER | DMAF_SPRITE);
 
   SetIntVector(INTB_BLIT, (IntHandlerT)GameOfLife, boards);
   EnableINT(INTF_BLIT);

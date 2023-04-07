@@ -8,7 +8,6 @@
 #include <stdlib.h>
 #include <sync.h>
 #include <system/memory.h>
-#include <system/interrupt.h>
 
 #define WIDTH 320
 #define HEIGHT 256
