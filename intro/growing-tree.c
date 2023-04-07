@@ -130,6 +130,7 @@ static GreetsT *GreetsFetch(void) {
   gr->x = 0;
   gr->y = 0;
   gr->n = 0;
+  gr->delay = 40;
   return gr;
 }
 
@@ -478,7 +479,7 @@ static void Render(void) {
   }
 
   if (waitFrame > 0) {
-    if (frameCount - waitFrame < 100) {
+    if (frameCount - waitFrame < 150) {
       TaskWaitVBlank();
       HandleDrawingGreets();
       return;
@@ -490,6 +491,9 @@ static void Render(void) {
   }
 
   ProfilerStart(GrowTree);
+  // Call function twice to make drawing trees
+  // visually faster
+  GrowingTree(branches, &lastBranch);
   GrowingTree(branches, &lastBranch);
 
   HandleDrawingGreets();
