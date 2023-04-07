@@ -33,12 +33,18 @@ static CopListT *MakeCopperList(CopInsPtrT *linebpl) {
   CopInit(cp);
   CopSetupBitplanes(cp, NULL, scroll, DEPTH);
   {
-    u_short i;
     void *ptr = scroll->planes[0];
+    short y;
 
-    for (i = 0; i < HEIGHT; i++, ptr += scroll->bytesPerRow) {
-      CopWaitSafe(cp, Y(i), 0);
-      linebpl[i] = CopMove32(cp, bplpt[0], ptr);
+    for (y = 0; y < HEIGHT; y++, ptr += scroll->bytesPerRow) {
+      CopWaitSafe(cp, Y(y), 0);
+      if ((y & 3) == 0) {
+        if (y <= 24)
+          CopSetColor(cp, 1, font_pal.colors[7 - (y >> 2)]);
+        if (HEIGHT - y <= 24)
+          CopSetColor(cp, 1, font_pal.colors[7 - ((HEIGHT - y) >> 2)]);
+      }
+      linebpl[y] = CopMove32(cp, bplpt[0], ptr);
     }
   }
   CopEnd(cp);
