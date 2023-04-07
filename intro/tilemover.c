@@ -3,7 +3,6 @@
 #include <copper.h>
 #include <stdlib.h>
 #include <system/memory.h>
-#include <system/interrupt.h>
 #include <fx.h>
 #include <sync.h>
 
@@ -257,15 +256,13 @@ static void UnLoad(void) {
   DeleteBitmap(logo_blit);
 }
 
-static int BgBlip(void) {
-  if (lightLevel) {
-    SetColor(0, tilemover_bg_pal.colors[blip_sequence[lightLevel]]);
-    lightLevel--;
-  }
-  return 0;
-}
+static void VBlank(void) {
+  if (!lightLevel)
+    return;
 
-INTSERVER(BlipBackgroundInterrupt, 0, (IntFuncT)BgBlip, NULL);
+  SetColor(0, tilemover_bg_pal.colors[blip_sequence[lightLevel]]);
+  lightLevel--;
+}
 
 extern void KillLogo(void);
 
@@ -296,12 +293,9 @@ static void Init(void) {
   
   UpdateBitplanePointers();
   EnableDMA(DMAF_RASTER | DMAF_BLITTER | DMAF_BLITHOG);
-
-  AddIntServer(INTB_VERTB, BlipBackgroundInterrupt);
 }
 
 static void Kill(void) {
-  RemIntServer(INTB_VERTB, BlipBackgroundInterrupt);
   DisableDMA(DMAF_COPPER | DMAF_RASTER | DMAF_BLITTER | DMAF_BLITHOG);
   DeleteBitmap(screen);
   DeleteCopList(cp);
@@ -469,4 +463,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(TileMover, Load, UnLoad, Init, Kill, Render, NULL);
+EFFECT(TileMover, Load, UnLoad, Init, Kill, Render, VBlank);
