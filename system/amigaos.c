@@ -181,6 +181,7 @@ void RestoreOS(void) {
 
   /* Restore exception vector and leave supervisor mode. */
   memcpy(bd->bd_vbr, oldExcVec, sizeof(oldExcVec));
+  /* TODO: This function is broken in V33/34 Kickstart, hangs on 68010. */
   UserState(oldSysStack);
 
   /* Restore AmigaOS state of dma & interrupts. */
