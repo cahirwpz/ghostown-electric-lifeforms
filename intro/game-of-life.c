@@ -90,6 +90,7 @@
 //
 
 #define NUM_SCENES 4
+#define TILES_N (40 * 32)
 
 #include "data/wireworld-vitruvian.c"
 #include "data/wireworld-fullscreen.c"
@@ -101,6 +102,7 @@
 extern TrackT GOLGame;
 extern TrackT WireworldDisplayBg;
 extern TrackT WireworldBg;
+extern TrackT WireworldFadeIn;
 
 static CopListT *cp;
 static BitmapT *current_board;
@@ -121,6 +123,8 @@ static CopInsT *sprptr[8];
 static BitmapT *prev_states[PREV_STATES_DEPTH];
 
 static BitmapT *background[2];
+
+static u_char tileShow[TILES_N] = {0};
 
 // states_head % PREV_STATES_DEPTH points to the newest (currently being
 // pixel-doubled, not displayed yet) game state in prev_states
@@ -215,9 +219,11 @@ static void BlitFunc(const BitmapT *sourceA, const BitmapT *sourceB,
   custom->bltsize = BLTSIZE;
 }
 
-static void MakeCopperList(CopListT *cp) {
+void MakeCopperList(CopListT *cp) {
   short i;
   short *color = wireworld_pcb_pal_pixels;
+  short display_bg = TrackValueGet(&WireworldDisplayBg, frameCount);
+  short pal_start = display_bg ? 8 : 0;
 
   CopInit(cp);
   // initially previous states are empty
@@ -239,21 +245,35 @@ static void MakeCopperList(CopListT *cp) {
   }
 
   palptr = CopSetColor(cp, 0, 0);
-  for (i = 1; i < 16; i++)
+  for (i = 1; i < 32; i++)
     CopSetColor(cp, i, 0);
-  CopLoadPal(cp, &wireworld_chip_pal, 16);
+  // CopLoadPal(cp, &wireworld_chip_pal, 16);
 
   for (i = 1; i <= DISP_HEIGHT; i += 2) {
     // vertical pixel doubling
     if (wireworld && (i - 1) % 8 == 0) {
-      CopSetColor(cp, 8, *color++);
-      CopSetColor(cp, 9, *color++);
-      CopSetColor(cp, 10, *color);
-      CopSetColor(cp, 11, *color++);
-      CopSetColor(cp, 12, *color);
-      CopSetColor(cp, 13, *color);
-      CopSetColor(cp, 14, *color);
-      CopSetColor(cp, 15, *color++);
+      // if we're displaying background set its colors without any electrons
+      if (display_bg)
+        CopSetColor(cp, pal_start, *color++);
+      // else background should be black
+
+      // if we're displaying background set its colors with electrons
+      // if we're not displaying background set first half of the color palette
+      CopSetColor(cp, pal_start + 1, *color++);
+      CopSetColor(cp, pal_start + 2, *color);
+      CopSetColor(cp, pal_start + 3, *color++);
+      CopSetColor(cp, pal_start + 4, *color);
+      CopSetColor(cp, pal_start + 5, *color);
+      CopSetColor(cp, pal_start + 6, *color);
+      CopSetColor(cp, pal_start + 7, *color++);
+
+      // if we're not displaying background set second half of the color palette
+      if (!display_bg) {
+        short j;
+        for (j = pal_start + 8; j < 16; j++)
+          CopSetColor(cp, j, *color);
+        color++;
+      }
     }
     CopMove16(cp, bpl1mod, -prev_states[0]->bytesPerRow);
     CopMove16(cp, bpl2mod, -prev_states[0]->bytesPerRow);
@@ -314,6 +334,54 @@ static void LoadBackground(const BitmapT *bg, u_short x, u_short y, short idx) {
   DeleteBitmap(tmp);
 }
 
+static void InitWireworldFadein(void) {
+  short x, y;
+  for (x = 0; x < 40; x++) {
+    for (y = 0; y < 32; y++) {
+      short dx = x - 20;
+      short dy = y - 16;
+      tileShow[y * 40 + x] = isqrt(dx * dx + dy * dy);
+    }
+  }
+}
+
+static inline void CopyBlock(short pos) {
+  // overall this is cheaper than keeping track of separate x and y because it
+  // only happens 1280 times (40 * 32)
+  short start = (pos / 40) * 160 + (pos % 40);
+  u_char *src = (u_char *)(background[0]->planes[0] + start);
+  u_char *dst = (u_char *)(background[1]->planes[0] + start);
+  *dst = *src;
+  dst += 40;
+  src += 40;
+  *dst = *src;
+  dst += 40;
+  src += 40;
+  *dst = *src;
+  dst += 40;
+  src += 40;
+  *dst = *src;
+}
+
+static inline void BoardFadeIn(void) {
+  u_char *tile = tileShow;
+  short n = TILES_N - 1;
+  do {
+    *tile = (*tile)--;
+    if (*tile == 0)
+      CopyBlock(n);
+    tile++;
+  } while (--n != -1);
+}
+
+static inline void ChipFadeIn(short phase) {
+  short i;
+  for (i = 16; i < 32; i++)
+    CopInsSet16(
+      palptr + i,
+      ColorTransition(0x000, wireworld_chip_pal.colors[i - 16], 15 - phase));
+}
+
 static void SharedPreInit(void) {
   static bool allocated = false;
 
@@ -343,21 +411,11 @@ static void SharedPreInit(void) {
     background[i] =
       NewBitmapCustom(DISP_WIDTH, DISP_HEIGHT / 2, BOARD_DEPTH, BM_DISPLAYABLE);
 
-  SetupPlayfield(MODE_LORES, DISP_DEPTH, X(0), Y(0), DISP_WIDTH, DISP_HEIGHT);
-
-  cp = NewCopList(1820);
-  MakeCopperList(cp);
-  CopListActivate(cp);
-
-#if DEBUG_KBD
-  KeyboardInit();
-#endif
-
-  EnableDMA(DMAF_RASTER | DMAF_BLITTER | DMAF_SPRITE | DMAF_COPPER);
-
   states_head = 0;
   current_board = boards[0];
   stepCount = 0;
+
+  EnableDMA(DMAF_BLITTER);
 
   for (i = 0; i < PREV_STATES_DEPTH; i++)
     BitmapClear(prev_states[i]);
@@ -365,6 +423,18 @@ static void SharedPreInit(void) {
   // ideally only their borders need to be cleared but this is simpler
   BitmapClear(boards[2]);
   BitmapClear(boards[3]);
+
+#if DEBUG_KBD
+  KeyboardInit();
+#endif
+
+  SetupPlayfield(MODE_LORES, DISP_DEPTH, X(0), Y(0), DISP_WIDTH, DISP_HEIGHT);
+
+  cp = NewCopList(1310);
+  MakeCopperList(cp);
+  CopListActivate(cp);
+
+  EnableDMA(DMAF_RASTER | DMAF_SPRITE);
 }
 
 static void SharedPostInit(void) {
@@ -388,7 +458,6 @@ static void SharedPostInit(void) {
 }
 
 static void InitWireworld(void) {
-  short i;
   const BitmapT *desired_bg;
   short display_bg = TrackValueGet(&WireworldDisplayBg, frameCount);
   short bg_idx = TrackValueGet(&WireworldBg, frameCount);
@@ -400,14 +469,14 @@ static void InitWireworld(void) {
   cur_electrons = bg_idx ? &pcb_electrons : &vitruvian_electrons;
 
   SharedPreInit();
-  for (i = 0; i < 16; i++)
-    CopInsSet16(&palptr[i], palette_vitruvian[i]);
-  InitSpawnFrames(cur_electrons,
-                  TrackValueGet(&WireworldSpawnMask, frameCount));
+  InitSpawnFrames(cur_electrons);
 
   if (display_bg) {
     LoadBackground(desired_bg, 0, 0, 0);
-    CopInsSet32(bplptr[3], background[0]->planes[0]);
+    BitmapClear(background[1]); // important!
+    WaitBlitter();
+    CopInsSet32(bplptr[3], background[1]->planes[0]);
+    InitWireworldFadein();
   }
 
   // board 11 is special in case of wireworld - it contains the electron paths
@@ -422,6 +491,7 @@ static void InitWireworld(void) {
 
 static void InitGameOfLife(void) {
   short i;
+  short display_bg = TrackValueGet(&WireworldDisplayBg, frameCount);
   current_game = &games[0];
   wireworld = false;
   prev_states_depth = 4;
@@ -436,7 +506,8 @@ static void InitGameOfLife(void) {
   LoadBackground(&lifeforms_logo, 0, 32, 1);
 
   BitmapClear(boards[0]);
-  BitmapCopy(boards[0], EXT_WIDTH_LEFT, EXT_HEIGHT_TOP, &wireworld_vitruvian);
+  BitmapCopy(boards[0], EXT_WIDTH_LEFT, EXT_HEIGHT_TOP,
+             display_bg ? &wireworld_pcb : &wireworld_vitruvian);
 
   SharedPostInit();
 }
@@ -476,7 +547,7 @@ static void GolStep(void) {
   void *src =
     current_board->planes[0] + EXT_BOARD_WIDTH / 8 + EXT_WIDTH_LEFT / 8;
 
-
+  ProfilerStart(GOLStep);
   if (!wireworld)
     current_game = &games[TrackValueGet(&GOLGame, frameCount)];
   if (wireworld) {
@@ -487,6 +558,21 @@ static void GolStep(void) {
 
     // which wireworld game (0-1) phase are we on
     static __code short wireworld_step = 0;
+
+    // if we're displaying background (wireworld chip variant)
+    if (prev_states_depth == 4) {
+      short val = TrackValueGet(&WireworldFadeIn, frameCount);
+      // board fade-in
+      if (val & 0xff00) {
+        BoardFadeIn();
+        return;
+      }
+      // chip fade-in
+      else if (val & 0xff) {
+        ChipFadeIn(val);
+        return;
+      }
+    }
 
     current_board = boards[wireworld_step];
     current_game = &wireworlds[wireworld_step];
@@ -511,19 +597,14 @@ static void GolStep(void) {
   if (wireworld) {
     const short cycling_len =
       sizeof(wireworld_chip_cycling) / sizeof(wireworld_chip_cycling[0]);
-      
-    ColorCyclingStep(&palptr[16], wireworld_chip_cycling, cycling_len,
-                     &wireworld_chip_pal);
-  
+    if (TrackValueGet(&WireworldFadeIn, frameCount) == 0)
+      ColorCyclingStep(&palptr[16], wireworld_chip_cycling, cycling_len,
+                       &wireworld_chip_pal);
   } else {
     short logo_idx = TrackValueGet(&GOLLogoType, frameCount);
     CopInsSet32(bplptr[3], background[logo_idx]->planes[0]);
-    
     TransitionPal(palette_gol + 1);
-    
-    ProfilerStart(GOLStep);
     ColorFadingStep(palette_gol);
-    ProfilerStop(GOLStep);
   }
   while (phase <= current_game->num_phases)
     continue;
@@ -532,10 +613,8 @@ static void GolStep(void) {
   // ----- PIXELDOUBLE-BLITTER SYNCHRONIZATION -----
 
   UpdateBitplanePointers();
-
   stepCount++;
-
-  
+  ProfilerStop(GOLStep);
 }
 
 #if DEBUG_KBD

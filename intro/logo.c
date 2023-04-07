@@ -30,21 +30,22 @@ static const PaletteT *ghostown_logo_pal[] = {
 extern TrackT GhostownLogoPal;
 
 static void Load(void) {
-  PixmapToBitmap(&ghostown_logo, ghostown_logo_width, ghostown_logo_height, 3,
-                 ghostown_logo_pixels);
+  static __code short done = false;
+
+  if (!done) {
+    PixmapToBitmap(&ghostown_logo, ghostown_logo_width, ghostown_logo_height, 3,
+                   ghostown_logo_pixels);
+    done = true;
+  }
 }
 
-static void Init(void) {
+static void SharedInit(bool out) {
+  short i;
+
   cleanup = true;
+
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH);
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
-
-  {
-    short i = 0;
-
-    for (i = 0; i < (1 << DEPTH); i++)
-      SetColor(i, ghostown_logo_1_pal.colors[0]);
-  }
 
   EnableDMA(DMAF_BLITTER);
   BitmapCopy(screen, (WIDTH - ghostown_logo_width) / 2,
@@ -59,33 +60,50 @@ static void Init(void) {
 
   CopListActivate(cp);
 
+  for (i = 0; i < (1 << DEPTH); i++)
+    SetColor(i, out ? ghostown_logo_3_pal.colors[i]
+                    : ghostown_logo_1_pal.colors[0]);
+
   EnableDMA(DMAF_RASTER);
+}
+
+static void InitIn(void) {
+  SharedInit(0);
+}
+
+static void InitOut(void) {
+  SharedInit(1);
+}
+
+static void Kill(void) {
+  DisableDMA(DMAF_RASTER);
+  DeleteCopList(cp);
+
+  DeleteBitmap(screen);
 }
 
 void KillLogo(void) {
   static __code bool enabled = false;
 
   if (enabled) {
-    DisableDMA(DMAF_RASTER);
-    DeleteCopList(cp);
-
-    DeleteBitmap(screen);
+    Kill();
   } else {
     enabled = true;
   }
 }
 
-static void Render(void) {
-  short num = TrackValueGet(&GhostownLogoPal, frameCount);
-  short frame = FromCurrKeyFrame(&GhostownLogoPal);
+static void Render(short out) {
+  short num;
 
-  if (num > 0) {
+  if ((num = TrackValueGet(&GhostownLogoPal, frameCount))) {
+    short frame = (out ? TillNextKeyFrame : FromCurrKeyFrame)(&GhostownLogoPal);
+
     if (frame < 16) {
       short i;
 
       for (i = 0; i < (1 << DEPTH); i++) {
         short prev = (num == 1) ? ghostown_logo_1_pal.colors[0]
-          : ghostown_logo_pal[num - 1]->colors[i];
+                                : ghostown_logo_pal[num - 1]->colors[i];
         short curr = ghostown_logo_pal[num]->colors[i];
         SetColor(i, ColorTransition(prev, curr, frame));
       }
@@ -97,4 +115,13 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(Logo, Load, NULL, Init, NULL, Render, NULL);
+static void RenderIn(void) {
+  Render(0);
+}
+
+static void RenderOut(void) {
+  Render(1);
+}
+
+EFFECT(LogoIn, Load, NULL, InitIn, NULL, RenderIn, NULL);
+EFFECT(LogoOut, Load, NULL, InitOut, Kill, RenderOut, NULL);

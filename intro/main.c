@@ -18,7 +18,7 @@
 extern u_char Module[];
 extern u_char Samples[];
 
-extern EffectT LogoEffect;
+extern EffectT LogoInEffect;
 extern EffectT WeaveEffect;
 extern EffectT TextScrollEffect;
 extern EffectT TurmiteEffect;
@@ -30,6 +30,7 @@ extern EffectT GameOfLifeEffect;
 extern EffectT VitruvianEffect;
 extern EffectT UVGutEffect;
 extern EffectT UVTitEffect;
+extern EffectT LogoOutEffect;
 
 short frameFromStart;
 short frameTillEnd;
@@ -37,7 +38,7 @@ short frameTillEnd;
 #include "data/intro.c"
 
 static EffectT *AllEffects[] = {
-  &LogoEffect,
+  &LogoInEffect,
   &TextScrollEffect,
   &WeaveEffect,
   &TurmiteEffect,
@@ -49,6 +50,7 @@ static EffectT *AllEffects[] = {
   &VitruvianEffect,
   &UVGutEffect,
   &UVTitEffect,
+  &LogoOutEffect,
   NULL,
 };
 

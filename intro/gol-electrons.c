@@ -5,7 +5,7 @@ extern TrackT WireworldSpawnMask;
 extern TrackT WireworldMinDelay;
 extern TrackT WireworldSpawnNow;
 
-#define ELPOS(x, y) \
+#define ELPOS(x, y)                                                            \
   ((x) + EXT_WIDTH_LEFT + (((y) + EXT_HEIGHT_TOP) * EXT_BOARD_WIDTH))
 
 #include "data/wireworld-vitruvian-electrons.c"
@@ -30,16 +30,17 @@ static inline int fastrand(void) {
   return a;
 }
 
-static void InitSpawnFrames(const ElectronArrayT *electrons, short spawn_mask) {
+static void InitSpawnFrames(const ElectronArrayT *electrons) {
   short i;
   short *spawn = next_spawn;
+  short spawn_mask = TrackValueGet(&WireworldSpawnMask, frameCount);
+  short min_delay = TrackValueGet(&WireworldMinDelay, frameCount);
   for (i = 0; i < electrons->num_electrons; i++)
-    *spawn++ = stepCount + (spawn_mask & random());
+    *spawn++ = stepCount + (random() & spawn_mask) + min_delay;
 }
 
 static void SpawnElectrons(const ElectronArrayT *electrons,
-                           BitmapT *board_heads, BitmapT *board_tails)
-{
+                           BitmapT *board_heads, BitmapT *board_tails) {
   u_char *bpl_heads = board_heads->planes[0];
   u_char *bpl_tails = board_tails->planes[0];
   short *pts = electrons->points;
@@ -64,4 +65,3 @@ static void SpawnElectrons(const ElectronArrayT *electrons,
     }
   } while (--n != -1);
 }
-

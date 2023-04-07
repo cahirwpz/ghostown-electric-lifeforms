@@ -87,8 +87,7 @@ extern TrackT SeaAnemoneVariant;
 extern TrackT SeaAnemonePal;
 extern TrackT SeaAnemonePalPulse;
 extern TrackT SeaAnemoneGradient;
-extern TrackT SeaAnemoneFadeOut;
-extern TrackT SeaAnemoneFadeIn;
+extern TrackT SeaAnemoneFade;
 
 typedef const PaletteT *SeaAnemonePalT[5];
 
@@ -138,10 +137,9 @@ static const SeaAnemonePalT *sea_anemone_pal[5] = {
 
 static const SeaAnemonePalT *active_pal = &anemone1_pal;
 static const short blip_sequence[] = {
-  0,
-  2, 1, 1, 1, 1, 1, 1, 1, 1, 1,
-  2, 2, 2, 2, 2, 2, 2, 2, 2, 2,
-  3, 3, 3, 3, 3, 3, 3, 3, 3, 3,
+  0, 2,
+  1, 1, 1, 1, 1, 1, 1,
+  3, 3, 3, 3, 3, 3, 3,
 };
 
 static const short gradient_envelope[] = {
@@ -153,7 +151,7 @@ static const short gradient_envelope[] = {
 };
 
 // For the background gradient
-static __code short activePalIndex = 1;
+static __code short activePalIndex = 3;
 
 static inline int fastrand(void) {
   static int m[2] = { 0x3E50B28C, 0xD461A7F9 };
@@ -318,12 +316,18 @@ static void VBlank(void) {
 
   if ((val = TrackValueGet(&SeaAnemonePalPulse, frameFromStart)))
     LoadPalette((*active_pal)[blip_sequence[val]], 0);
-  
-  if ((val = TrackValueGet(&SeaAnemoneFadeOut, frameFromStart))) 
-    FadeBlack(sea_anemone_palettes[activePalIndex], 0, val);
 
-  if ((val = TrackValueGet(&SeaAnemoneFadeIn, frameFromStart))) 
-    FadeBlack(sea_anemone_palettes[activePalIndex], 0, 16 - val);
+  (void)TrackValueGet(&SeaAnemoneFade, frameCount);
+
+  if ((val = FromCurrKeyFrame(&SeaAnemoneFade)) < 16) {
+    FadeBlack(sea_anemone_palettes[activePalIndex], 0, val);
+    FadeBlack(&whirl_pal, 16, val);
+  }
+  
+  if ((val = TillNextKeyFrame(&SeaAnemoneFade)) < 16) {
+    FadeBlack(sea_anemone_palettes[activePalIndex], 0, val);
+    FadeBlack(&whirl_pal, 16, val);
+  }
 }
 
 static void MakeCopperList(CopListT *cp, CopInsT **bplptr, CopInsT **sprptr,
@@ -371,8 +375,7 @@ static void Init(void) {
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
   LoadPalette(sea_anemone_palettes[activePalIndex], 0);
-  for (i = 16; i < 32; i += 4)
-    LoadPalette(&whirl_pal, i);
+  LoadPalette(&whirl_pal, 16);
 
   cp[0] = NewCopList(50 + 2 * anemone_gradient_length);
   cp[1] = NewCopList(50 + 2 * anemone_gradient_length);
