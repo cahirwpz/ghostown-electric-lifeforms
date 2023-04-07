@@ -427,6 +427,14 @@ static void SharedPreInit(void) {
 #if DEBUG_KBD
   KeyboardInit();
 #endif
+
+  SetupPlayfield(MODE_LORES, DISP_DEPTH, X(0), Y(0), DISP_WIDTH, DISP_HEIGHT);
+
+  cp = NewCopList(1310);
+  MakeCopperList(cp);
+  CopListActivate(cp);
+
+  EnableDMA(DMAF_RASTER | DMAF_SPRITE);
 }
 
 static void SharedPostInit(void) {
@@ -444,14 +452,6 @@ static void SharedPostInit(void) {
   custom->bltdmod = 0;
 
   phase = 0;
-
-  SetupPlayfield(MODE_LORES, DISP_DEPTH, X(0), Y(0), DISP_WIDTH, DISP_HEIGHT);
-
-  cp = NewCopList(1310);
-  MakeCopperList(cp);
-  CopListActivate(cp);
-
-  EnableDMA(DMAF_RASTER | DMAF_SPRITE);
 
   SetIntVector(INTB_BLIT, (IntHandlerT)GameOfLife, boards);
   EnableINT(INTF_BLIT);
