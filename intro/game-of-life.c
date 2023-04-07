@@ -330,39 +330,38 @@ static void InitWireworldFadein(void) {
 }
 
 static inline void CopyBlock(short pos) {
-  short i;
   // overall this is cheaper than keeping track of separate x and y because it
   // only happens 1280 times (40 * 32)
   short start = (pos / 40) * 160 + (pos % 40);
   u_char *src = (u_char *)(background[0]->planes[0] + start);
   u_char *dst = (u_char *)(background[1]->planes[0] + start);
-  for (i = 0; i < 4; i++) {
-    *dst = *src;
-    dst += 40;
-    src += 40;
-  }
+  *dst = *src;
+  dst += 40;
+  src += 40;
+  *dst = *src;
+  dst += 40;
+  src += 40;
+  *dst = *src;
+  dst += 40;
+  src += 40;
+  *dst = *src;
 }
 
-static void VBlank(void) {
-  short val;
-  UpdateFrameCount();
-  // board fade-in
-  if (TrackValueGet(&WireworldFadeIn, frameCount) & 0xff00) {
-    u_char *tile = tileShow;
-    short n = TILES_N-1;
-    do {
-      *tile = (*tile)--;
-      if (*tile == 0)
-        CopyBlock(n);
-      tile++;
-    } while (--n != -1);
-  }
-  // chip fade-in
-  else if ((val = TrackValueGet(&WireworldFadeIn, frameCount) & 0xff)) {
-    short i;
-    for (i = 16; i < 32; i++)
-      CopInsSet16(palptr + i, ColorTransition(0x000, wireworld_chip_pal.colors[i-16], 15-val));
-  }
+static inline void BoardFadeIn(void) {
+  u_char *tile = tileShow;
+  short n = TILES_N-1;
+  do {
+    *tile = (*tile)--;
+    if (*tile == 0)
+      CopyBlock(n);
+    tile++;
+  } while (--n != -1);
+}
+
+static inline void ChipFadeIn(short phase) {
+  short i;
+  for (i = 16; i < 32; i++)
+    CopInsSet16(palptr + i, ColorTransition(0x000, wireworld_chip_pal.colors[i-16], 15-phase));
 }
 
 static void SharedPreInit(void) {
@@ -541,6 +540,21 @@ static void GolStep(void) {
     // which wireworld game (0-1) phase are we on
     static __code short wireworld_step = 0;
 
+    // if we're displaying background (wireworld chip variant)
+    if (prev_states_depth == 4) {
+      short val = TrackValueGet(&WireworldFadeIn, frameCount);
+      // board fade-in
+      if (val & 0xff00) {
+        BoardFadeIn();
+        return;
+      }
+      // chip fade-in
+      else if (val & 0xff) {
+        ChipFadeIn(val);
+        return;
+      }
+    }
+
     current_board = boards[wireworld_step];
     current_game = &wireworlds[wireworld_step];
     wireworld_step ^= 1;
@@ -618,5 +632,5 @@ static void Render(void) {
 }
 #endif
 
-EFFECT(Wireworld, NULL, NULL, InitWireworld, Kill, Render, VBlank);
+EFFECT(Wireworld, NULL, NULL, InitWireworld, Kill, Render, NULL);
 EFFECT(GameOfLife, NULL, NULL, InitGameOfLife, Kill, Render, NULL);
