@@ -129,6 +129,7 @@ void BitmapCopyArea(const BitmapT *dst, u_short dx, u_short dy,
                     const BitmapT *src, const Area2D *area);
 
 /* Blitter or operation. */
+/* TODO: does not behave correctly for unaligned `x` */
 void BlitterOrSetup(const BitmapT *dst, u_short x, u_short y,
                       const BitmapT *src);
 void BlitterOrStart(short dstbpl, short srcbpl);
