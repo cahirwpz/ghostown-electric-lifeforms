@@ -573,7 +573,7 @@ static void ChooseTurmiteBoard(short i) {
   active_pal = turmite_pal[i];
 }
 
-static void ForEachFrame(void) {
+static void VBlank(void) {
   short val;
 
   UpdateFrameCount();
@@ -637,4 +637,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(Turmite, Load, NULL, Init, Kill, Render, ForEachFrame);
+EFFECT(Turmite, Load, NULL, Init, Kill, Render, VBlank);

@@ -1,5 +1,5 @@
 @track EffectNumber
-# logo
+# logo in
 $0000 0 !step
 # tilemover
 $0200 5
@@ -29,21 +29,23 @@ $2600 5
 $2800 3
 # scrolling text
 $2C00 1
-# logo 
+# logo out
 $3000 12
 # end
-$3200 -1
+$3100 -1
 @end
 
 @track GhostownLogoPal
+# logo in
 $0000 0 !step
 $0020 1 
 $0100 2
 $0120 3
+# logo out
 $3000 3
-$3020 2
-$3100 1
-$3120 0
+$3010 2
+$3020 1
+$3030 0
 @end
 
 @track ElectricLifeformsLogoPal
@@ -97,10 +99,7 @@ $2638 2
 @end
 
 @track TileMoverBlit
-$0202 1 !event
-$0210 1
-$0220 1
-$0230 1
+$0200 1 !event
 
 $0300 3
 $030A 3
@@ -192,7 +191,7 @@ $273E 2
 @end
 
 @track TileMoverBgBlip
-$0406 12 !event
+$0406 12 !trigger
 $0418 12
 $041E 12 
 $0426 12 
@@ -209,12 +208,15 @@ $053E 12
 @track GOLGame
 # classic gol
 $0A00 0 !step
-# day and night
-$0A20 2
 # maze
-$0A30 5 
+$0A20 2
+# day and night
+$0A30 5
 # Diamoeba
 $0B20 3
+# fadeout (three-four -> diamoeba again)
+$0B38 6
+$0B3b 3
 #---second time---#
 # classic
 $2000 0
@@ -222,7 +224,7 @@ $2000 0
 $2030 4
 # day and night
 $2100 5
-# Diamoeba
+# three-four
 $2120 6
 @end
 
