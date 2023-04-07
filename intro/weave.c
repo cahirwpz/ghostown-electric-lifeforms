@@ -156,7 +156,7 @@ static void MakeCopperListFull(StateFullT *state) {
   CopEnd(cp);
 }
 
-static void MakeCopperListBars(StateBarT *bars) {
+static void MakeCopperListBars(StateBarT *bars, bool color) {
   short b, by, y, i;
   CopListT *cp = bars->cp;
 
@@ -188,7 +188,7 @@ static void MakeCopperListBars(StateBarT *bars) {
       for (i = 0; i < DEPTH; i++)
         CopMove32(cp, bplpt[i], NULL);
       CopMove16(cp, bplcon1, 0);
-      CopLoadColorArray(cp, &bar_pal.colors[(b & 1) ? 16 : 0], 16, 0);
+      CopLoadColorArray(cp, &bar_pal.colors[(b & 1) && color ? 16 : 0], 16, 0);
     } else if (y == by) {
       /* Advance bitplane pointers to display consecutive lines. */
       CopMove16(cp, bpl1mod, bar_bplmod);
@@ -202,6 +202,20 @@ static void MakeCopperListBars(StateBarT *bars) {
   }
 
   CopEnd(cp);
+}
+
+static void UpdateBarColor(StateBarT *bars, short step) {
+  CopInsT *ins1 = bars->palette[1];
+  CopInsT *ins3 = bars->palette[3];
+  const u_short *from = &bar_pal.colors[0];
+  const u_short *to = &bar_pal.colors[16];
+  short i;
+
+  for (i = 0; i < 16; i++) {
+    u_short col = ColorTransition(*from++, *to++, step);
+    CopInsSet16(ins1++, col);
+    CopInsSet16(ins3++, col);
+  }
 }
 
 static void UpdateBarState(StateBarT *bars) {
@@ -296,24 +310,37 @@ static void UpdateStripeState(StateFullT *state) {
 static void ZeroSpriteTiles(int t) {
   short i;
 
+  if (t > 4)
+    return;
+
   for (i = 0; i < NSPRITES; i++) {
     SprWordT *dst = TILEPTR(i, t);
     bzero(dst, stripes_height * sizeof(SprWordT));
   }
 }
 
+#define TILESTRIDE (stripes_bytesPerRow / sizeof(u_short))
+
 static void CopySpriteTiles(int t) {
   short i, j;
+
+  if (t > 4)
+    return;
 
   for (i = 0; i < NSPRITES; i++) {
     u_short *src = &_stripes_bpl[i];
     u_short *dst = (u_short *)TILEPTR(i, t);
 
-    for (j = 0; j < stripes_height; j++) {
-      *dst++ = *src;
-      src += stripes_bytesPerRow / sizeof(u_short);
-      *dst++ = *src;
-      src += stripes_bytesPerRow / sizeof(u_short);
+    for (j = 0; j < stripes_height / 4; j++) {
+      *dst++ = src[0 * TILESTRIDE];
+      *dst++ = src[1 * TILESTRIDE];
+      *dst++ = src[2 * TILESTRIDE];
+      *dst++ = src[3 * TILESTRIDE];
+      *dst++ = src[4 * TILESTRIDE];
+      *dst++ = src[5 * TILESTRIDE];
+      *dst++ = src[6 * TILESTRIDE];
+      *dst++ = src[7 * TILESTRIDE];
+      src += TILESTRIDE * 8;
     }
   }
 }
@@ -432,8 +459,8 @@ static void Init(void) {
   stateBars = MemAlloc(sizeof(StateBarT) * 2, MEMF_PUBLIC|MEMF_CLEAR);
   stateBars[0].cp = NewCopList(CP_BARS_SIZE);
   stateBars[1].cp = NewCopList(CP_BARS_SIZE);
-  MakeCopperListBars(&stateBars[0]);
-  MakeCopperListBars(&stateBars[1]);
+  MakeCopperListBars(&stateBars[0], false);
+  MakeCopperListBars(&stateBars[1], false);
 
   UpdateBarState(&stateBars[0]);
   UpdateSpriteState(&stateFull[0]);
@@ -523,14 +550,22 @@ static void ControlBars(StateBarT *bars) {
 static __code short phaseIn = 0;
 static __code short phaseOut = 0;
 
+#define BARIN 64
+#define BARPAL 64
+#define BAROUT 64
+
+#define FRAMEOUT (HEIGHT - BAROUT)
+#define FRAMEINDELAY (BARIN + BARPAL)
+#define FRAMEIN (HEIGHT + FRAMEINDELAY)
+
 static void ControlStripes(void) {
-  if (frameFromStart <= 224) {
-    short t = frameFromStart - 64;
+  if (frameFromStart <= FRAMEIN) {
+    short t = frameFromStart - FRAMEINDELAY;
 
     if (t >= 1 + 32 * phaseIn)
       CopySpriteTiles(phaseIn++);
-  } else if (frameTillEnd <= 224) {
-    short t = 224 - frameTillEnd;
+  } else if (frameTillEnd <= FRAMEOUT) {
+    short t = FRAMEOUT - frameTillEnd;
 
     if (t >= 1 + 32 * phaseOut)
       ZeroSpriteTiles(phaseOut++);
@@ -542,14 +577,21 @@ static short shakeStripe[16] = {
 };
 
 static void Render(void) {
-  if (frameFromStart < 64 || frameTillEnd < 64) {
+  if (frameFromStart < BARIN || frameTillEnd < BAROUT) {
     StateBarT *bars = &stateBars[active];
 
     ResetSprites();
     ControlBars(bars);
-    MakeCopperListBars(bars);
+    MakeCopperListBars(bars, frameTillEnd < BAROUT);
     UpdateBarState(bars);
     CopListRun(bars->cp);
+  } else if (frameFromStart >= BARIN && frameFromStart < BARIN + BARPAL) {
+    StateFullT *state = &stateFull[active];
+
+    ResetSprites();
+    UpdateBarColor(&state->bars, (frameFromStart - BARIN) / 4);
+    UpdateBarState(&state->bars);
+    CopListRun(state->cp);
   } else {
     StateFullT *state = &stateFull[active];
     

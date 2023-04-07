@@ -210,29 +210,14 @@ static void BlitSimple(void *sourceA, void *sourceB, void *sourceC,
   custom->bltsize = bltsize;
 }
 
-// It's just a dirty temporary "fix" - without SRCA in minterms during the first blit 
-// (logo in Init()), the logo never shows up.
-static short blitA = true;
-
 static void BlitBitmap(short x, short y, const BitmapT *blit) {
   short i;
   short j = active;
-  BlitterCopySetup(screen, MARGIN + x, MARGIN + y, blit);
-  /* monkeypatch minterms to perform screen1 = screen1 | blit */
-  if (blitA) {
-    custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (ABC | ANBC | ABNC);
-    blitA = false;
-  } else {
-    custom->bltcon0 = (SRCB | SRCC | DEST) | (ABC | ANBC | ABNC) ; 
-  }
-  
-  // This mask fixes some graphical glitches with blits, but causes others,
-  // need to think about it some more.
-  //custom->bltafwm = 0xFFFF;
-  //custom->bltalwm = 0xFFFF;
+
+  BlitterOrSetup(screen, MARGIN + (x & ~15), MARGIN + y, blit);
   
   for (i = DEPTH - 1; i >= 0; i--) {
-    BlitterCopyStart(j, 0);
+    BlitterOrStart(j, 0);
     j--;
     if (j < 0)
       j += DEPTH + 1;
