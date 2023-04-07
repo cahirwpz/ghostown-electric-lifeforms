@@ -1,5 +1,5 @@
 @track EffectNumber
-# logo
+# logo in
 $0000 0 !step
 # tilemover
 $0200 5
@@ -29,21 +29,23 @@ $2600 5
 $2800 3
 # scrolling text
 $2C00 1
-# logo 
+# logo out
 $3000 12
 # end
-$3200 -1
+$3100 -1
 @end
 
 @track GhostownLogoPal
+# logo in
 $0000 0 !step
 $0020 1 
 $0100 2
 $0120 3
+# logo out
 $3000 3
-$3020 2
-$3100 1
-$3120 0
+$3010 2
+$3020 1
+$3030 0
 @end
 
 @track ElectricLifeformsLogoPal
