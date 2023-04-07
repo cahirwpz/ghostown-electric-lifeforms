@@ -562,6 +562,7 @@ static void ResetTurmite(TurmiteT *t, u_short pos) {
 
 static void ChooseTurmiteBoard(short i) {
   BitmapClear(screen);
+  WaitBlitter();
   active_pal_index = i;
   memcpy(screen->planes[DEPTH - 1], turmite_credits_bpl[i],
          turmite_credits_1_size);
