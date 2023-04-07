@@ -5,6 +5,7 @@
 #include <copper.h>
 #include <palette.h>
 #include <sync.h>
+#include <sprite.h>
 #include <c2p_1x1_4.h>
 #include <system/task.h>
 #include <system/interrupt.h>
@@ -197,6 +198,7 @@ int main(void) {
    * fetch segments locations to relocate symbol information read from file. */
   asm volatile("exg %d7,%d7");
 
+  ResetSprites();
   InitSamples();
   PtInstallCIA();
   PtInit(Module, Samples, 0);
