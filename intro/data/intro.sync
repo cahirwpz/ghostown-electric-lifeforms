@@ -97,7 +97,8 @@ $2638 2
 @end
 
 @track TileMoverBlit
-$0202 1 !event
+$0200 1 !event
+$0202 1
 $0210 1
 $0220 1
 $0230 1

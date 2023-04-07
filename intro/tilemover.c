@@ -274,7 +274,8 @@ static void Init(void) {
 
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1);  
   EnableDMA(DMAF_BLITTER);
-  BlitBitmap(S_WIDTH / 2 - 96 - 8, S_HEIGHT / 2 - 66, logo_blit);
+  if (TrackValueGet(&TileMoverBlit, frameCount) == 1)
+    BlitBitmap(S_WIDTH / 2 - 96 - 8, S_HEIGHT / 2 - 66, logo_blit);
   WaitBlitter();
   DisableDMA(DMAF_BLITTER);
   SetupPlayfield(MODE_LORES, DEPTH, X(MARGIN), Y((256 - S_HEIGHT) / 2),
