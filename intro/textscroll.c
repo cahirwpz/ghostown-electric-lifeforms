@@ -9,6 +9,7 @@
 #define DEPTH 1
 
 #define SIZE 8
+#define SPEED 1
 
 #define COLUMNS (WIDTH / SIZE)
 #define LINES   (HEIGHT / SIZE)
@@ -38,11 +39,11 @@ static CopListT *MakeCopperList(CopInsPtrT *linebpl) {
 
     for (y = 0; y < HEIGHT; y++, ptr += scroll->bytesPerRow) {
       CopWaitSafe(cp, Y(y), 0);
-      if ((y & 3) == 0) {
-        if (y <= 24)
-          CopSetColor(cp, 1, font_pal.colors[7 - (y >> 2)]);
-        if (HEIGHT - y <= 24)
-          CopSetColor(cp, 1, font_pal.colors[7 - ((HEIGHT - y) >> 2)]);
+      if ((y & 7) == 0) {
+        if (y <= 6 * 8)
+          CopSetColor(cp, 1, font_pal.colors[7 - (y >> 3)]);
+        if (HEIGHT - y <= 6 * 8)
+          CopSetColor(cp, 1, font_pal.colors[7 - ((HEIGHT - y) >> 3)]);
       }
       linebpl[y] = CopMove32(cp, bplpt[0], ptr);
     }
@@ -104,7 +105,7 @@ static void SetupLinePointers(void) {
   void *plane = scroll->planes[0];
   int stride = scroll->bytesPerRow;
   int bplsize = scroll->bplSize;
-  short y = (int)(frameCount / 2 + 8) % (short)scroll->height;
+  short y = (int)(frameCount / SPEED + 8) % (short)scroll->height;
   void *start = plane + (short)stride * y;
   void *end = plane + bplsize;
   short n = HEIGHT;
@@ -126,7 +127,7 @@ static char *NextLine(char *str) {
 
 static void RenderNextLineIfNeeded(void) {
   Area2D rect = {0, 0, WIDTH, SIZE};
-  short s = frameCount / 16;
+  short s = frameCount / (SPEED * 8);
 
   if (s > last_line) {
     void *ptr = scroll->planes[0];
