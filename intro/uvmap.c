@@ -16,6 +16,7 @@
 extern TrackT UvmapTransition;
 extern TrackT UvmapSrcTexture;
 extern TrackT UvmapDstTexture;
+extern TrackT UvmapSprite;
 
 static u_short *texFstHi, *texFstLo;
 static u_short *texSndHi, *texSndLo;
@@ -359,6 +360,20 @@ static void MakeCopperList(CopListT *cp, short *pixels) {
   CopEnd(cp);
 }
 
+static void VBlank(void) {
+  short val;
+
+  UpdateFrameCount();
+
+  if ((val = TrackValueGet(&UvmapSprite, frameCount))) {
+    if (val > 0) {
+      EnableDMA(DMAF_SPRITE);
+    } else {
+      ResetSprites();
+    }
+  }
+}
+
 static void Init(short var) {
   short i;
 
@@ -395,7 +410,7 @@ static void Init(short var) {
     LoadPalette(&electric_pal, 16);
   }
 
-  EnableDMA(DMAF_RASTER | DMAF_SPRITE);
+  EnableDMA(DMAF_RASTER);
 
   active = 0;
   c2p_bpl = NULL;
@@ -491,4 +506,4 @@ static void Render(void) {
 }
 
 EFFECT(UVGut, Load, NULL, InitGut, Kill, Render, NULL);
-EFFECT(UVTit, Load, NULL, InitTit, Kill, Render, NULL);
+EFFECT(UVTit, Load, NULL, InitTit, Kill, Render, VBlank);

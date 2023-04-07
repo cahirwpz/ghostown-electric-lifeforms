@@ -219,9 +219,11 @@ static void BlitFunc(const BitmapT *sourceA, const BitmapT *sourceB,
   custom->bltsize = BLTSIZE;
 }
 
-static void MakeCopperList(CopListT *cp) {
+void MakeCopperList(CopListT *cp) {
   short i;
   short *color = wireworld_pcb_pal_pixels;
+  short display_bg = TrackValueGet(&WireworldDisplayBg, frameCount);
+  short pal_start = display_bg ? 8 : 0;
 
   CopInit(cp);
   // initially previous states are empty
@@ -250,14 +252,28 @@ static void MakeCopperList(CopListT *cp) {
   for (i = 1; i <= DISP_HEIGHT; i += 2) {
     // vertical pixel doubling
     if (wireworld && (i - 1) % 8 == 0) {
-      CopSetColor(cp, 8, *color++);
-      CopSetColor(cp, 9, *color++);
-      CopSetColor(cp, 10, *color);
-      CopSetColor(cp, 11, *color++);
-      CopSetColor(cp, 12, *color);
-      CopSetColor(cp, 13, *color);
-      CopSetColor(cp, 14, *color);
-      CopSetColor(cp, 15, *color++);
+      // if we're displaying background set its colors without any electrons
+      if (display_bg)
+        CopSetColor(cp, pal_start, *color++);
+      // else background should be black
+
+      // if we're displaying background set its colors with electrons
+      // if we're not displaying background set first half of the color palette
+      CopSetColor(cp, pal_start+1, *color++);
+      CopSetColor(cp, pal_start+2, *color);
+      CopSetColor(cp, pal_start+3, *color++);
+      CopSetColor(cp, pal_start+4, *color);
+      CopSetColor(cp, pal_start+5, *color);
+      CopSetColor(cp, pal_start+6, *color);
+      CopSetColor(cp, pal_start+7, *color++);
+
+      // if we're not displaying background set second half of the color palette
+      if (!display_bg) {
+        short j;
+        for (j = pal_start + 8; j < 16; j++)
+          CopSetColor(cp, j, *color);
+        color++;
+      }
     }
     CopMove16(cp, bpl1mod, -prev_states[0]->bytesPerRow);
     CopMove16(cp, bpl2mod, -prev_states[0]->bytesPerRow);
@@ -395,7 +411,7 @@ static void SharedPreInit(void) {
 
   SetupPlayfield(MODE_LORES, DISP_DEPTH, X(0), Y(0), DISP_WIDTH, DISP_HEIGHT);
 
-  cp = NewCopList(1820);
+  cp = NewCopList(1310);
   MakeCopperList(cp);
   CopListActivate(cp);
 
@@ -438,7 +454,6 @@ static void SharedPostInit(void) {
 }
 
 static void InitWireworld(void) {
-  short i;
   const BitmapT *desired_bg;
   short display_bg = TrackValueGet(&WireworldDisplayBg, frameCount);
   short bg_idx = TrackValueGet(&WireworldBg, frameCount);
@@ -450,8 +465,6 @@ static void InitWireworld(void) {
   cur_electrons = bg_idx ? &pcb_electrons : &vitruvian_electrons;
 
   SharedPreInit();
-  for (i = 0; i < 16; i++)
-    CopInsSet16(&palptr[i], palette_vitruvian[i]);
   InitSpawnFrames(cur_electrons);
 
   if (display_bg) {

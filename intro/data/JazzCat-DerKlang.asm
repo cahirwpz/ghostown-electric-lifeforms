@@ -56,7 +56,7 @@ _AK_ProgressLen:
 
 AK_USE_PROGRESS			equ 1
 AK_FINE_PROGRESS		equ 1
-AK_FINE_PROGRESS_LEN	equ 239956
+AK_FINE_PROGRESS_LEN	equ 239958
 AK_SMP_LEN				equ 177446
 AK_EXT_SMP_LEN			equ 6762
 
@@ -1346,6 +1346,55 @@ AK_Generate:
 				addq.l	#1,d7
 				cmp.l	AK_SmpLen+64(a5),d7
 				blt		.Inst17Loop
+
+				movem.l a0-a1,-(sp)	;Stash sample base address & large buffer address for loop generator
+
+;----------------------------------------------------------------------------
+; Instrument 17 - Loop Generator (Offset: 4094 Length: 2
+;----------------------------------------------------------------------------
+
+				move.l	#2,d7
+				move.l	AK_SmpAddr+64(a5),a0
+				lea		4094(a0),a0
+				move.l	a0,a1
+				sub.l	d7,a1
+				moveq	#0,d4
+				move.l	#32767<<8,d5
+				move.l	d5,d0
+				divs	d7,d0
+				bvc.s	.LoopGenVC_16
+				moveq	#0,d0
+.LoopGenVC_16
+				moveq	#0,d6
+				move.w	d0,d6
+.LoopGen_16
+				move.l	d4,d2
+				asr.l	#8,d2
+				move.l	d5,d3
+				asr.l	#8,d3
+				move.b	(a0),d0
+				move.b	(a1)+,d1
+				ext.w	d0
+				ext.w	d1
+				muls	d3,d0
+				muls	d2,d1
+				add.l	d1,d0
+				add.l	d0,d0
+				swap	d0
+				move.b	d0,(a0)+
+				add.l	d6,d4
+				sub.l	d6,d5
+
+				ifne	AK_USE_PROGRESS
+					ifne	AK_FINE_PROGRESS
+						addq.l	#1,(a3)
+					endif
+				endif
+
+				subq.l	#1,d7
+				bne.s	.LoopGen_16
+
+				movem.l (sp)+,a0-a1	;Restore sample base address & large buffer address after loop generator
 
 ;----------------------------------------------------------------------------
 ; Instrument 18 - TBlow
