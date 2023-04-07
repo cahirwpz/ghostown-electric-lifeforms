@@ -15,8 +15,7 @@
 #define NSPRITES 8
 
 extern TrackT TreeVariant;
-extern TrackT TreeFadeOut;
-extern TrackT TreeFadeIn;
+extern TrackT TreeFade;
 
 static CopListT *cp;
 static CopInsT *bplptr[DEPTH];
@@ -148,11 +147,13 @@ static void VBlank(void) {
 
   UpdateFrameCount();
 
-  if ((val = TrackValueGet(&TreeFadeOut, frameFromStart))) 
-    FadeBlack(nrPal ? &tree_pal_electric : &tree_pal_organic, 0, val);
+  (void)TrackValueGet(&TreeFade, frameCount);
 
-  if ((val = TrackValueGet(&TreeFadeIn, frameFromStart))) 
-    FadeBlack(nrPal ? &tree_pal_electric : &tree_pal_organic, 0, 16 - val);
+  if ((val = FromCurrKeyFrame(&TreeFade)) < 16)
+    FadeBlack(nrPal ? &tree_pal_electric : &tree_pal_organic, 0, val);
+  
+  if ((val = TillNextKeyFrame(&TreeFade)) < 16)
+    FadeBlack(nrPal ? &tree_pal_electric : &tree_pal_organic, 0, val);
 }
 
 static void Init(void) {
@@ -465,7 +466,7 @@ static void Render(void) {
   static short waitFrame = 0;
   short val;
 
-  if ((val = TrackValueGet(&TreeVariant, frameFromStart))) {
+  if ((val = TrackValueGet(&TreeVariant, frameCount))) {
     short i;
     nrPal = val - 1;
     BitmapClear(screen);
