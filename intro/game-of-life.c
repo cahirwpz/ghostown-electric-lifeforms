@@ -589,18 +589,13 @@ static void GolStep(void) {
   // run PixelDouble in parallel
   PixelDouble(src, dst, double_pixels);
   // wait for all blits except the last to finish
+  EnableDMA(DMAF_BLITHOG);
   while (phase < current_game->num_phases)
     continue;
+  DisableDMA(DMAF_BLITHOG);
   // run the last blit
   BlitGameOfLife(boards, current_game->num_phases - 1);
   // wait for the last blit to finish
-  while (phase <= current_game->num_phases)
-    continue;
-  // reset phase counter
-  phase = 0;
-  // ----- PIXELDOUBLE-BLITTER SYNCHRONIZATION -----
-
-  UpdateBitplanePointers();
   if (wireworld) {
     const short cycling_len =
       sizeof(wireworld_chip_cycling) / sizeof(wireworld_chip_cycling[0]);
@@ -613,9 +608,16 @@ static void GolStep(void) {
     TransitionPal(palette_gol + 1);
     ColorFadingStep(palette_gol);
   }
+  EnableDMA(DMAF_BLITHOG);
+  while (phase <= current_game->num_phases)
+    continue;
+  DisableDMA(DMAF_BLITHOG);
+  // reset phase counter
+  phase = 0;
+  // ----- PIXELDOUBLE-BLITTER SYNCHRONIZATION -----
 
+  UpdateBitplanePointers();
   stepCount++;
-
   ProfilerStop(GOLStep);
 }
 

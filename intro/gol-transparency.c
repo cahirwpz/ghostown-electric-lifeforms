@@ -2,6 +2,19 @@ extern TrackT GOLCellColor;
 extern TrackT GOLLogoColor;
 extern TrackT GOLLogoFade;
 
+static inline u_short _ColorTransition(u_short from, u_short to, u_short step) {
+  short r = (from & 0xf00) | ((to >> 4) & 0x0f0) | step;
+  short g = ((from << 4) & 0xf00) | (to & 0x0f0) | step;
+  short b = ((from << 8) & 0xf00) | ((to << 4) & 0x0f0) | step;
+
+  r = colortab[r];
+  g = colortab[g];
+  b = colortab[b];
+
+  return (r << 4) | g | (b >> 4);
+}
+
+
 static void ColorFadingStep(short *pal) {
   short i;
   short s = TrackValueGet(&GOLLogoFade, frameCount);
@@ -23,7 +36,7 @@ static void ColorFadingStep(short *pal) {
   }
 
   for (i = 0; i < 8; i++) {
-    CopInsSet16(palptr + i, ColorTransition(pal[i], 0x000, cell_col));
-    CopInsSet16(palptr + i + 8, ColorTransition(pal[i], 0xfff, logo_col));
+    CopInsSet16(palptr + i, _ColorTransition(pal[i], 0x000, cell_col));
+    CopInsSet16(palptr + i + 8, _ColorTransition(pal[i], 0xfff, logo_col));
   }
 }

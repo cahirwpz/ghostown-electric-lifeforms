@@ -43,7 +43,7 @@ static void ColorCyclingStep(CopInsT *ins, ColorCyclingT *rots,
     short i, n;
     ColorCyclingT *rot = &rots[j];
 
-    rot->step += (frameCount - lastFrameCount) * rot->rate;
+    rot->step += (short)(frameCount - lastFrameCount) * rot->rate;
     if (rot->step < (1 << 14))
       continue;
 
