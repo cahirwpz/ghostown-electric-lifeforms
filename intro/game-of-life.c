@@ -456,6 +456,8 @@ static void InitWireworld(void) {
 
   if (display_bg) {
     LoadBackground(desired_bg, 0, 0, 0);
+    BitmapClear(background[1]); // important!
+    WaitBlitter();
     CopInsSet32(bplptr[3], background[1]->planes[0]);
     InitWireworldFadein();
   }
