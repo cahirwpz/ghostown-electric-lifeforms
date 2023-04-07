@@ -90,7 +90,7 @@
 //
 
 #define NUM_SCENES 4
-#define TILES_N (40*32)
+#define TILES_N (40 * 32)
 
 #include "data/wireworld-vitruvian.c"
 #include "data/wireworld-fullscreen.c"
@@ -259,13 +259,13 @@ void MakeCopperList(CopListT *cp) {
 
       // if we're displaying background set its colors with electrons
       // if we're not displaying background set first half of the color palette
-      CopSetColor(cp, pal_start+1, *color++);
-      CopSetColor(cp, pal_start+2, *color);
-      CopSetColor(cp, pal_start+3, *color++);
-      CopSetColor(cp, pal_start+4, *color);
-      CopSetColor(cp, pal_start+5, *color);
-      CopSetColor(cp, pal_start+6, *color);
-      CopSetColor(cp, pal_start+7, *color++);
+      CopSetColor(cp, pal_start + 1, *color++);
+      CopSetColor(cp, pal_start + 2, *color);
+      CopSetColor(cp, pal_start + 3, *color++);
+      CopSetColor(cp, pal_start + 4, *color);
+      CopSetColor(cp, pal_start + 5, *color);
+      CopSetColor(cp, pal_start + 6, *color);
+      CopSetColor(cp, pal_start + 7, *color++);
 
       // if we're not displaying background set second half of the color palette
       if (!display_bg) {
@@ -340,7 +340,7 @@ static void InitWireworldFadein(void) {
     for (y = 0; y < 32; y++) {
       short dx = x - 20;
       short dy = y - 16;
-      tileShow[y * 40 + x] = isqrt(dx*dx + dy*dy);
+      tileShow[y * 40 + x] = isqrt(dx * dx + dy * dy);
     }
   }
 }
@@ -365,7 +365,7 @@ static inline void CopyBlock(short pos) {
 
 static inline void BoardFadeIn(void) {
   u_char *tile = tileShow;
-  short n = TILES_N-1;
+  short n = TILES_N - 1;
   do {
     *tile = (*tile)--;
     if (*tile == 0)
@@ -377,7 +377,9 @@ static inline void BoardFadeIn(void) {
 static inline void ChipFadeIn(short phase) {
   short i;
   for (i = 16; i < 32; i++)
-    CopInsSet16(palptr + i, ColorTransition(0x000, wireworld_chip_pal.colors[i-16], 15-phase));
+    CopInsSet16(
+      palptr + i,
+      ColorTransition(0x000, wireworld_chip_pal.colors[i - 16], 15 - phase));
 }
 
 static void SharedPreInit(void) {
@@ -503,7 +505,7 @@ static void InitGameOfLife(void) {
 
   BitmapClear(boards[0]);
   BitmapCopy(boards[0], EXT_WIDTH_LEFT, EXT_HEIGHT_TOP,
-    display_bg ? &wireworld_pcb : &wireworld_vitruvian);
+             display_bg ? &wireworld_pcb : &wireworld_vitruvian);
 
   SharedPostInit();
 }
@@ -602,7 +604,7 @@ static void GolStep(void) {
       sizeof(wireworld_chip_cycling) / sizeof(wireworld_chip_cycling[0]);
     if (TrackValueGet(&WireworldFadeIn, frameCount) == 0)
       ColorCyclingStep(&palptr[16], wireworld_chip_cycling, cycling_len,
-                      &wireworld_chip_pal);
+                       &wireworld_chip_pal);
   } else {
     short logo_idx = TrackValueGet(&GOLLogoType, frameCount);
     CopInsSet32(bplptr[3], background[logo_idx]->planes[0]);
