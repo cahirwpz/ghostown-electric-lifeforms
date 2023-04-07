@@ -191,7 +191,7 @@ $273E 2
 @end
 
 @track TileMoverBgBlip
-$0406 12 !event
+$0406 12 !trigger
 $0418 12
 $041E 12 
 $0426 12 
