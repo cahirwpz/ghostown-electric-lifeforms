@@ -13,11 +13,13 @@ extern TrackT WireworldSpawnNow;
 
 static const ElectronArrayT *cur_electrons;
 
-static void InitSpawnFrames(const ElectronArrayT *electrons, short spawn_mask) {
+static void InitSpawnFrames(const ElectronArrayT *electrons) {
   short i;
   short *spawn = next_spawn;
+  short spawn_mask = TrackValueGet(&WireworldSpawnMask, frameCount);
+  short min_delay = TrackValueGet(&WireworldMinDelay, frameCount);
   for (i = 0; i < electrons->num_electrons; i++)
-    *spawn++ = stepCount + (spawn_mask & random());
+    *spawn++ = stepCount + (random() & spawn_mask) + min_delay;
 }
 
 static void SpawnElectrons(const ElectronArrayT *electrons,
