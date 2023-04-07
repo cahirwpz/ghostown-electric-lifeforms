@@ -209,12 +209,15 @@ $053E 12
 @track GOLGame
 # classic gol
 $0A00 0 !step
-# day and night
-$0A20 2
 # maze
-$0A30 5 
+$0A20 2
+# day and night
+$0A30 5
 # Diamoeba
 $0B20 3
+# fadeout (three-four -> diamoeba again)
+$0B38 6
+$0B3b 3
 #---second time---#
 # classic
 $2000 0
@@ -222,7 +225,7 @@ $2000 0
 $2030 4
 # day and night
 $2100 5
-# Diamoeba
+# three-four
 $2120 6
 @end
 
