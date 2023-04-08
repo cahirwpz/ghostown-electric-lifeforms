@@ -6,16 +6,14 @@
                             AMIGA 500 OCS 64K INTRO
                            RELEASED AT REVISION 2023
                                             
-                                 FULL CREDITS:
-
                                   MAIN CODING:
                                      CAHIR
 
                                     CODING:
                                   KRIS + SPOOK
 
-                              ADDITIONAL CODING:
-                                TYGRYS + CODI
+                               ADDITIONAL CODING:
+                                 TYGRYS + CODI
 
                                GLITCHY PIXELLER:
                                     SLAYER
@@ -29,22 +27,37 @@
                                   TUBA ABUSE:
                                     JAZZCAT
 
+                                   TOOLING:
+                             PTPLAYER BY FRANK WILLE
+                        SHRINKLER BY BLUEBERRY / LOONIES
+               CELLULAR AUTOMATON RULES TO BLITS BY PIOTR POLESIUK
+
 
                       LET'S GO BACK TO OUR GREETINGS LIST
 
+   FLEX                       FLOPPY      FOCUS DESIGN              FUTURIS
+   HAUJOBB                    INSANE      JOKER                      LAMERS
+   LEMON                     LOONIES      MAWI                MOODS PLATEAU    
+   NAH-KOLOR               ESISTANCE      RNO                        SKARLA
+   SPACEBALLS              SPECCY.PL      OXYRON                   TRACTION
+   TULOU TEK                 UN AMOR      UNIQUE                   UP ROUGH
+   VOID                       Y-CREW      WHELPZ                    ZYMOSIS
 
-                      FLEX                         FLOPPY        
-                      FOCUS DESIGN                FUTURIS            
-                      HAUJOBB                      INSANE          
-                      JOKER                        LAMERS           
-                      LEMON                       LOONIES               
-                      MAWI                  MOODS PLATEAU    
-                      NAH-KOLOR                 ESISTANCE             
-                      RNO                          SKARLA          
-                      SPACEBALLS                SPECCY.PL         
-                      OXYRON                     TRACTION   
-                      TULOU                           TEK       
-                      UN AMOR                      UNIQUE
-                      UP ROUGH                       VOID  
-                      Y-CREW                       WHELPZ
 
+                             CAHIR ON THE KEYBOARD
+
+   THE WORK ON INTRO BEGUN ALMOST 1,5 YEARS AGO AS A TEACHING EXPERIMENT.
+ THANKS TO COURTESY OF COMPUTER SCIENCE DEPARTMENT / UNIVERSITY OF WROCLAW
+  I GAVE A COURSE IN AMIGA DEMOSCENE PROGRAMMING. A FEW FOLKS HAS ATTENDED
+      AND TO MY SURPRISE THREE WERE INTERESTED IN LONG-TERM COOPERATION.
+  AS THE RESULT GHOSTOWN GAINED NEW MEMBERS - AND MORE IMPORTANTLY - CODERS!
+ THIS PRODUCTION IS THEIR FIRST RELEASE ON DEMOSCENE. WELCOME SPOOK AND KRIS!
+
+YOU WANT NEW PEOPLE CONTRIBUTE TO THE DEMOSCENE? THEN TEACH THEM HOW TO DO SO!
+
+AND LAST BUT NOT LEAST, THANK YOU ALICE FOR YOUR SUPPORT DURING THIS JOURNEY <3
+
+
+                       JAZZCAT & SLAYER ON THE KEYBOARD
+
+                    SEE YOU AT HEX PISTONS 2 THIS SUMMER!
