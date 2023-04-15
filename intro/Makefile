@@ -219,6 +219,13 @@ data/gol-transitions.png: $(GRADIENT)
 	$(PYTHON3) $(GRADIENT) load data/gol-pal-1.png load data/gol-pal-2.png \
 	load data/gol-pal-3.png load data/gol-pal-4.png save $@
 
+REPOHEAD := $(shell git rev-parse --short HEAD)
+
+%.exe.packed: %.exe
+	@echo "[PACK] $(DIR)$< -> $(DIR)$@"
+	Shrinkler -o -f 0xdff180 \
+	  -t "Electric Lifeforms by Ghostown (build: $(REPOHEAD))" $< $@
+
 audiovq: audiovq.c
 	@echo "[HOSTCC] $(DIR)$< -> $(DIR)$@"
 	cc -O2 -march=native -Wall -o $@ $^ -lm

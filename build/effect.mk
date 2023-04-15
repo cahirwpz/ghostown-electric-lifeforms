@@ -84,7 +84,7 @@ ifeq ($(AMIGAOS), 0)
 	@echo "[ROM] $(DIR)$< -> $(DIR)$@"
 	$(ROMUTIL) $(ROMSTARTUP) $< $@ 
 else
-%.adf: %.exe $(BOOTBLOCK)
+%.adf: %.exe.packed $(BOOTBLOCK)
 	@echo "[ADF] $(DIR)$< -> $(DIR)$@"
 	echo $< > startup-sequence
 	xdftool $@ format dos + write $< + makedir s + write startup-sequence s
