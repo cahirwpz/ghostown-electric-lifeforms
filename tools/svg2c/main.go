@@ -19,8 +19,7 @@ import (
 )
 
 const (
-	svgTemplate = `
-// {{ .Name }}
+	svgTemplate = `// {{ .Name }}
 static GreetsT gr{{ .Name }} = {
   .curr = NULL,
   .n = 0,
@@ -181,7 +180,7 @@ func (sd *SvgData) Export() (output string, err error) {
 		return
 	}
 
-	file, err := os.Create(defaultFileName)
+	file, err := os.Create(outputPath)
 	if err != nil {
 		return "", err
 	}
@@ -222,7 +221,6 @@ func handleFile(path string, name string) string {
 	}
 	defer file.Close()
 
-	// TODO title name
 	svgData := SvgData{[]GeometricData{}, Point{0, 0}, cases.Title(language.Und, cases.Compact).String(name)}
 
 	element, _ := svgparser.Parse(file, false)
@@ -234,18 +232,24 @@ func handleFile(path string, name string) string {
 		case "polyline":
 			parsedPoints := parsePolyLine(element)
 			svgData.Data = append(svgData.Data, GeometricData{len(parsedPoints), parsedPoints, []Point{}})
+			break
 		case "line":
 			parsedPoints := parseLine(element)
 			svgData.Data = append(svgData.Data, GeometricData{len(parsedPoints), parsedPoints, []Point{}})
+			break
 		case "path":
-			fmt.Println("Found path element, geometry won't be parsed")
+			if verbose {
+				fmt.Println("Found path element, geometry won't be parsed")
+			}
+			break
 		default:
-			fmt.Printf("[WARN] Parsed element %s\n", element.Name)
+			if verbose {
+				fmt.Printf("[WARN] Parsed element %s\n", element.Name)
+			}
 		}
 	}
 	svgData.CalcOrigin()
 	svgData.CalcDataWithOffset()
-	fmt.Println(svgData.Data[0])
 	data, err := svgData.Export()
 	if err != nil {
 		log.Fatal(err)
@@ -253,29 +257,40 @@ func handleFile(path string, name string) string {
 	return data
 }
 
-const defaultFileName = "growing-tree-greets-data.c"
+const defaultFileName = "data.c"
+
+var inputDir string
+var outputPath string
+var verbose bool
+var printHelp bool
+
+func init() {
+	flag.StringVar(&inputDir, "in", "", "Input folder containing svg files")
+	flag.StringVar(&outputPath, "out", defaultFileName, "Output filename with processed data")
+	flag.BoolVar(&verbose, "v", false, "Output verbose logs")
+	flag.BoolVar(&printHelp, "help", false, "Prints this message")
+}
 
 func main() {
 
 	flag.Parse()
 
-	if len(flag.Args()) < 1 || len(flag.Arg(0)) == 0 {
+	if printHelp || len(inputDir) == 0 {
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
 
-	dir := flag.Arg(0)
-	fileInfo, err := os.Stat(dir)
+	fileInfo, err := os.Stat(inputDir)
 	if err != nil {
 		log.Fatal(err)
 		os.Exit(1)
 	}
 
-	if fileInfo.IsDir() == false {
+	if !fileInfo.IsDir() {
 		log.Fatal("Path should be a folder")
 	}
 
-	entries, err := os.ReadDir(dir)
+	entries, err := os.ReadDir(inputDir)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -285,7 +300,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	file, err := os.Create(defaultFileName)
+	file, err := os.Create(outputPath)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -297,8 +312,10 @@ func main() {
 		fileName := entry.Name()
 		fileExt := filepath.Ext(fileName)
 		if fileExt == ".svg" {
-			fmt.Printf("\nConverting file: %s\n", fileName)
-			exportString += handleFile(filepath.Join(dir, fileName), strings.TrimSuffix(fileName, fileExt))
+			if verbose {
+				fmt.Printf("\nConverting file: %s\n", fileName)
+			}
+			exportString += handleFile(filepath.Join(inputDir, fileName), strings.TrimSuffix(fileName, fileExt))
 		}
 	}
 	file.WriteString(exportString)
