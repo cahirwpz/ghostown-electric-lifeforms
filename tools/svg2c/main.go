@@ -14,8 +14,6 @@ import (
 	"strings"
 
 	"github.com/joshvarga/svgparser"
-	"golang.org/x/text/cases"
-	"golang.org/x/text/language"
 )
 
 const (
@@ -75,19 +73,23 @@ func parseCoordinate(coord string) (int, error) {
 func parseLine(el *svgparser.Element) []Point {
 	X1, err := parseCoordinate(el.Attributes["x1"])
 	if err != nil {
-		log.Fatalln("Error parsing coordinates x1")
+		log.Fatalf("Error parsing line coord x1 - value: %s\n",
+			el.Attributes["x1"])
 	}
 	Y1, err := parseCoordinate(el.Attributes["y1"])
 	if err != nil {
-		log.Fatalln("Error parsing coordinates y1")
+		log.Fatalf("Error parsing coordinates y1 - value: %s\n",
+			el.Attributes["y1"])
 	}
 	X2, err := parseCoordinate(el.Attributes["x2"])
 	if err != nil {
-		log.Fatalln("Error parsing coordinates x2")
+		log.Fatalf("Error parsing coordinates x2 - value: %s\n",
+			el.Attributes["x2"])
 	}
 	Y2, err := parseCoordinate(el.Attributes["y2"])
 	if err != nil {
-		log.Fatalln("Error parsing coordinates y2")
+		log.Fatalf("Error parsing coordinates y2 - value: %s\n",
+			el.Attributes["y2"])
 	}
 	return []Point{{X1, Y1}, {X2, Y2}}
 }
@@ -99,19 +101,20 @@ func parsePolyLine(el *svgparser.Element) []Point {
 	points := strings.Split(trimmedPoints, " ")
 	parsedPoints := []Point{}
 	for _, point := range points {
-		if point != "" {
-			coords := strings.Split(point, ",")
-			x, err := parseCoordinate(strings.TrimSpace(coords[0]))
-			if err != nil {
-				log.Fatalf("Error parsing coordinate x in point: '%v'\n", point)
-			}
-			y, err := parseCoordinate(coords[1])
-			if err != nil {
-				log.Fatalln("Error parsing coordinates y")
-			}
-			parsedPoint := Point{x, y}
-			parsedPoints = append(parsedPoints, parsedPoint)
+		if point == "" {
+			continue
 		}
+		coords := strings.Split(point, ",")
+		x, err := parseCoordinate(strings.TrimSpace(coords[0]))
+		if err != nil {
+			log.Fatalf("Error parsing coordinate x in point: '%v'\n", point)
+		}
+		y, err := parseCoordinate(coords[1])
+		if err != nil {
+			log.Fatalf("Error parsing coordinate y in point: '%v'\n", point)
+		}
+		parsedPoint := Point{x, y}
+		parsedPoints = append(parsedPoints, parsedPoint)
 	}
 	return parsedPoints
 }
@@ -139,12 +142,6 @@ func (sd *SvgData) GetMinPoint() Point {
 			if point.X < minPoint.X {
 				minPoint.X = point.X
 			}
-			if point.X < minPoint.X {
-				minPoint.X = point.X
-			}
-			if point.Y < minPoint.Y {
-				minPoint.Y = point.Y
-			}
 			if point.Y < minPoint.Y {
 				minPoint.Y = point.Y
 			}
@@ -159,12 +156,6 @@ func (sd *SvgData) GetMaxPoint() Point {
 		for _, point := range gData.Points {
 			if point.X > maxPoint.X {
 				maxPoint.X = point.X
-			}
-			if point.X > maxPoint.X {
-				maxPoint.X = point.X
-			}
-			if point.Y > maxPoint.Y {
-				maxPoint.Y = point.Y
 			}
 			if point.Y > maxPoint.Y {
 				maxPoint.Y = point.Y
@@ -207,11 +198,11 @@ func (gd *GeometricData) GetWithOffsetAndDelta(offset Point) []Point {
 }
 
 func (gd *GeometricData) GetPointsWithOffset(offset Point) []Point {
-	var wihtOffset []Point
+	var withOffset []Point
 	for _, point := range gd.Points {
-		wihtOffset = append(wihtOffset, Sub(point, offset))
+		withOffset = append(withOffset, Sub(point, offset))
 	}
-	return wihtOffset
+	return withOffset
 }
 
 func handleFile(path string, name string) string {
@@ -221,7 +212,7 @@ func handleFile(path string, name string) string {
 	}
 	defer file.Close()
 
-	svgData := SvgData{[]GeometricData{}, Point{0, 0}, cases.Title(language.Und, cases.Compact).String(name)}
+	svgData := SvgData{[]GeometricData{}, Point{0, 0}, name}
 
 	element, _ := svgparser.Parse(file, false)
 	elements := element.Children
@@ -231,17 +222,16 @@ func handleFile(path string, name string) string {
 		switch elementType {
 		case "polyline":
 			parsedPoints := parsePolyLine(element)
-			svgData.Data = append(svgData.Data, GeometricData{len(parsedPoints), parsedPoints, []Point{}})
-			break
+			svgData.Data = append(svgData.Data,
+				GeometricData{len(parsedPoints), parsedPoints, []Point{}})
 		case "line":
 			parsedPoints := parseLine(element)
-			svgData.Data = append(svgData.Data, GeometricData{len(parsedPoints), parsedPoints, []Point{}})
-			break
+			svgData.Data = append(svgData.Data,
+				GeometricData{len(parsedPoints), parsedPoints, []Point{}})
 		case "path":
 			if verbose {
 				fmt.Println("Found path element, geometry won't be parsed")
 			}
-			break
 		default:
 			if verbose {
 				fmt.Printf("[WARN] Parsed element %s\n", element.Name)
@@ -283,7 +273,6 @@ func main() {
 	fileInfo, err := os.Stat(inputDir)
 	if err != nil {
 		log.Fatal(err)
-		os.Exit(1)
 	}
 
 	if !fileInfo.IsDir() {
