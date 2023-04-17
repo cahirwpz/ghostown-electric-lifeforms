@@ -22,7 +22,7 @@ static u_short *texFstHi, *texFstLo;
 static u_short *texSndHi, *texSndLo;
 static BitmapT *screen[2];
 static __code u_short active = 0;
-static __code short c2p_phase;
+static __code volatile short c2p_phase;
 static __code void **c2p_bpl;
 static CopListT *cp;
 static CopInsT *bplptr[DEPTH];
@@ -499,6 +499,8 @@ static void Render(void) {
   }
   ProfilerStop(UVMap);
 
+  while (c2p_phase < 7)
+    WaitBlitter();
   c2p_phase = 0;
   c2p_bpl = screen[active]->planes;
   ChunkyToPlanar();
