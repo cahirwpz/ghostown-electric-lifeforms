@@ -205,13 +205,7 @@ func (gd *GeometricData) GetPointsWithOffset(offset Point) []Point {
 	return withOffset
 }
 
-func handleFile(path string, name string) string {
-	file, err := os.Open(path)
-	if err != nil {
-		log.Fatal(err)
-	}
-	defer file.Close()
-
+func handleFile(file *os.File, name string) string {
 	svgData := SvgData{[]GeometricData{}, Point{0, 0}, name}
 
 	element, _ := svgparser.Parse(file, false)
@@ -249,14 +243,12 @@ func handleFile(path string, name string) string {
 
 const defaultFileName = "data.c"
 
-var inputDir string
 var outputPath string
 var verbose bool
 var printHelp bool
 
 func init() {
-	flag.StringVar(&inputDir, "in", "", "Input folder containing svg files")
-	flag.StringVar(&outputPath, "out", defaultFileName, "Output filename with processed data")
+	flag.StringVar(&outputPath, "o", defaultFileName, "Output filename with processed data")
 	flag.BoolVar(&verbose, "v", false, "Output verbose logs")
 	flag.BoolVar(&printHelp, "help", false, "Prints this message")
 }
@@ -265,27 +257,32 @@ func main() {
 
 	flag.Parse()
 
-	if printHelp || len(inputDir) == 0 {
+	if printHelp || len(flag.Args()) < 1 || len(outputPath) == 0 {
 		flag.PrintDefaults()
 		os.Exit(1)
 	}
 
-	fileInfo, err := os.Stat(inputDir)
-	if err != nil {
-		log.Fatal(err)
+	var exportString string
+
+	filesToConvert := flag.Args()
+
+	for _, entry := range filesToConvert {
+		file, err := os.Open(entry)
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer file.Close()
+		fileExt := filepath.Ext(entry)
+		fileName := filepath.Base(entry)
+		if fileExt == ".svg" {
+			if verbose {
+				fmt.Printf("\nConverting file: %s\n", fileName)
+			}
+			exportString += handleFile(file, strings.TrimSuffix(fileName, fileExt))
+		}
 	}
 
-	if !fileInfo.IsDir() {
-		log.Fatal("Path should be a folder")
-	}
-
-	entries, err := os.ReadDir(inputDir)
-	if err != nil {
-		log.Fatal(err)
-	}
-
-	if len(entries) == 0 {
-		fmt.Println("Noting to convert")
+	if len(exportString) == 0 {
 		os.Exit(0)
 	}
 
@@ -294,19 +291,6 @@ func main() {
 		log.Fatal(err)
 	}
 	defer file.Close()
-
-	var exportString string
-
-	for _, entry := range entries {
-		fileName := entry.Name()
-		fileExt := filepath.Ext(fileName)
-		if fileExt == ".svg" {
-			if verbose {
-				fmt.Printf("\nConverting file: %s\n", fileName)
-			}
-			exportString += handleFile(filepath.Join(inputDir, fileName), strings.TrimSuffix(fileName, fileExt))
-		}
-	}
 	file.WriteString(exportString)
 	if err != nil {
 		log.Fatal(err)
