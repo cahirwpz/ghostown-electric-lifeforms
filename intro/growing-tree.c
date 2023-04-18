@@ -463,7 +463,6 @@ void GrowingTree(BranchT *branches, BranchT **lastp) {
 PROFILE(GrowTree);
 
 static void Render(void) {
-  static short waitFrame = 0;
   short val;
 
   if ((val = TrackValueGet(&TreeVariant, frameCount))) {
@@ -471,37 +470,21 @@ static void Render(void) {
     nrPal = val - 1;
     BitmapClear(screen);
     GreetsNextTrack();
-    waitFrame = 0;
 
     for (i = 0; i < NSPRITES; i++)
       CopInsSetSprite(sprptr[i], &grass[i]);
-  }
 
-  if (waitFrame > 0) {
-    if (frameCount - waitFrame < 150) {
-      TaskWaitVBlank();
-      HandleDrawingGreets();
-      return;
-    }
-  }
-
-  if (lastBranch == branches) {
     MakeBranch(WIDTH / 2, HEIGHT - fruit_height / 2 - 1);
   }
 
   ProfilerStart(GrowTree);
-  // Call function twice to make drawing trees
-  // visually faster
+  // Call function twice to make drawing trees visually faster
   GrowingTree(branches, &lastBranch);
   GrowingTree(branches, &lastBranch);
 
   HandleDrawingGreets();
 
   ProfilerStop(GrowTree);
-
-  if (lastBranch == branches) {
-    waitFrame = frameCount;
-  }
 
   TaskWaitVBlank();
 }
