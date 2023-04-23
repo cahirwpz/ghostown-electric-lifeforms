@@ -35,8 +35,8 @@ MEMDEBUG := 0
 # (in kilobytes!) passed to our custom memory allocator.
 # To calculate total memory taken after an executable file
 # is loaded into memory please use `m68k-amigaos-objdump` tool.
-CHIPMEM := 220
-FASTMEM := 180
+CHIPMEM := 200
+FASTMEM := 160
 
 # Pass "VERBOSE=1" at command line to display command being invoked by GNU Make
 VERBOSE ?= 0
