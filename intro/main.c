@@ -181,7 +181,7 @@ static void RunEffects(void) {
     {
       EffectT *effect = AllEffects[curr];
       short t = UpdateFrameCount();
-      if (effect->Render)
+      if ((lastFrameCount != frameCount) && effect->Render)
         effect->Render();
       lastFrameCount = t;
     }
