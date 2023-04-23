@@ -2,9 +2,9 @@ TOPDIR = $(realpath .)
 
 SUBDIRS = tools lib system intro
 EXTRA-FILES = tags cscope.out
-CLEAN-FILES = bootloader.bin a500rom.bin addchip.bootblock.bin
+CLEAN-FILES = bootloader.bin a500rom.bin addchip.bootblock.bin vbrmove
 
-all: a500rom.bin bootloader.bin addchip.bootblock.bin build
+all: a500rom.bin bootloader.bin addchip.bootblock.bin vbrmove build
 
 addchip.bootblock.bin: VASMFLAGS += -phxass -cnop=0
 
