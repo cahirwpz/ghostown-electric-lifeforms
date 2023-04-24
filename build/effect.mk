@@ -13,6 +13,7 @@ MAIN ?= $(TOPDIR)/effects/main.o
 BOOTLOADER = $(TOPDIR)/bootloader.bin
 ROMSTARTUP = $(TOPDIR)/a500rom.bin
 BOOTBLOCK = $(TOPDIR)/addchip.bootblock.bin
+VBRMOVE = $(TOPDIR)/vbrmove
 
 EXTRA-FILES += $(DATA_GEN) $(EFFECT).adf
 CLEAN-FILES += $(DATA_GEN) $(EFFECT).exe $(EFFECT).exe.dbg $(EFFECT).exe.map
@@ -84,7 +85,7 @@ ifeq ($(AMIGAOS), 0)
 	@echo "[ROM] $(DIR)$< -> $(DIR)$@"
 	$(ROMUTIL) $(ROMSTARTUP) $< $@ 
 else
-%.adf: %.exe $(BOOTBLOCK)
+%.adf: %.exe.packed $(BOOTBLOCK)
 	@echo "[ADF] $(DIR)$< -> $(DIR)$@"
 	echo $< > startup-sequence
 	xdftool $@ format dos + write $< + makedir s + write startup-sequence s

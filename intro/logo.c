@@ -92,12 +92,12 @@ void KillLogo(void) {
   }
 }
 
-static void Render(bool out) {
-  short num = TrackValueGet(&GhostownLogoPal, frameCount);
-  short frame = out ? TillNextKeyFrame(&GhostownLogoPal)
-                    : FromCurrKeyFrame(&GhostownLogoPal);
+static void Render(short out) {
+  short num;
 
-  if (num) {
+  if ((num = TrackValueGet(&GhostownLogoPal, frameCount))) {
+    short frame = (out ? TillNextKeyFrame : FromCurrKeyFrame)(&GhostownLogoPal);
+
     if (frame < 16) {
       short i;
 

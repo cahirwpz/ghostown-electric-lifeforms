@@ -3,7 +3,6 @@
 #include <copper.h>
 #include <stdlib.h>
 #include <system/memory.h>
-#include <system/interrupt.h>
 #include <fx.h>
 #include <sync.h>
 
@@ -40,6 +39,7 @@
 
 static __code BitmapT *screen;
 static __code int active = 0;
+static __code const PaletteT *currPal;
 static CopListT *cp;
 static CopInsT *bplptr[DEPTH + 1];
 
@@ -68,7 +68,6 @@ static TilemoverPalT tilemover_palettes = {
   &pal_gold
 };
 
-static __code short lightLevel = 0;
 static const short blip_sequence[] = {
   0, 0, 1, 2, 3, 4, 5, 5, 5, 4, 3, 2, 1
 };
@@ -210,29 +209,14 @@ static void BlitSimple(void *sourceA, void *sourceB, void *sourceC,
   custom->bltsize = bltsize;
 }
 
-// It's just a dirty temporary "fix" - without SRCA in minterms during the first blit 
-// (logo in Init()), the logo never shows up.
-static short blitA = true;
-
 static void BlitBitmap(short x, short y, const BitmapT *blit) {
   short i;
   short j = active;
-  BlitterCopySetup(screen, MARGIN + x, MARGIN + y, blit);
-  /* monkeypatch minterms to perform screen1 = screen1 | blit */
-  if (blitA) {
-    custom->bltcon0 = (SRCA | SRCB | SRCC | DEST) | (ABC | ANBC | ABNC);
-    blitA = false;
-  } else {
-    custom->bltcon0 = (SRCB | SRCC | DEST) | (ABC | ANBC | ABNC) ; 
-  }
-  
-  // This mask fixes some graphical glitches with blits, but causes others,
-  // need to think about it some more.
-  //custom->bltafwm = 0xFFFF;
-  //custom->bltalwm = 0xFFFF;
+
+  BlitterOrSetup(screen, MARGIN + (x & ~15), MARGIN + y, blit);
   
   for (i = DEPTH - 1; i >= 0; i--) {
-    BlitterCopyStart(j, 0);
+    BlitterOrStart(j, 0);
     j--;
     if (j < 0)
       j += DEPTH + 1;
@@ -272,15 +256,17 @@ static void UnLoad(void) {
   DeleteBitmap(logo_blit);
 }
 
-static int BgBlip(void) {
-  if (lightLevel) {
-    SetColor(0, tilemover_bg_pal.colors[blip_sequence[lightLevel]]);
-    lightLevel--;
-  }
-  return 0;
-}
+static void VBlank(void) {
+  short val;
 
-INTSERVER(BlipBackgroundInterrupt, 0, (IntFuncT)BgBlip, NULL);
+  UpdateFrameCount();
+
+  if (frameTillEnd < 16) {
+    FadeBlack(currPal, 0, frameTillEnd); 
+  } else if ((val = TrackValueGet(&TileMoverBgBlip, frameCount))) {
+    SetColor(0, tilemover_bg_pal.colors[blip_sequence[val]]);
+  }
+}
 
 extern void KillLogo(void);
 
@@ -292,7 +278,8 @@ static void Init(void) {
 
   screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1);  
   EnableDMA(DMAF_BLITTER);
-  BlitBitmap(S_WIDTH / 2 - 96 - 8, S_HEIGHT / 2 - 66, logo_blit);
+  if (TrackValueGet(&TileMoverBlit, frameCount) == 1)
+    BlitBitmap(S_WIDTH / 2 - 96 - 8, S_HEIGHT / 2 - 66, logo_blit);
   WaitBlitter();
   DisableDMA(DMAF_BLITTER);
   SetupPlayfield(MODE_LORES, DEPTH, X(MARGIN), Y((256 - S_HEIGHT) / 2),
@@ -311,12 +298,9 @@ static void Init(void) {
   
   UpdateBitplanePointers();
   EnableDMA(DMAF_RASTER | DMAF_BLITTER | DMAF_BLITHOG);
-
-  AddIntServer(INTB_VERTB, BlipBackgroundInterrupt);
 }
 
 static void Kill(void) {
-  RemIntServer(INTB_VERTB, BlipBackgroundInterrupt);
   DisableDMA(DMAF_COPPER | DMAF_RASTER | DMAF_BLITTER | DMAF_BLITHOG);
   DeleteBitmap(screen);
   DeleteCopList(cp);
@@ -432,11 +416,11 @@ PROFILE(TileMover);
 static void Render(void) {
   short current_pal = TrackValueGet(&TileMoverPal, frameCount);
   short current_ff = TrackValueGet(&TileMoverNumber, frameCount);
-  short current_blip = TrackValueGet(&TileMoverBgBlip, frameCount);
   short val;
   
   if (current_pal) {
-    LoadPalette(tilemover_palettes[current_pal], 0);
+    currPal = tilemover_palettes[current_pal];
+    LoadPalette(currPal, 0);
     SetColor(0, BGCOLOR);
     // Spinning torus needs to have screen cleared out to avoid
     // ugly visual artifacts.
@@ -444,9 +428,6 @@ static void Render(void) {
       BitmapClear(screen);
     }
   }
-
-  if (current_blip)
-    lightLevel = current_blip;
 
   if ((val = TrackValueGet(&TileMoverBlit, frameCount)))
     BlitShape(val);
@@ -484,4 +465,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(TileMover, Load, UnLoad, Init, Kill, Render, NULL);
+EFFECT(TileMover, Load, UnLoad, Init, Kill, Render, VBlank);

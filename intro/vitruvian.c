@@ -62,6 +62,8 @@ static void Kill(void) {
   DeleteBitmap(screen);
 }
 
+static bool initialFadeIn = true;
+
 static void Render(void) {
   short num = TrackValueGet(&ElectricLifeformsLogoPal, frameCount);
   short frame = FromCurrKeyFrame(&ElectricLifeformsLogoPal);
@@ -69,8 +71,10 @@ static void Render(void) {
   if (num > 0) {
     if (frame < 16) {
       short i;
-
-      for (i = 0; i < (1 << DEPTH); i++) {
+      
+      // Initially, we want to fade in the full palette.
+      // Then, only flicker the right side of the bitmap.
+      for (i = initialFadeIn ? 0 : 5; i < (1 << DEPTH); i++) {
         short prev = (num == 1) ? electric_lifeforms_1_pal.colors[0]
           : electric_lifeforms_pal[num - 1]->colors[i];
         short curr = electric_lifeforms_pal[num]->colors[i];
@@ -78,6 +82,7 @@ static void Render(void) {
       }
     } else {
       LoadPalette(electric_lifeforms_pal[num], 0);
+      initialFadeIn = false;
     }
   }
 

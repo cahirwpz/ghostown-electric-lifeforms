@@ -1,151 +1,63 @@
-                                   IT WAS 
-                             THE FINAL VERSION OF
-
-                             SUNGLASSES AT NIGHT
+                              ELECTRIC LIFEFORMS
                                       BY
-                             GHOSTOWN and WHELPZ
+                                   GHOSTOWN
 
 
-                              AMIGA 500 OCS DEMO
-                          PARTY VERSION WAS RELEASED 
-                        AT RIVERWASH 2014 DEMO COMPO
-                          RACIBORZ 19-21 . 09 . 2014
-
-                          FINAL VERSION WAS RELEASED 
-                      at PAYBACK 2015 - HELSINKI, FINLAND
-                          AND SHOWN OUT OF COMPETITION.
+                            AMIGA 500 OCS 64K INTRO
+                           RELEASED AT REVISION 2023
                                             
+                                  MAIN CODING:
+                                     CAHIR
 
-                                   CREDITS:
+                                    CODING:
+                                  KRIS + SPOOK
 
-                                    CODER:
-                                    CAHIR
+                               ADDITIONAL CODING:
+                                 TYGRYS + CODI
 
-                                   PAINTER:
+                               GLITCHY PIXELLER:
                                     SLAYER
 
-                                     DJ:
-                                   JAZZCAT
+                             ADDITIONAL GRAPHICS:
+                                     YUMI
+
+                             AMIGA KLANG SCIENTIST:
+                                    VIRGILL
+
+                                  TUBA ABUSE:
+                                    JAZZCAT
+
+                                   TOOLING:
+                             PTPLAYER BY FRANK WILLE
+                        SHRINKLER BY BLUEBERRY / LOONIES
+               CELLULAR AUTOMATON RULES TO BLITS BY PIOTR POLESIUK
 
 
-                         GHOSTOWN SEND GREETINGS TO:
+                      LET'S GO BACK TO OUR GREETINGS LIST
 
-                         ADA                 ARTWAY
-                         BLACK SUN              DCS
-                         DECREE           DEKADENCE
-                         DESIRE        DINX PROJECT
-                         D.T.A.  SOFTWARE    STUDIO
-                         ELUDE               FLOPPY
-                         FOCUS DESIGN       FUTURIS
-                         INSANE              LAMERS
-                         LEMON              LOONIES
-                         MOODS PLATEAU         MAWI
-                         NAH-KOLOR              RNO
-                         SKARLA          SPACEBALLS
-                         SPECCY.PL         TRACTION
-                         TULOU          WANTED TEAM
-                         UP ROUGH            Y_CREW
+   FLEX                       FLOPPY      FOCUS DESIGN              FUTURIS
+   HAUJOBB                    INSANE      JOKER                      LAMERS
+   LEMON                     LOONIES      MAWI                MOODS PLATEAU    
+   NAH-KOLOR               ESISTANCE      RNO                        SKARLA
+   SPACEBALLS              SPECCY.PL      OXYRON                   TRACTION
+   TULOU TEK                 UN AMOR      UNIQUE                   UP ROUGH
+   VOID                       Y-CREW      WHELPZ                    ZYMOSIS
 
 
-                              CAHIR ON THE KEYS:
+                             CAHIR ON THE KEYBOARD
 
-  "Sunglasses at Night" was almost entirely written in hand optimized C with
-very few assembly inlines - "9/10 of the time is spent in 1/10 of the code" :P
+   THE WORK ON INTRO BEGUN ALMOST 1,5 YEARS AGO AS A TEACHING EXPERIMENT.
+ THANKS TO COURTESY OF COMPUTER SCIENCE DEPARTMENT / UNIVERSITY OF WROCLAW
+  I GAVE A COURSE IN AMIGA DEMOSCENE PROGRAMMING. A FEW FOLKS HAS ATTENDED
+      AND TO MY SURPRISE THREE WERE INTERESTED IN LONG-TERM COOPERATION.
+  AS THE RESULT GHOSTOWN GAINED NEW MEMBERS - AND MORE IMPORTANTLY - CODERS!
+ THIS PRODUCTION IS THEIR FIRST RELEASE ON DEMOSCENE. WELCOME SPOOK AND KRIS!
 
-                                <advertisment>
-                  The demo is open sourced and available at:
+YOU WANT NEW PEOPLE CONTRIBUTE TO THE DEMOSCENE? THEN TEACH THEM HOW TO DO SO!
 
-          https://github.com/cahirwpz/demoscene/tree/sunglasses/a500
-
-Now... go there, download it, learn how to use it and make some cool demo for
-  next demoscene party! Another thing worth to mention: I maintain GCC cross
- compiler targeting classic Amiga. Sources and build script are available at:
-
-              https://github.com/cahirwpz/m68k-amigaos-toolchain
-
-  If you think you're into compilers and linkers, please drop me a message.
-                               </advertisment>
-
- Thanks go to Photon/Scoopex for updated P61 routine, sp/ctz for fast blitter
-         c2p idea and Keir Fraser for extremely fast deflate routine.
-
-   Personal greetings fly to: Argasek, Fei, Kiero, Dakota, Hakon, Voyager,
-  Epyon, Hilander, people at II UWr and friends from Google (hey, Han Shen!)
+AND LAST BUT NOT LEAST, THANK YOU ALICE FOR YOUR SUPPORT DURING THIS JOURNEY <3
 
 
-                             JAZZCAT ON THE KEYS:
+                       JAZZCAT & SLAYER ON THE KEYBOARD
 
- It's been a while since I've written a scrolltext! Just some quick greetings
-                  to the following guys (no special order):
-
-                Bodzio - thanks for 20 years of you know what!, 
-
-                 Horneusz - jest tylko jedna racja - ipsacja!, 
-
-                     AceMan - what about Uploads list, man?, 
-
-                           PSK - american beers rule!, 
-
-                 Chaser - Primator + capsaicin = oh-fucking-yeah, 
-
-                        Z5 - you know that we love you, 
-
-                         Novel - hellos from Mr. Delay, 
-
-               Corial - thanks for your kind wordson S&M soundtrack, 
-
-                   Blueberry - any news regarding Tycho Brache?, 
-
-                       Britelite - did you enjoy Zubrowka?, 
-
-                            Michu - still snuffin'?, 
-
-                    Jok - looking forward to see you today!, 
-
-                        Flops - what about your demo?, 
-
-                            ITU - to kiedy pijemy?,
-  
-                                   Serpent 
-              - I was disappointed to discover that "Vare" demo 
-                      had nothing to do with you at all!, 
-
-          Axel - still have some of the spices you sent me 8 years ago!, 
-
-                 Asle - will have something for you soon, chief!, 
-
-            X-Ceed - what about a new Amiga demo soundtrack someday, 
-
-                   Sachy - troll znowu koduje, niesamowite!.
-
-
-                             SLAYER ON THE KEYS:
-
-After 1,5 yrs of "demoscene rehab" we decided to make another stuff. We did it
-very quickly. inspired by swimming in the Adriatic sea, 3 bottles of Bushmills 
-                           and some newwave music.
-
-           Personal greetz fly to Sosabowski and all graphic friends: 
-Codi, Cosh, Darklight, Jok, Farfar, Veto, Prowler, Sim1, Substrate and Piesiu.
-
-                    Do Amiga demos or get the fuck out! :P 
-
-
-
-
-                                        
-                                        
-                                        
-                                        
-                                        
-                                        
-
-
-
-
-
-
-
-
-                                   THE END
-                                                                   
+                    SEE YOU AT HEX PISTONS 2 THIS SUMMER!

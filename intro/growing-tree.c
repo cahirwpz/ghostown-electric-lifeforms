@@ -8,7 +8,6 @@
 #include <stdlib.h>
 #include <sync.h>
 #include <system/memory.h>
-#include <system/interrupt.h>
 
 #define WIDTH 320
 #define HEIGHT 256
@@ -16,8 +15,7 @@
 #define NSPRITES 8
 
 extern TrackT TreeVariant;
-extern TrackT TreeFadeOut;
-extern TrackT TreeFadeIn;
+extern TrackT TreeFade;
 
 static CopListT *cp;
 static CopInsT *bplptr[DEPTH];
@@ -149,11 +147,13 @@ static void VBlank(void) {
 
   UpdateFrameCount();
 
-  if ((val = TrackValueGet(&TreeFadeOut, frameFromStart))) 
-    FadeBlack(nrPal ? &tree_pal_electric : &tree_pal_organic, 0, val);
+  (void)TrackValueGet(&TreeFade, frameCount);
 
-  if ((val = TrackValueGet(&TreeFadeIn, frameFromStart))) 
-    FadeBlack(nrPal ? &tree_pal_electric : &tree_pal_organic, 0, 16 - val);
+  if ((val = FromCurrKeyFrame(&TreeFade)) < 16)
+    FadeBlack(nrPal ? &tree_pal_electric : &tree_pal_organic, 0, val);
+  
+  if ((val = TillNextKeyFrame(&TreeFade)) < 16)
+    FadeBlack(nrPal ? &tree_pal_electric : &tree_pal_organic, 0, val);
 }
 
 static void Init(void) {
@@ -463,42 +463,28 @@ void GrowingTree(BranchT *branches, BranchT **lastp) {
 PROFILE(GrowTree);
 
 static void Render(void) {
-  static short waitFrame = 0;
   short val;
 
-  if ((val = TrackValueGet(&TreeVariant, frameFromStart))) {
+  if ((val = TrackValueGet(&TreeVariant, frameCount))) {
     short i;
     nrPal = val - 1;
     BitmapClear(screen);
     GreetsNextTrack();
-    waitFrame = 0;
 
     for (i = 0; i < NSPRITES; i++)
       CopInsSetSprite(sprptr[i], &grass[i]);
-  }
 
-  if (waitFrame > 0) {
-    if (frameCount - waitFrame < 100) {
-      TaskWaitVBlank();
-      HandleDrawingGreets();
-      return;
-    }
-  }
-
-  if (lastBranch == branches) {
     MakeBranch(WIDTH / 2, HEIGHT - fruit_height / 2 - 1);
   }
 
   ProfilerStart(GrowTree);
+  // Call function twice to make drawing trees visually faster
+  GrowingTree(branches, &lastBranch);
   GrowingTree(branches, &lastBranch);
 
   HandleDrawingGreets();
 
   ProfilerStop(GrowTree);
-
-  if (lastBranch == branches) {
-    waitFrame = frameCount;
-  }
 
   TaskWaitVBlank();
 }

@@ -31,8 +31,7 @@ static u_int lookup[256][2];
 
 extern TrackT TurmiteBoard;
 extern TrackT TurmitePal;
-extern TrackT TurmiteFadeIn;
-extern TrackT TurmiteFadeOut;
+extern TrackT TurmiteFade;
 
 #include "palettes.h"
 
@@ -563,6 +562,7 @@ static void ResetTurmite(TurmiteT *t, u_short pos) {
 
 static void ChooseTurmiteBoard(short i) {
   BitmapClear(screen);
+  WaitBlitter();
   active_pal_index = i;
   memcpy(screen->planes[DEPTH - 1], turmite_credits_bpl[i],
          turmite_credits_1_size);
@@ -574,7 +574,7 @@ static void ChooseTurmiteBoard(short i) {
   active_pal = turmite_pal[i];
 }
 
-static void ForEachFrame(void) {
+static void VBlank(void) {
   short val;
 
   UpdateFrameCount();
@@ -582,11 +582,13 @@ static void ForEachFrame(void) {
   if ((val = TrackValueGet(&TurmitePal, frameFromStart)))
     LoadPalette((*active_pal)[blip_sequence[val]], 0);
 
-  if ((val = TrackValueGet(&TurmiteFadeOut, frameFromStart))) 
+  (void)TrackValueGet(&TurmiteFade, frameCount);
+
+  if ((val = FromCurrKeyFrame(&TurmiteFade)) < 16)
     FadeBlack(turmite_palettes[active_pal_index], 0, val);
 
-  if ((val = TrackValueGet(&TurmiteFadeIn, frameFromStart))) 
-    FadeBlack(turmite_palettes[active_pal_index], 0, 16 - val);
+  if ((val = TillNextKeyFrame(&TurmiteFade)) < 16)
+    FadeBlack(turmite_palettes[active_pal_index], 0, val);
 }
 
 static void Init(void) {
@@ -623,15 +625,17 @@ PROFILE(SimulateTurmite);
 static void Render(void) {
   short val;
 
-  if ((val = TrackValueGet(&TurmiteBoard, frameFromStart)))
+  if ((val = TrackValueGet(&TurmiteBoard, frameCount)))
     ChooseTurmiteBoard(val);
 
-  ProfilerStart(SimulateTurmite);
-  SimulateTurmite(TheTurmite[0], board, screen->planes[0]);
-  SimulateTurmite(TheTurmite[1], board, screen->planes[0]);
-  ProfilerStop(SimulateTurmite);
+  if (FromCurrKeyFrame(&TurmiteBoard) >= 50) {
+    ProfilerStart(SimulateTurmite);
+    SimulateTurmite(TheTurmite[0], board, screen->planes[0]);
+    SimulateTurmite(TheTurmite[1], board, screen->planes[0]);
+    ProfilerStop(SimulateTurmite);
+  }
 
   TaskWaitVBlank();
 }
 
-EFFECT(Turmite, Load, NULL, Init, Kill, Render, ForEachFrame);
+EFFECT(Turmite, Load, NULL, Init, Kill, Render, VBlank);
