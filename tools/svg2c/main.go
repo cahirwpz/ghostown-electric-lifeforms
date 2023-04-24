@@ -17,15 +17,14 @@ import (
 )
 
 const (
-	svgTemplate = `// {{ .Name }}
-static GreetsT gr{{ .Name }} = {
+	svgTemplate = `static GreetsT {{ .Name }} = {
   .curr = NULL,
   .n = 0,
   .x = 0,
   .y = 0,
   .origin_x = {{ .Origin.X }},
   .origin_y = {{ .Origin.Y }},
-  .delay = 0,
+  .delay = {{ .Delay }},
   .data = {
     {{- range .Data }}
     {{ .Length }},
@@ -41,6 +40,7 @@ static GreetsT gr{{ .Name }} = {
 type SvgData struct {
 	Data   []GeometricData // Individual SVG elements data
 	Origin Point           // Origin point for whole SVG
+	Delay  int             // Delay in frames
 	Name   string          // Name of the data (file name)
 }
 
@@ -222,8 +222,8 @@ func (gd *GeometricData) getPointsWithOffset(offset Point) []Point {
 }
 
 // handleFile returns file data as converted string
-func handleFile(file *os.File, name string) string {
-	svgData := SvgData{[]GeometricData{}, Point{0, 0}, name}
+func handleFile(file *os.File, name string, delay int) string {
+	svgData := SvgData{[]GeometricData{}, Point{0, 0}, delay, name}
 
 	element, err := svgparser.Parse(file, false)
 	if err != nil {
@@ -263,13 +263,15 @@ func handleFile(file *os.File, name string) string {
 
 const defaultFileName = "data.c"
 
-var outputPath string
-var verbose bool
-var printHelp bool
+var outputPath, structName string
+var verbose, printHelp bool
+var delayValue int
 
 func init() {
 	flag.StringVar(&outputPath, "o", defaultFileName, "Output filename with processed data")
+	flag.StringVar(&structName, "name", "", "Custom structure name")
 	flag.BoolVar(&verbose, "v", false, "Output verbose logs")
+	flag.IntVar(&delayValue, "delay", 0, "Delay in frames")
 	flag.BoolVar(&printHelp, "help", false, "Prints this message")
 }
 
@@ -284,34 +286,41 @@ func main() {
 
 	var exportString string
 
-	filesToConvert := flag.Args()
+	if len(flag.Args()) != 1 {
+		log.Fatalln("svg2c handles only single file conversion at once")
+	}
 
-	for _, entry := range filesToConvert {
-		file, err := os.Open(entry)
-		if err != nil {
-			log.Fatal(err)
+	fileName := flag.Args()[0]
+
+	file, err := os.Open(fileName)
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer file.Close()
+
+	fileExt := filepath.Ext(fileName)
+	fileBase := filepath.Base(fileName)
+	if len(structName) == 0 {
+		structName = strings.TrimSuffix(fileBase, fileExt)
+	}
+
+	if fileExt == ".svg" {
+		if verbose {
+			fmt.Println("Converting file:", fileName)
 		}
-		defer file.Close()
-		fileExt := filepath.Ext(entry)
-		fileName := filepath.Base(entry)
-		if fileExt == ".svg" {
-			if verbose {
-				fmt.Println("Converting file:", fileName)
-			}
-			exportString += handleFile(file, strings.TrimSuffix(fileName, fileExt))
-		}
+		exportString += handleFile(file, structName, delayValue)
 	}
 
 	if len(exportString) == 0 {
 		os.Exit(0)
 	}
 
-	file, err := os.Create(outputPath)
+	outFile, err := os.Create(outputPath)
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer file.Close()
-	file.WriteString(exportString)
+	defer outFile.Close()
+	outFile.WriteString(exportString)
 	if err != nil {
 		log.Fatal(err)
 	}
