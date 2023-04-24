@@ -37,16 +37,18 @@ static GreetsT gr{{ .Name }} = {
 `
 )
 
+// A SVG data container for a single file
 type SvgData struct {
-	Data   []GeometricData
-	Origin Point
-	Name   string
+	Data   []GeometricData // Individual SVG elements data
+	Origin Point           // Origin point for whole SVG
+	Name   string          // Name of the data (file name)
 }
 
+// A SVG data for individual SVG element eg. line, polyline
 type GeometricData struct {
-	Length      int
-	Points      []Point
-	DeltaPoints []Point
+	Length      int     // Length of the points slice
+	Points      []Point // Standard points representation
+	DeltaPoints []Point // Delta encoded points representation
 }
 
 type Point struct {
@@ -62,6 +64,7 @@ func Sub(p1, p2 Point) (p Point) {
 	return Point{p1.X - p2.X, p1.Y - p2.Y}
 }
 
+// parseCoordinate parses string float representation to integer eg. "123.45" -> 123
 func parseCoordinate(coord string) (int, error) {
 	num, err := strconv.ParseFloat(coord, 32)
 	if err != nil {
@@ -70,6 +73,8 @@ func parseCoordinate(coord string) (int, error) {
 	return int(math.Round(num)), nil
 }
 
+// parseLine parses SVG line element and returns slice (pair) of Points
+// line element has explicitly defined attributes x1, y1, x2, y2
 func parseLine(el *svgparser.Element) []Point {
 	X1, err := parseCoordinate(el.Attributes["x1"])
 	if err != nil {
@@ -94,6 +99,8 @@ func parseLine(el *svgparser.Element) []Point {
 	return []Point{{X1, Y1}, {X2, Y2}}
 }
 
+// parsePolyline parses polyline SVG element and returns slice of elements
+// polyline holds points data in "x1,y1 x2,y2 ... xn,yn" format
 func parsePolyLine(el *svgparser.Element) []Point {
 	pointsString := el.Attributes["points"]
 	space := regexp.MustCompile(`\s+`)
@@ -119,9 +126,11 @@ func parsePolyLine(el *svgparser.Element) []Point {
 	return parsedPoints
 }
 
-func (sd *SvgData) CalcOrigin() {
-	minPoint := sd.GetMinPoint()
-	maxPoint := sd.GetMaxPoint()
+// calcOrigin calculates coordinates of the point which is
+// in the middle of the SVG bounding box from the top-left corner of the screen
+func (sd *SvgData) calcOrigin() {
+	minPoint := sd.getMinPoint()
+	maxPoint := sd.getMaxPoint()
 	midPoint := Point{
 		(maxPoint.X - minPoint.X) / 2,
 		(maxPoint.Y - minPoint.Y) / 2,
@@ -129,13 +138,15 @@ func (sd *SvgData) CalcOrigin() {
 	sd.Origin = Add(minPoint, midPoint)
 }
 
-func (sd *SvgData) CalcDataWithOffset() {
+func (sd *SvgData) calcDataWithOffset() {
 	for idx, gData := range sd.Data {
-		sd.Data[idx].DeltaPoints = gData.GetWithOffsetAndDelta(sd.Origin)
+		sd.Data[idx].DeltaPoints = gData.getWithOffsetAndDelta(sd.Origin)
 	}
 }
 
-func (sd *SvgData) GetMinPoint() Point {
+// getMinPoint calculates top-left corner of the SVG bounding box,
+// the closest point to the top-left corner of the screen.
+func (sd *SvgData) getMinPoint() Point {
 	var minPoint = sd.Data[0].Points[0]
 	for _, gData := range sd.Data {
 		for _, point := range gData.Points {
@@ -150,7 +161,9 @@ func (sd *SvgData) GetMinPoint() Point {
 	return minPoint
 }
 
-func (sd *SvgData) GetMaxPoint() Point {
+// getMaxPoint calculates bottom-right corner of the SVG bounding box,
+// the farthest point to the top-left corner of the screen.
+func (sd *SvgData) getMaxPoint() Point {
 	var maxPoint = sd.Data[0].Points[0]
 	for _, gData := range sd.Data {
 		for _, point := range gData.Points {
@@ -165,6 +178,7 @@ func (sd *SvgData) GetMaxPoint() Point {
 	return maxPoint
 }
 
+// Export returns string data of the SvgData structure
 func (sd *SvgData) Export() (output string, err error) {
 	t, err := template.New("svg").Parse(svgTemplate)
 	if err != nil {
@@ -185,8 +199,9 @@ func (sd *SvgData) Export() (output string, err error) {
 	return data.String(), nil
 }
 
-func (gd *GeometricData) GetWithOffsetAndDelta(offset Point) []Point {
-	inputPoints := gd.GetPointsWithOffset(offset)
+// getWithOffsetAndDelta returns points with offset compressed with delta compression,
+func (gd *GeometricData) getWithOffsetAndDelta(offset Point) []Point {
+	inputPoints := gd.getPointsWithOffset(offset)
 	deltaPoints := []Point{inputPoints[0]}
 	for index, point := range inputPoints {
 		if index != 0 {
@@ -197,7 +212,8 @@ func (gd *GeometricData) GetWithOffsetAndDelta(offset Point) []Point {
 	return deltaPoints
 }
 
-func (gd *GeometricData) GetPointsWithOffset(offset Point) []Point {
+// getPointsWithOffset returns points translated by the offset
+func (gd *GeometricData) getPointsWithOffset(offset Point) []Point {
 	var withOffset []Point
 	for _, point := range gd.Points {
 		withOffset = append(withOffset, Sub(point, offset))
@@ -205,10 +221,14 @@ func (gd *GeometricData) GetPointsWithOffset(offset Point) []Point {
 	return withOffset
 }
 
+// handleFile returns file data as converted string
 func handleFile(file *os.File, name string) string {
 	svgData := SvgData{[]GeometricData{}, Point{0, 0}, name}
 
-	element, _ := svgparser.Parse(file, false)
+	element, err := svgparser.Parse(file, false)
+	if err != nil {
+		log.Fatal(err)
+	}
 	elements := element.Children
 
 	for _, element := range elements {
@@ -232,8 +252,8 @@ func handleFile(file *os.File, name string) string {
 			}
 		}
 	}
-	svgData.CalcOrigin()
-	svgData.CalcDataWithOffset()
+	svgData.calcOrigin()
+	svgData.calcDataWithOffset()
 	data, err := svgData.Export()
 	if err != nil {
 		log.Fatal(err)
