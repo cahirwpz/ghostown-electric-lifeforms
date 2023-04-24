@@ -28,7 +28,7 @@ static GreetsT gr{{ .Name }} = {
   .delay = 0,
   .data = {
     {{- range .Data }}
-    {{ .Lenght }},
+    {{ .Length }},
     {{- range .DeltaPoints }}{{ .X }},{{.Y}},{{- end }}
     {{- end }}
     -1
@@ -99,7 +99,7 @@ func parsePolyLine(el *svgparser.Element) []Point {
 	space := regexp.MustCompile(`\s+`)
 	trimmedPoints := space.ReplaceAllString(pointsString, " ")
 	points := strings.Split(trimmedPoints, " ")
-        var parsedPoints = make([]Point, 0, len(points))
+	var parsedPoints = make([]Point, 0, len(points))
 	for _, point := range points {
 		if point == "" {
 			continue
