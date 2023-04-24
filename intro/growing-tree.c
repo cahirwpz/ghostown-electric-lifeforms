@@ -30,6 +30,18 @@ static u_short nrPal = 0;
 #include "data/fruit-2.c"
 #include "data/grass.c"
 
+#include "data/greets-altair.svg"
+#include "data/greets-appendix.svg"
+#include "data/greets-artway.svg"
+#include "data/greets-atnwhore.svg"
+#include "data/greets-capsule.svg"
+#include "data/greets-continue.svg"
+#include "data/greets-dekadence.svg"
+#include "data/greets-desire.svg"
+#include "data/greets-dreamweb.svg"
+#include "data/greets-elude.svg"
+#include "data/greets-tobe.svg"
+
 typedef struct Branch {
   short pos_x, pos_y; // Q12.4
   union { // Q4.12
