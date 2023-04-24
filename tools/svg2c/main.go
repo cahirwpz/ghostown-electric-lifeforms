@@ -44,7 +44,7 @@ type SvgData struct {
 }
 
 type GeometricData struct {
-	Lenght      int
+	Length      int
 	Points      []Point
 	DeltaPoints []Point
 }
@@ -54,11 +54,11 @@ type Point struct {
 	Y int
 }
 
-func Add(p1 Point, p2 Point) (p Point) {
+func Add(p1, p2 Point) (p Point) {
 	return Point{p1.X + p2.X, p1.Y + p2.Y}
 }
 
-func Sub(p1 Point, p2 Point) (p Point) {
+func Sub(p1, p2 Point) (p Point) {
 	return Point{p1.X - p2.X, p1.Y - p2.Y}
 }
 
@@ -99,7 +99,7 @@ func parsePolyLine(el *svgparser.Element) []Point {
 	space := regexp.MustCompile(`\s+`)
 	trimmedPoints := space.ReplaceAllString(pointsString, " ")
 	points := strings.Split(trimmedPoints, " ")
-	parsedPoints := []Point{}
+        var parsedPoints = make([]Point, 0, len(points))
 	for _, point := range points {
 		if point == "" {
 			continue
@@ -276,7 +276,7 @@ func main() {
 		fileName := filepath.Base(entry)
 		if fileExt == ".svg" {
 			if verbose {
-				fmt.Printf("\nConverting file: %s\n", fileName)
+				fmt.Println("Converting file:", fileName)
 			}
 			exportString += handleFile(file, strings.TrimSuffix(fileName, fileExt))
 		}
