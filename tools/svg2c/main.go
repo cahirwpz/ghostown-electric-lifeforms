@@ -302,6 +302,7 @@ func main() {
 	fileBase := filepath.Base(fileName)
 	if len(structName) == 0 {
 		structName = strings.TrimSuffix(fileBase, fileExt)
+		structName = strings.Replace(structName, "-", "_", -1)
 	}
 
 	if fileExt == ".svg" {
