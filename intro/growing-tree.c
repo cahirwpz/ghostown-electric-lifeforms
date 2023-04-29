@@ -64,25 +64,48 @@ typedef struct Greets {
   char data[0];
 } GreetsT;
 
-#include "growing-tree-greets-data.c"
+#include "data/greets-altair.c"
+#include "data/greets-appendix.c"
+#include "data/greets-artway.c"
+#include "data/greets-atnwhore.c"
+#include "data/greets-capsule.c"
+#include "data/greets-continue.c"
+#include "data/greets-dekadence.c"
+#include "data/greets-desire.c"
+#include "data/greets-dreamweb.c"
+#include "data/greets-elude.c"
+#include "data/greets-tobe.c"
+
+static GreetsT greets_empty = {
+  .curr = NULL,
+  .n = 0,
+  .x = 0,
+  .y = 0,
+  .origin_x = 0,
+  .origin_y = 0,
+  .delay = 40,
+  .data = {
+    -1,
+  }
+};
 
 static GreetsT *greetsArray[] = {
   // First batch
-  &grAltair,
-  &grAppendix,
-  &grArtway,
+  &greets_altair,
+  &greets_appendix,
+  &greets_artway,
   // Second batch
-  &grAtnwhore,
-  &grCapsule,
-  &grDekadence,
+  &greets_atnwhore,
+  &greets_capsule,
+  &greets_dekadence,
   // Third batch
-  &grDesire,
-  &grDreamweb,
-  &grElude,
+  &greets_desire,
+  &greets_dreamweb,
+  &greets_elude,
   // Fourth batch
-  &emptyPlaceholder,
-  &grContinue,
-  &grTobe,
+  &greets_empty,
+  &greets_continue,
+  &greets_tobe,
   // End
   NULL,
 };

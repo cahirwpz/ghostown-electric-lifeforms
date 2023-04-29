@@ -28,7 +28,7 @@ BUILD-FILES := audiovq
 CLEAN-FILES := main.o \
 	data/bar.c data/bar-*.c data/stripes.c data/stripes-*.c \
 	data/$(MODULE)*.o data/$(MODULE).{smp,trk}* data/text-scroll-font.c \
-	data/intro.c data/electric-lifeforms-0[1-2].c \
+	data/intro.c data/electric-lifeforms-0[1-2].c data/greets-*.c \
 	data/fruit-*.c data/anemone-gradient.c data/anemone-gradient-data.c \
 	data/ghostown-logo-crop.c \
 	data/logo-electrons.c data/electric-lifeforms.c \
@@ -150,6 +150,18 @@ PNG2C.texture-outside := --pixmap texture_out,64x64x8,+onlydata
 PNG2C.uvgut-gradient := --pixmap uvgut_gradient,16x16x12,+onlydata
 PNG2C.uvtit-gradient := --pixmap uvtit_gradient,16x16x12,+onlydata
 PNG2C.gol-transitions := --pixmap gol_transitions,3x46x12,+onlydata
+
+SVG2C.greets-altair := -delay 40
+SVG2C.greets-appendix := -delay 40
+SVG2C.greets-artway := -delay 40
+SVG2C.greets-atnwhore := -delay 40
+SVG2C.greets-capsule := -delay 40
+SVG2C.greets-continue := -delay 40
+SVG2C.greets-dekadence := -delay 40
+SVG2C.greets-desire := -delay 40
+SVG2C.greets-dreamweb := -delay 40
+SVG2C.greets-elude := -delay 40
+SVG2C.greets-tobe := -delay 40
 
 CPPFLAGS += -DINTRO -DVQ=$(VQ) -DDELTA=$(DELTA) -DKLANG=$(KLANG) -I.
 
