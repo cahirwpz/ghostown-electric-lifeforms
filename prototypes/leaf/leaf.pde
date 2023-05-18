@@ -22,14 +22,17 @@ EasyOCS ocs;
 void drawTriangle(float xc, float yc, float r, float angle) {
   angle -= radians(90);
 
-  float x1 = r * cos(angle + TWO_PI * 0 / 3) + xc;
-  float y1 = r * sin(angle + TWO_PI * 0 / 3) + yc;
-  float x2 = r * cos(angle + TWO_PI * 1 / 3) + xc;
-  float y2 = r * sin(angle + TWO_PI * 1 / 3) + yc;
-  float x3 = r * cos(angle + TWO_PI * 2 / 3) + xc;
-  float y3 = r * sin(angle + TWO_PI * 2 / 3) + yc;
+  PVector p1 = new PVector(
+    r * cos(angle + TWO_PI * 0 / 3) + xc, 
+    r * sin(angle + TWO_PI * 0 / 3) + yc);
+  PVector p2 = new PVector(
+    r * cos(angle + TWO_PI * 1 / 3) + xc, 
+    r * sin(angle + TWO_PI * 1 / 3) + yc);
+  PVector p3 = new PVector(
+    r * cos(angle + TWO_PI * 2 / 3) + xc, 
+    r * sin(angle + TWO_PI * 2 / 3) + yc);
 
-  triangle(x1, y1, x2, y2, x3, y3);
+  addTriangle(p1, p2, p3);
 }
 
 void setup() {
@@ -42,7 +45,6 @@ void setup() {
 
 void draw() {
   background(0);
-  noStroke();
 
   float step = sin(radians(frameCount / PI)) * PI;
 
@@ -53,6 +55,8 @@ void draw() {
     drawTriangle(WIDTH / 2, HEIGHT / 2, radius, angle);
     drawTriangle(WIDTH / 2, HEIGHT / 2, radius, -angle);
   }
+
+  sbuf.rasterize();
 
   ocs.update();
 }
