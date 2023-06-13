@@ -222,4 +222,4 @@ static bool HandleEvent(void) {
   return true;
 }
 
-EFFECT(PlayP61, NULL, NULL, Init, Kill, Render);
+EFFECT(PlayP61, NULL, NULL, Init, Kill, Render, NULL);

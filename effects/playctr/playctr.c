@@ -173,4 +173,4 @@ static bool HandleEvent(void) {
   return true;
 }
 
-EFFECT(PlayCinter, Load, UnLoad, Init, Kill, Render);
+EFFECT(PlayCinter, Load, UnLoad, Init, Kill, Render, NULL);

@@ -181,4 +181,4 @@ static bool HandleEvent(void) {
   return true;
 }
 
-EFFECT(PlayProtracker, Load, UnLoad, Init, Kill, Render);
+EFFECT(PlayProtracker, Load, UnLoad, Init, Kill, Render, NULL);

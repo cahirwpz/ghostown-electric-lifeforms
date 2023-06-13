@@ -2,7 +2,7 @@ TOPDIR := $(realpath ..)
 
 SUBDIRS := \
 	anim \
-	anim-polygons \
+	# anim-polygons \
 	ball \
 	bobs3d \
 	blurred \
@@ -31,7 +31,7 @@ SUBDIRS := \
 	playahx \
 	playctr \
 	playp61 \
-	playpt \
+	# playpt \
 	plotter \
 	prisms \
 	rotator \

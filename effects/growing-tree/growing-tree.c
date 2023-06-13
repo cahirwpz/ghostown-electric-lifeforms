@@ -447,4 +447,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(GrowingTree, NULL, NULL, Init, Kill, Render);
+EFFECT(GrowingTree, NULL, NULL, Init, Kill, Render, NULL);
