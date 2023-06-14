@@ -149,8 +149,8 @@ static void RunEffects(void) {
 
   frameCount = SYNCPOS(pos);
   SetFrameCounter(frameCount);
-  PtSongPos = pos >> 8;
-  PtPatternPos = (pos & 0x3f) << 4;
+  PtData.mt_SongPos = pos >> 8;
+  PtData.mt_PatternPos = (pos & 0x3f) << 4;
   PtEnable = -1;
 
   AddIntServer(INTB_VERTB, VBlankInterrupt);
