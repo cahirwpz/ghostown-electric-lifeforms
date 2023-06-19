@@ -104,15 +104,17 @@ static void NoteToHex(char *str, u_short note, u_short cmd) {
 
 static void Render(void) {
   PtModule *mod = PtData.mt_mod;
-  short songPos = PtData.mt_SongPos;
+  short songPos = PtSongPos;
   short pattNum = mod->order[songPos];
-  short pattPos = PtData.mt_PatternPos >> 4;
+  short pattPos = PtPatternPos >> 4;
   u_int *pattern = (void *)mod->pattern[pattNum];
   short i;
 
   ConsoleSetCursor(&console, 0, 3);
-  ConsolePrint(&console, "Playing \"%s\"\n\n", mod->name);
+  // Console currently hangs because mod->name empty
+  //ConsolePrint(&console, "Playing \"%s\"\n\n", mod->name); 
   ConsolePrint(&console, "Song position: %d -> %d\n\n", songPos, pattNum);
+ 
 
   for (i = pattPos - 4; i < pattPos + 4; i++) {
     static char buf[41];
