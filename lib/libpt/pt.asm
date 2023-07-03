@@ -8,7 +8,7 @@
 
         section '.text',code
 
-_PtData         set     mt_data+mt_Antiriad_End	
+_PtData         set     mt_data+mt_chan1
 _PtEnable       set     _mt_Enable
 _PtE8Trigger    set     _mt_E8Trigger
 

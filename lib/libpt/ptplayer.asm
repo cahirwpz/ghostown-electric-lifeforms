@@ -3173,8 +3173,6 @@ mt_VibratoSineTable_End	rs.b	0
         endc ; JAZZCAT
 ; Antiriad - end of vibrato sine table
 
-mt_Antiriad_End	rs.b	0
-
 mt_chan1	rs.b	n_sizeof
 mt_chan2	rs.b	n_sizeof
 mt_chan3	rs.b	n_sizeof
