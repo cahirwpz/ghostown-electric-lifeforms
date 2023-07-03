@@ -2,7 +2,6 @@ TOPDIR := $(realpath ..)
 
 SUBDIRS := \
 	anim \
-	# anim-polygons \
 	ball \
 	bobs3d \
 	blurred \
@@ -31,7 +30,6 @@ SUBDIRS := \
 	playahx \
 	playctr \
 	playp61 \
-	# playpt \
 	plotter \
 	prisms \
 	rotator \
@@ -51,6 +49,10 @@ SUBDIRS := \
 	uvmap-rgb \
 	weave \
 	wireframe
+
+BROKEN := \
+	anim-polygons \
+	playpt
 
 FAILURES := \
 	tests \
