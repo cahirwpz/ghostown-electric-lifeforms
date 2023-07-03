@@ -11,6 +11,10 @@
 #define HEIGHT 256
 #define DEPTH 1
 
+/* XXX: Always consult this value with AmigaKlang output,
+ * otherwise you'll experience a really nasty debugging session. */
+#define AKLANG_BUFLEN 36864
+
 #include "data/lat2-08.c"
 
 extern u_char Module[];
@@ -27,12 +31,10 @@ extern u_int AK_Progress;
 void AK_Generate(void *TmpBuf asm("a1"));
 
 static void Load(void) {
-  void *TmpBuf = MemAlloc(32768, MEMF_PUBLIC);
+  void *TmpBuf = MemAlloc(AKLANG_BUFLEN, MEMF_PUBLIC);
+  Log("Generating samples, please wait...\n");
   AK_Generate(TmpBuf);
   MemFree(TmpBuf);
-}
-
-static void UnLoad(void) {
 }
 
 static void Init(void) {
@@ -180,4 +182,4 @@ static bool HandleEvent(void) {
   return true;
 }
 
-EFFECT(PlayProtracker, Load, UnLoad, Init, Kill, Render, NULL);
+EFFECT(PlayProtracker, Load, NULL, Init, Kill, Render, NULL);
