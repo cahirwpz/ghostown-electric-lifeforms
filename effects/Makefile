@@ -30,6 +30,7 @@ SUBDIRS := \
 	playahx \
 	playctr \
 	playp61 \
+	playpt \
 	plotter \
 	prisms \
 	rotator \
@@ -51,8 +52,7 @@ SUBDIRS := \
 	wireframe
 
 BROKEN := \
-	anim-polygons \
-	playpt
+	anim-polygons
 
 FAILURES := \
 	tests \

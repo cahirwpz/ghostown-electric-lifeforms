@@ -3,8 +3,6 @@
         xdef    _PtInit
         xdef    _PtEnd
         xdef    _PtData
-        xdef	_PtSongPos
-        xdef	_PtPatternPos
         xdef    _PtEnable
         xdef    _PtE8Trigger
 
