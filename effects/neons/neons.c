@@ -107,7 +107,7 @@ static void UnLoad(void) {
   DeleteBitmap(screen[1]);
 }
 
-static void VBlank(void) {
+static void CustomRotatePalette(void) {
   u_short *src = palette[0]->colors;
   CopInsT *ins = pal + 1;
   int i = frameCount;
@@ -221,4 +221,4 @@ static void Render(void) {
   active ^= 1;
 }
 
-EFFECT(Neons, Load, UnLoad, Init, Kill, Render, VBlank);
+EFFECT(Neons, Load, UnLoad, Init, Kill, Render, CustomRotatePalette);

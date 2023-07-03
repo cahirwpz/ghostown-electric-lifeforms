@@ -48,7 +48,7 @@ static void UnLoad(void) {
   MemFree(module);
 }
 
-static void VBlank(void) {
+static void CinterMusic(void) {
   if (stopped)
     return;
   CinterPlay1(player);
@@ -166,4 +166,4 @@ static bool HandleEvent(void) {
   return true;
 }
 
-EFFECT(PlayCinter, Load, UnLoad, Init, Kill, Render, VBlank);
+EFFECT(PlayCinter, Load, UnLoad, Init, Kill, Render, CinterMusic);

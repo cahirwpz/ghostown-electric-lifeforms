@@ -4,7 +4,6 @@
 #include <console.h>
 #include <copper.h>
 #include <system/event.h>
-#include <system/interrupt.h>
 #include <system/keyboard.h>
 #include <system/memory.h>
 
