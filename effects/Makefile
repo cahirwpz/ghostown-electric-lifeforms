@@ -2,6 +2,7 @@ TOPDIR := $(realpath ..)
 
 SUBDIRS := \
 	anim \
+	anim-polygons \
 	ball \
 	bobs3d \
 	blurred \
@@ -50,9 +51,6 @@ SUBDIRS := \
 	uvmap-rgb \
 	weave \
 	wireframe
-
-BROKEN := \
-	anim-polygons
 
 FAILURES := \
 	tests \
