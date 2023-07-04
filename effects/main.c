@@ -24,11 +24,9 @@ static void StartBgTask(void) {
 }
 #endif
 
-static volatile EffectFuncT VBlankHandler = NULL;
-
 static int VBlankISR(void) {
-  if (VBlankHandler)
-      VBlankHandler();
+  if (Effect.VBlank)
+      Effect.VBlank();
   return 0;
 }
 
@@ -47,7 +45,6 @@ int main(void) {
 
   EffectLoad(&Effect);
   EffectInit(&Effect);
-  VBlankHandler = Effect.VBlank;
   EffectRun(&Effect);
   EffectKill(&Effect);
   EffectUnLoad(&Effect);
