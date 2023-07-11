@@ -15,10 +15,10 @@ typedef struct {
   CopInsPairT bplptr1;
   CopInsT color0;
   CopInsT color1;
-} CopInsLineT;
+} CopLineT;
 
 static CopListT *cp[2];
-static CopInsLineT *copLine[2][HEIGHT];
+static CopLineT *copLines[2][HEIGHT];
 static short active = 1;
 
 #include "stripes.c"
@@ -98,7 +98,7 @@ static void UnLoad(void) {
     MemFree(cache[s]);
 }
 
-static void MakeCopperList(CopListT *cp, CopInsLineT **line) {
+static void MakeCopperList(CopListT *cp, CopLineT **line) {
   short i;
   void *data = cache[0];
 
@@ -107,7 +107,7 @@ static void MakeCopperList(CopListT *cp, CopInsLineT **line) {
   CopSetColor(cp, 1, 0x000);
   for (i = 0; i < HEIGHT; i++) {
     CopWaitSafe(cp, Y(i), 0);
-    line[i] = (CopInsLineT *)CopMove16(cp, bplcon1, 0x00);
+    line[i] = (CopLineT *)CopMove16(cp, bplcon1, 0x00);
     CopMove32(cp, bplpt[0], data + EMPTY * CWIDTH / 8);
     CopMove32(cp, bplpt[1], data + FULL * CWIDTH / 8);
     CopSetColor(cp, 2, 0x000);
@@ -125,8 +125,8 @@ static void Init(void) {
 
   cp[0] = NewCopList(50 + HEIGHT * 8);
   cp[1] = NewCopList(50 + HEIGHT * 8);
-  MakeCopperList(cp[0], copLine[0]);
-  MakeCopperList(cp[1], copLine[1]);
+  MakeCopperList(cp[0], copLines[0]);
+  MakeCopperList(cp[1], copLines[1]);
   CopListActivate(cp[0]);
   EnableDMA(DMAF_RASTER);
 }
@@ -139,7 +139,7 @@ static void Kill(void) {
 
 static void RenderPipes(void) {
   u_short *pixels = (u_short *)colors.pixels;
-  CopInsLineT **lineInsTab = copLine[active];
+  CopLineT **lineTab = copLines[active];
   int *offset = offsets;
   short *stripe = stripes;
   short i;
@@ -147,7 +147,7 @@ static void RenderPipes(void) {
   register int center asm("d7") = - WIDTH * STEP / 2;
 
   for (i = 0; i < HEIGHT; i++) {
-    CopInsLineT *lineIns = *lineInsTab++;
+    CopLineT *lineIns = *lineTab++;
     short w = *stripe++;
     int x = ((short)w * (short)frame) >> 3;
     short _x, _c;
