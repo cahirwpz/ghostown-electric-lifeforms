@@ -1,18 +1,20 @@
 #include <copper.h>
 
-void CopSetupBitplanes(CopListT *list, CopInsT **bplptr,
-                       const BitmapT *bitmap, u_short depth) 
+CopInsPairT *CopSetupBitplanes(CopListT *list, const BitmapT *bitmap,
+                               u_short depth) 
 {
+  CopInsPairT *bplptr = NULL;
+
   {
     void **planes = bitmap->planes;
     short n = depth - 1;
     short i = 0;
 
     do {
-      CopInsT *ins = CopMove32(list, bplpt[i++], *planes++);
+      CopInsPairT *ins = CopMove32(list, bplpt[i++], *planes++);
 
-      if (bplptr)
-        *bplptr++ = ins;
+      if (!bplptr)
+        bplptr = ins;
     } while (--n != -1);
   }
 
@@ -25,4 +27,6 @@ void CopSetupBitplanes(CopListT *list, CopInsT **bplptr,
     CopMove16(list, bpl1mod, modulo);
     CopMove16(list, bpl2mod, modulo);
   }
+
+  return bplptr;
 }

@@ -1,12 +1,15 @@
 #include <sprite.h>
 
-void CopSetupSprites(CopListT *list, CopInsT **sprptr) {
+CopInsPairT *CopSetupSprites(CopListT *list) {
   SprDataT *spr = NullSprData;
+  CopInsPairT *sprptr = NULL;
   short i;
 
   for (i = 0; i < 8; i++) {
-    CopInsT *ins = CopMove32(list, sprpt[i], spr);
-    if (sprptr)
-      *sprptr++ = ins;
+    CopInsPairT *ins = CopMove32(list, sprpt[i], spr);
+    if (!sprptr)
+      sprptr = ins;
   }
+
+  return sprptr;
 }

@@ -178,7 +178,7 @@ static void RenderPipes(void) {
           "addl %1,%0"
           : "+d" (line) : "d" (off) : "1");
 #endif
-      CopInsSet32(ins + 1, line);
+      CopInsSet32((CopInsPairT *)&ins[1], line);
     }
 
     /* Shift bitplanes */

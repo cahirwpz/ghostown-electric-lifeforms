@@ -51,7 +51,7 @@ static SpanInfoT spanInfo[HEIGHT];
 static PrismT prisms[PRISMS];
 static short active = 0;
 
-static CopInsT *sprptr[8];
+static CopInsPairT *sprptr;
 
 static u_short colorSet[NCOLORS] = {
   0xC0F, 0xF0C, 0x80F, 0xF08
@@ -120,7 +120,7 @@ static void MakeCopperList(CopListT *cp, CopInsT **cline) {
   short i;
 
   CopInit(cp);
-  CopSetupSprites(cp, sprptr);
+  sprptr = CopSetupSprites(cp);
 
   for (i = 0; i < HEIGHT; i++) {
     CopWait(cp, Y(i - 1), 0xDE);
@@ -131,7 +131,7 @@ static void MakeCopperList(CopListT *cp, CopInsT **cline) {
 
   CopEnd(cp);
 
-  ITER(i, 0, 7, CopInsSetSprite(sprptr[i], &sprite[i]));
+  ITER(i, 0, 7, CopInsSetSprite(&sprptr[i], &sprite[i]));
 }
 
 static void Init(void) {
@@ -303,7 +303,7 @@ static void DrawVisibleSpans(SpanInfoT *si, CopInsT **cline) {
 
     CopInsSet16(ins, color);
     CopInsSet16(ins + 1, bplcon2);
-    CopInsSet32(ins + 2, (void *)getlong(rowAddr, width));
+    CopInsSet32((CopInsPairT *)&ins[2], (void *)getlong(rowAddr, width));
 
     si = (SpanInfoT *)wp;
   }
