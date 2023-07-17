@@ -3,7 +3,7 @@
 CopInsPairT *CopSetupBitplanes(CopListT *list, const BitmapT *bitmap,
                                u_short depth) 
 {
-  CopInsPairT *bplptr = NULL;
+  CopInsPairT *bplptr = CopInsPtr(list);
 
   {
     void **planes = bitmap->planes;
@@ -11,10 +11,7 @@ CopInsPairT *CopSetupBitplanes(CopListT *list, const BitmapT *bitmap,
     short i = 0;
 
     do {
-      CopInsPairT *ins = CopMove32(list, bplpt[i++], *planes++);
-
-      if (!bplptr)
-        bplptr = ins;
+      CopMove32(list, bplpt[i++], *planes++);
     } while (--n != -1);
   }
 

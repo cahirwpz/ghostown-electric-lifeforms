@@ -318,11 +318,9 @@ static void MakeCopperList(CopListT *cp) {
   // initially previous states are empty
   // save addresses of these instructions to change bitplane
   // order when new state gets generated
-  for (i = 0; i < DISP_DEPTH; i++) {
-    CopInsPairT *ins = CopMove32(cp, bplpt[i], prev_states[i]->planes[0]);
-    if (!bplptr)
-      bplptr = ins;
-  }
+  bplptr = CopInsPtr(cp);
+  for (i = 0; i < DISP_DEPTH; i++) 
+    CopMove32(cp, bplpt[i], prev_states[i]->planes[0]);
 
   palptr = CopLoadPal(cp, &palette, 0);
 
