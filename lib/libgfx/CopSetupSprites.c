@@ -3,10 +3,11 @@
 CopInsPairT *CopSetupSprites(CopListT *list) {
   SprDataT *spr = NullSprData;
   CopInsPairT *sprptr = CopInsPtr(list);
-  short i;
+  short n = 8;
+  int i = 0;
 
-  for (i = 0; i < 8; i++)
-    CopMove32(list, sprpt[i], spr);
+  while (--n >= 0)
+    CopMove32(list, sprpt[i++], spr);
 
   return sprptr;
 }
