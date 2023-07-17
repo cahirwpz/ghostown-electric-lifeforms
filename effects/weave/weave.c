@@ -82,7 +82,6 @@ static void MakeCopperList(CopListT *cp, StateT *state) {
   CopMove32(cp, sprpt[7], &stripes3_sprdat);
 
   CopWait(cp, Y(-1), 0);
-
   
   state->sprite = CopMove32(cp, sprpt[0], stripes0_sprdat.data); /* up */
   CopMove32(cp, sprpt[1], stripes1_sprdat.data);

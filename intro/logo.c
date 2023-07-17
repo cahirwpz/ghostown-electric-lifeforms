@@ -55,7 +55,7 @@ static void SharedInit(bool out) {
 
   cp = NewCopList(40);
   CopInit(cp);
-  CopSetupBitplanes(cp, NULL, screen, DEPTH);
+  CopSetupBitplanes(cp, screen, DEPTH);
   CopEnd(cp);
 
   CopListActivate(cp);

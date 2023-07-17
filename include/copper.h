@@ -60,6 +60,11 @@ static inline void CopEnd(CopListT *list) {
   list->curr = ins;
 }
 
+/* @brief Return a pointer to the current copper instruction pointer. */
+static inline void *CopInsPtr(CopListT *list) {
+  return list->curr;
+}
+
 /* @brief Enable copper and activate copper list.
  * @warning This function busy-waits for vertical blank. */
 void CopListActivate(CopListT *list);

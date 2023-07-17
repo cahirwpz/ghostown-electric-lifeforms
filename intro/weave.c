@@ -53,7 +53,7 @@ typedef struct StateBar {
 typedef struct StateFull {
   StateBarT bars;
   CopListT *cp;
-  CopInsT *sprite;
+  CopInsPairT *sprite;
   /* for each line five horizontal positions */
   short ampl;
   u_short *stripes[HEIGHT];
@@ -96,7 +96,7 @@ static void MakeCopperListFull(StateFullT *state) {
 
   CopWait(cp, Y(-1), 0);
 
-  state->sprite = cp->curr;
+  state->sprite = CopInsPtr(cp);
   for (i = 0; i < NSPRITES; i++)
     CopMove32(cp, sprpt[i], stripe[i].sprdat->data);
 
@@ -243,7 +243,7 @@ static void UpdateBarState(StateBarT *bars) {
         offset += bar_bytesPerRow * 33;
 
       for (j = 0; j < DEPTH; j++, ins += 2)
-        CopInsSet32(ins, bar.planes[j] + offset);
+        CopInsSet32((CopInsPairT *)ins, bar.planes[j] + offset);
       CopInsSet16(ins, (shift << 4) | shift);
     }
 
@@ -252,13 +252,13 @@ static void UpdateBarState(StateBarT *bars) {
 }
 
 static void UpdateSpriteState(StateFullT *state) {
-  CopInsT *ins = state->sprite;
+  CopInsPairT *ins = state->sprite;
   int t = frameCount * 2;
   int fu = t & 63;
   int fd = ~t & 63;
   short i;
 
-  for (i = 0; i < NSPRITES; i++, ins += 2)
+  for (i = 0; i < NSPRITES; i++, ins++)
     CopInsSet32(ins, stripe[i].sprdat->data + ((i & 2) ? fd : fu));
 }
 

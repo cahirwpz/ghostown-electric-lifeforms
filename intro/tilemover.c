@@ -41,7 +41,7 @@ static __code BitmapT *screen;
 static __code int active = 0;
 static __code const PaletteT *currPal;
 static CopListT *cp;
-static CopInsT *bplptr[DEPTH + 1];
+static CopInsPairT *bplptr;
 
 /* 1 bit version of logo for blitting */
 static BitmapT *logo_blit;
@@ -229,7 +229,7 @@ static void UpdateBitplanePointers(void) {
   short j = active;
 
   for (i = DEPTH - 1; i >= 0; i--) {
-    CopInsSet32(bplptr[i], screen->planes[j] + offset);
+    CopInsSet32(&bplptr[i], screen->planes[j] + offset);
     j--;
     if (j < 0)
       j += DEPTH + 1;
@@ -289,7 +289,7 @@ static void Init(void) {
 
   cp = NewCopList(100);
   CopInit(cp);
-  CopSetupBitplanes(cp, bplptr, screen, DEPTH);
+  bplptr = CopSetupBitplanes(cp, screen, DEPTH);
   CopMove16(cp, bpl1mod, (WIDTH - S_WIDTH) / 8);
   CopMove16(cp, bpl2mod, (WIDTH - S_WIDTH) / 8);
   CopEnd(cp);
