@@ -45,17 +45,10 @@ extern short frameFromStart;
 extern short frameTillEnd;
 #endif
 
-typedef enum {
-  EFFECT_LOADED = 1,
-  EFFECT_READY = 2,
-  EFFECT_RUNNING = 4,
-} EffectStateT;
-
 typedef void (*EffectFuncT)(void);
 
 typedef struct Effect {
   const char *name;
-  EffectStateT state;
   /*
    * Executed in background task when other effect is running.
    * Precalculates data for the effect to be launched.
@@ -102,7 +95,6 @@ void EffectRun(EffectT *effect);
 #define EFFECT(NAME, L, U, I, K, R, V)                                         \
   EffectT NAME##Effect = {                                                     \
     .name = #NAME,                                                             \
-    .state = 0,                                                                \
     .Load = (L),                                                               \
     .UnLoad = (U),                                                             \
     .Init = (I),                                                               \
