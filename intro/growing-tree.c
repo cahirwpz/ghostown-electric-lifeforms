@@ -18,9 +18,9 @@ extern TrackT TreeVariant;
 extern TrackT TreeFade;
 
 static CopListT *cp;
-static CopInsT *bplptr[DEPTH];
+static CopInsPairT *bplptr;
+static CopInsPairT *sprptr;
 static BitmapT *screen;
-static CopInsT *sprptr[8];
 
 static u_short nrPal = 0;
 
@@ -199,8 +199,8 @@ static void Init(void) {
 
   cp = NewCopList(50);
   CopInit(cp);
-  CopSetupBitplanes(cp, bplptr, screen, DEPTH);
-  CopSetupSprites(cp, sprptr);
+  bplptr = CopSetupBitplanes(cp, screen, DEPTH);
+  sprptr = CopSetupSprites(cp);
   CopEnd(cp);
 
   CopListActivate(cp);
@@ -495,7 +495,7 @@ static void Render(void) {
     GreetsNextTrack();
 
     for (i = 0; i < NSPRITES; i++)
-      CopInsSetSprite(sprptr[i], &grass[i]);
+      CopInsSetSprite(&sprptr[i], &grass[i]);
 
     MakeBranch(WIDTH / 2, HEIGHT - fruit_height / 2 - 1);
   }

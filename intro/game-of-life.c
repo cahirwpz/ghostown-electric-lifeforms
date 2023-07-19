@@ -110,13 +110,12 @@ static BitmapT *current_board;
 // current board = boards[0], the rest is intermediate results
 static BitmapT *boards[BOARD_COUNT];
 
-// pointers to copper instructions, for rewriting bitplane pointers
-static CopInsT *bplptr[DISP_DEPTH];
+// pointers to copper instructions, for rewriting bitplane & sprite pointers
+static CopInsPairT *bplptr;
+static CopInsPairT *sprptr;
 
 // pointers to copper instructions, for setting colors
 static CopInsT *palptr;
-
-static CopInsT *sprptr[8];
 
 // circular buffer of previous game states as they would be rendered (with
 // horizontally doubled pixels)
@@ -229,18 +228,19 @@ void MakeCopperList(CopListT *cp) {
   // initially previous states are empty
   // save addresses of these instructions to change bitplane
   // order when new state gets generated
+  bplptr = CopInsPtr(cp);
   for (i = 0; i < DISP_DEPTH; i++)
-    bplptr[i] = CopMove32(cp, bplpt[i], prev_states[i]->planes[0]);
+    CopMove32(cp, bplpt[i], prev_states[i]->planes[0]);
 
-  CopSetupSprites(cp, sprptr);
+  sprptr = CopSetupSprites(cp);
   for (i = 0; i < 8; i++) {
     SpriteT *spr = &wireworld_chip[i];
     SpriteUpdatePos(spr, X(DISP_WIDTH / 2 + (i / 2) * 16 - 33),
                     Y(DISP_HEIGHT / 2 - spr->height / 2));
     if (wireworld && TrackValueGet(&WireworldBg, frameCount) == 1) {
-      CopInsSetSprite(sprptr[i], spr);
+      CopInsSetSprite(&sprptr[i], spr);
     } else {
-      CopInsSet32(sprptr[i], NullSprData);
+      CopInsSet32(&sprptr[i], NullSprData);
     }
   }
 
@@ -299,7 +299,7 @@ static void UpdateBitplanePointers(void) {
     if (last >= prev_states_depth)
       last -= prev_states_depth;
     cur = prev_states[last];
-    CopInsSet32(bplptr[i], cur->planes[0]);
+    CopInsSet32(&bplptr[i], cur->planes[0]);
   }
   states_head++;
   if (states_head >= prev_states_depth)
@@ -475,7 +475,7 @@ static void InitWireworld(void) {
     LoadBackground(desired_bg, 0, 0, 0);
     BitmapClear(background[1]); // important!
     WaitBlitter();
-    CopInsSet32(bplptr[3], background[1]->planes[0]);
+    CopInsSet32(&bplptr[3], background[1]->planes[0]);
     InitWireworldFadein();
   }
 
@@ -604,7 +604,7 @@ static void GolStep(void) {
                        &wireworld_chip_pal);
   } else {
     short logo_idx = TrackValueGet(&GOLLogoType, frameCount);
-    CopInsSet32(bplptr[3], background[logo_idx]->planes[0]);
+    CopInsSet32(&bplptr[3], background[logo_idx]->planes[0]);
     TransitionPal(palette_gol + 1);
     ColorFadingStep(palette_gol);
   }

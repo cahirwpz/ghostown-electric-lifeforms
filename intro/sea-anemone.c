@@ -19,8 +19,8 @@
 
 static __code short active = 0;
 static __code CopListT *cp[2];
-static CopInsT *sprptr[2][8];
-static CopInsT *bplptr[2][DEPTH];
+static CopInsPairT *sprptr[2];
+static CopInsPairT *bplptr[2];
 static BitmapT *screen;
 
 #include "palettes.h"
@@ -369,15 +369,15 @@ static void VBlank(void) {
   }
 }
 
-static void MakeCopperList(CopListT *cp, CopInsT **bplptr, CopInsT **sprptr,
-                           CopInsT **insptr)
-{
+static CopListT *MakeCopperList(int active) {
+  CopListT *cp = NewCopList(50 + 2 * anemone_gradient_length);
   const u_char *ptr = anemone_gradient_y;
+  CopInsT **insptr = colins[active];
   short i;
 
   CopInit(cp);
-  CopSetupBitplanes(cp, bplptr, screen, DEPTH);
-  CopSetupSprites(cp, sprptr);
+  bplptr[active] = CopSetupBitplanes(cp, screen, DEPTH);
+  sprptr[active] = CopSetupSprites(cp);
 
   for (i = 0; i < anemone_gradient_length; i++) {
     short y = *ptr++;
@@ -386,6 +386,7 @@ static void MakeCopperList(CopListT *cp, CopInsT **bplptr, CopInsT **sprptr,
   }
 
   CopEnd(cp);
+  return cp;
 }
 
 static void Init(void) {
@@ -402,10 +403,8 @@ static void Init(void) {
   LoadPalette(currPal, 0);
   LoadPalette(&whirl_pal, 16);
 
-  cp[0] = NewCopList(50 + 2 * anemone_gradient_length);
-  cp[1] = NewCopList(50 + 2 * anemone_gradient_length);
-  MakeCopperList(cp[0], bplptr[0], sprptr[0], colins[0]);
-  MakeCopperList(cp[1], bplptr[1], sprptr[1], colins[1]);
+  cp[0] = MakeCopperList(0);
+  cp[1] = MakeCopperList(1);
   GradientUpdate(0);
   CopListActivate(cp[0]);
 
@@ -569,7 +568,7 @@ static void Render(void) {
     lineOffset = vShift * screen_bytesPerRow;
 
     for (i = 0; i < DEPTH; i++)
-      CopInsSet32(bplptr[active][i], screen->planes[i] + lineOffset);
+      CopInsSet32(&bplptr[active][i], screen->planes[i] + lineOffset);
   }
 
   if (ArmVariant == 3) {
@@ -577,7 +576,7 @@ static void Render(void) {
 
     EnableDMA(DMAF_SPRITE);
     for (i = 0; i < NSPRITES; i++) {
-      CopInsSetSprite(sprptr[active][i], &whirl[i]);
+      CopInsSetSprite(&sprptr[active][i], &whirl[i]);
     }
   } else {
     ResetSprites();
