@@ -605,9 +605,8 @@ static void Init(void) {
   ChooseTurmiteBoard(1);
 
   cp = NewCopList(100);
-  CopInit(cp);
   CopSetupBitplanes(cp, screen, DEPTH);
-  CopEnd(cp);
+  CopListFinish(cp);
   CopListActivate(cp);
 
   EnableDMA(DMAF_RASTER);

@@ -66,10 +66,10 @@ static void GenerateShifterValues(void) {
   }
 }
 
-static void MakeCopperList(CopListT *cp, short n) {
+static CopListT *MakeCopperList(short n) {
+  CopListT *cp = NewCopList(100 + 2 * HEIGHT + 15 * HEIGHT / 8);
   short i;
 
-  CopInit(cp);
   CopSetupBitplanes(cp, &floor, DEPTH);
 
   for (i = 0; i < HEIGHT; i++) {
@@ -84,7 +84,7 @@ static void MakeCopperList(CopListT *cp, short n) {
     }
   }
 
-  CopEnd(cp);
+  return CopListFinish(cp);
 }
 
 static void InitStripes(void) {
@@ -109,11 +109,8 @@ static void Init(void) {
   SetupBitplaneFetch(MODE_LORES, X(-16), WIDTH + 16);
   SetColor(0, 0);
 
-  coplist[0] = NewCopList(100 + 2 * HEIGHT + 15 * HEIGHT / 8);
-  coplist[1] = NewCopList(100 + 2 * HEIGHT + 15 * HEIGHT / 8);
-
-  MakeCopperList(coplist[0], 0);
-  MakeCopperList(coplist[1], 1);
+  coplist[0] = MakeCopperList(0);
+  coplist[1] = MakeCopperList(1);
 
   CopListActivate(coplist[active ^ 1]);
   EnableDMA(DMAF_RASTER);

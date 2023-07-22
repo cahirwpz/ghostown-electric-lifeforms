@@ -375,7 +375,6 @@ static CopListT *MakeCopperList(int active) {
   CopInsT **insptr = colins[active];
   short i;
 
-  CopInit(cp);
   bplptr[active] = CopSetupBitplanes(cp, screen, DEPTH);
   sprptr[active] = CopSetupSprites(cp);
 
@@ -385,8 +384,7 @@ static CopListT *MakeCopperList(int active) {
     *insptr++ = CopSetColor(cp, 0, 0);
   }
 
-  CopEnd(cp);
-  return cp;
+  return CopListFinish(cp);
 }
 
 static void Init(void) {

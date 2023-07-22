@@ -51,16 +51,9 @@ static void Load(void) {
   }
 }
 
-static void Init(void) {
-  screen0 = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
-  screen1 = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
+static CopListT *MakeCopperList(void) {
+  CopListT *cp = NewCopList(80 + (HTILES + 4) * VTILES);
 
-  SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
-  LoadPalette(&tilegfx_pal, 0);
-
-  cp = NewCopList(80 + (HTILES + 4) * VTILES);
-
-  CopInit(cp);
   /* X(-1) to align with copper induced color changes */
   bplptr = CopSetupBitplanes(cp, screen1, DEPTH);
   CopWaitV(cp, VP(0));
@@ -95,8 +88,17 @@ static void Init(void) {
       CopMove16(cp, copjmp2, 0);
     }
   }
-  CopEnd(cp);
+  return CopListFinish(cp);
+}
 
+static void Init(void) {
+  screen0 = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
+  screen1 = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
+
+  SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
+  LoadPalette(&tilegfx_pal, 0);
+
+  cp = MakeCopperList();
   CopListActivate(cp);
 
   EnableDMA(DMAF_RASTER | DMAF_BLITTER | DMAF_BLITHOG);

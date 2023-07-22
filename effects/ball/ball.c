@@ -79,18 +79,11 @@ static void MakeUVMapRenderCode(void) {
   *code++ = 0x4e75; /* rts */
 }
 
-static void MakeCopperList(CopListT *cp) {
-  CopInit(cp);
+static CopListT *MakeCopperList(void) {
+  CopListT *cp = NewCopList(80);
   CopSetupBitplanes(cp, &background, S_DEPTH);
   sprptr = CopSetupSprites(cp);
-  CopEnd(cp);
-
-  {
-    short i;
-
-    for (i = 0; i < 8; i++)
-      CopInsSetSprite(&sprptr[i], &sprite[active][i]);
-  }
+  return CopListFinish(cp);
 }
 
 static void Init(void) {
@@ -127,9 +120,15 @@ static void Init(void) {
   LoadPalette(&background_pal, 0);
   LoadPalette(&texture_pal, 16);
 
-  cp = NewCopList(80);
-  MakeCopperList(cp);
+  cp = MakeCopperList();
   CopListActivate(cp);
+
+  {
+    short i;
+
+    for (i = 0; i < 8; i++)
+      CopInsSetSprite(&sprptr[i], &sprite[active][i]);
+  }
 
   EnableDMA(DMAF_RASTER | DMAF_SPRITE);
 }

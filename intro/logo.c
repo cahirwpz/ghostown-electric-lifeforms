@@ -54,9 +54,8 @@ static void SharedInit(bool out) {
   DisableDMA(DMAF_BLITTER);
 
   cp = NewCopList(40);
-  CopInit(cp);
   CopSetupBitplanes(cp, screen, DEPTH);
-  CopEnd(cp);
+  CopListFinish(cp);
 
   CopListActivate(cp);
 

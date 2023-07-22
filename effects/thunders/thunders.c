@@ -92,11 +92,11 @@ static void Load(void) {
   ITER(i, 0, SIZE * SIZE - 1, tileCycle[i] = random() & SIN_MASK);
 }
 
-static void MakeCopperList(CopListT *cp, BitmapT *screen) {
-  CopInit(cp);
+static CopListT *MakeCopperList(BitmapT *screen) {
+  CopListT *cp = NewCopList((HEIGHT - FAR_Y) * 16 + 200);
   CopSetupBitplanes(cp, screen, DEPTH);
   CopSetupSprites(cp);
-  CopEnd(cp);
+  return CopListFinish(cp);
 }
 
 static void Init(void) {
@@ -106,11 +106,8 @@ static void Init(void) {
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
   ITER(k, 0, 7, SetColor(k, BGCOL));
 
-  cp0 = NewCopList((HEIGHT - FAR_Y) * 16 + 200);
-  cp1 = NewCopList((HEIGHT - FAR_Y) * 16 + 200);
-
-  MakeCopperList(cp0, screen0);
-  MakeCopperList(cp1, screen1);
+  cp0 = MakeCopperList(screen0);
+  cp1 = MakeCopperList(screen1);
 
   EnableDMA(DMAF_BLITTER | DMAF_BLITHOG);
 
@@ -381,7 +378,7 @@ static void ColorizeLowerHalf(CopListT *cp, short yi, short kyo) {
 static void MakeFloorCopperList(short yo, short kyo) {
   CopListT *cp = cp0;
 
-  CopInit(cp);
+  CopListReset(cp);
   {
     void **planes = screen0->planes;
     CopMove32(cp, bplpt[0], (*planes++) + WIDTH * (HEIGHT - 1) / 8);
@@ -414,7 +411,7 @@ static void MakeFloorCopperList(short yo, short kyo) {
   FillStripes(2);
   ColorizeLowerHalf(cp, yo, kyo);
 
-  CopEnd(cp);
+  CopListFinish(cp);
 }
 
 PROFILE(Thunders);

@@ -141,11 +141,10 @@ static void SetupRaster(CopListT *cp) {
 }
 
 static void MakeCopperList(CopListT *cp) {
-
-  CopInit(cp);
+  CopListReset(cp);
   SetupLayers(cp);
   SetupRaster(cp);
-  CopEnd(cp);
+  CopListFinish(cp);
 }
 
 static void Init(void) {

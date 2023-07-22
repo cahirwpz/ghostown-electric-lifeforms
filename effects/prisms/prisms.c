@@ -122,10 +122,10 @@ static void GenerateColorShades(void) {
   }
 }
 
-static void MakeCopperList(CopListT *cp, CopLineT **line) {
+static CopListT *MakeCopperList(CopLineT **line) {
+  CopListT *cp = NewCopList(HEIGHT * 5 + 200);
   short i;
 
-  CopInit(cp);
   sprptr = CopSetupSprites(cp);
 
   for (i = 0; i < HEIGHT; i++) {
@@ -135,9 +135,10 @@ static void MakeCopperList(CopListT *cp, CopLineT **line) {
     CopMove32(cp, bplpt[0], rowAddr[0]);
   }
 
-  CopEnd(cp);
-
   ITER(i, 0, 7, CopInsSetSprite(&sprptr[i], &sprite[i]));
+  ITER(i, 0, 7, SpriteUpdatePos(&sprite[i], X(96 + 16 * i), Y((256 - 24) / 2)));
+
+  return CopListFinish(cp);
 }
 
 static void Init(void) {
@@ -154,13 +155,8 @@ static void Init(void) {
   LoadPalette(&sprite_pal, 24);
   LoadPalette(&sprite_pal, 28);
 
-  cp[0] = NewCopList(HEIGHT * 5 + 200);
-  cp[1] = NewCopList(HEIGHT * 5 + 200);
-
-  MakeCopperList(cp[0], copLines[0]);
-  MakeCopperList(cp[1], copLines[1]);
-
-  ITER(i, 0, 7, SpriteUpdatePos(&sprite[i], X(96 + 16 * i), Y((256 - 24) / 2)));
+  cp[0] = MakeCopperList(copLines[0]);
+  cp[1] = MakeCopperList(copLines[1]);
 
   CopListActivate(cp[0]);
   EnableDMA(DMAF_RASTER | DMAF_SPRITE);

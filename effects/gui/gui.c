@@ -73,10 +73,9 @@ static void Init(void) {
   LoadPalette(&pointer_pal, 16);
 
   cp = NewCopList(120);
-  CopInit(cp);
   CopSetupBitplanes(cp, screen, DEPTH);
   sprptr = CopSetupSprites(cp);
-  CopEnd(cp);
+  CopListFinish(cp);
 
   CopInsSetSprite(&sprptr[0], &pointer);
   SpriteUpdatePos(&pointer, X(0), Y(0));

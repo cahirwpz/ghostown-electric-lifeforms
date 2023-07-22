@@ -53,7 +53,7 @@ static const BitmapT *member[5] = {
 #define FLOOR_Y Y(64)
 
 static void MakeCopperList(CopListT *cp) {
-  CopInit(cp);
+  CopListReset(cp);
   CopSetupDisplayWindow(cp, MODE_LORES, X(0), Y(0), 320, 256); 
   CopMove16(cp, dmacon, DMAF_RASTER);
 
@@ -112,7 +112,7 @@ static void MakeCopperList(CopListT *cp) {
     CopMove16(cp, dmacon, DMAF_RASTER);
   }
 
-  CopEnd(cp);
+  CopListFinish(cp);
 }
 
 static void Init(void) {

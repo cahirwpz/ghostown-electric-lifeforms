@@ -25,12 +25,11 @@ static CopInsPairT *sprptr[2];
 #include "data/twister-right.c"
 #include "data/twister.c"
 
-static void MakeCopperList(CopListT **ptr, short n) {
+static CopListT *MakeCopperList(short n) {
   CopListT *cp = NewCopList(100 + HEIGHT * 5 + (31 * HEIGHT / 3));
   short *pixels = texture.pixels;
   short i, j, k;
 
-  CopInit(cp);
   bplptr[n] = CopSetupBitplanes(cp, &twister, DEPTH);
   sprptr[n] = CopSetupSprites(cp);
   CopMove16(cp, dmacon, DMAF_SETCLR|DMAF_RASTER);
@@ -51,14 +50,12 @@ static void MakeCopperList(CopListT **ptr, short n) {
     }
   }
 
-  CopEnd(cp);
-
   CopInsSetSprite(&sprptr[n][4], &left[0]);
   CopInsSetSprite(&sprptr[n][5], &left[1]);
   CopInsSetSprite(&sprptr[n][6], &right[0]);
   CopInsSetSprite(&sprptr[n][7], &right[1]);
 
-  *ptr = cp;
+  return CopListFinish(cp);
 }
 
 static void Init(void) {
@@ -68,8 +65,8 @@ static void Init(void) {
   custom->diwstrt = 0x2c81;
   custom->diwstop = 0x2bc1;
 
-  MakeCopperList(&cp[0], 0);
-  MakeCopperList(&cp[1], 1);
+  cp[0] = MakeCopperList(0);
+  cp[1] = MakeCopperList(1);
 
   SpriteUpdatePos(&left[0], X(0), Y(0));
   SpriteUpdatePos(&left[1], X(16), Y(0));

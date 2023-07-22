@@ -152,9 +152,8 @@ static void Init(void) {
   GreetsInit();
 
   cp = NewCopList(50);
-  CopInit(cp);
   bplptr = CopSetupBitplanes(cp, screen, DEPTH);
-  CopEnd(cp);
+  CopListFinish(cp);
   CopListActivate(cp);
 
   EnableDMA(DMAF_RASTER | DMAF_BLITTER);
