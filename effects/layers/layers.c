@@ -13,7 +13,7 @@
 #include "data/bg-gradient.c"
 #include "data/fg-gradient.c"
 
-static CopListT *cp0, *cp1;
+static CopListT *cp[2];
 static short fg_y, bg_y, fg_x, bg_x;
 
 #define bg_bplmod ((background_width - (WIDTH + 16)) / 8)
@@ -156,17 +156,17 @@ static void Init(void) {
   custom->bplcon2 = 0;
 #endif
 
-  cp0 = NewCopList(500);
-  cp1 = NewCopList(500);
-  MakeCopperList(cp0);
-  CopListActivate(cp0);
+  cp[0] = NewCopList(500);
+  cp[1] = NewCopList(500);
+  MakeCopperList(cp[0]);
+  CopListActivate(cp[0]);
   EnableDMA(DMAF_RASTER);
 }
 
 static void Kill(void) {
   DisableDMA(DMAF_RASTER);
-  DeleteCopList(cp0);
-  DeleteCopList(cp1);
+  DeleteCopList(cp[0]);
+  DeleteCopList(cp[1]);
 }
 
 PROFILE(MakeCopperList);
@@ -183,12 +183,12 @@ static void Render(void) {
   fg_x = normfx(SIN(frameCount * 12) * fg_w) + fg_w;
 
   ProfilerStart(MakeCopperList);
-  MakeCopperList(cp1);
+  MakeCopperList(cp[1]);
   ProfilerStop(MakeCopperList);
 
-  CopListRun(cp1);
+  CopListRun(cp[1]);
   TaskWaitVBlank();
-  swapr(cp0, cp1);
+  { CopListT *tmp = cp[0]; cp[0] = cp[1]; cp[1] = tmp; }
 }
 
 EFFECT(Credits, NULL, NULL, Init, Kill, Render, NULL);

@@ -25,8 +25,8 @@
 #define FAR_Y (HEIGHT * NEAR_Z / FAR_Z)
 #define FAR_W (WIDTH * FAR_Z / 256)
 
-static BitmapT *screen0, *screen1;
-static CopListT *cp0, *cp1;
+static BitmapT *screen[2];
+static CopListT *cp[2];
 static u_short tileColor[SIZE * SIZE];
 static short tileCycle[SIZE * SIZE];
 static short tileEnergy[SIZE * SIZE];
@@ -91,37 +91,35 @@ static void Load(void) {
   ITER(i, 0, SIZE * SIZE - 1, tileCycle[i] = random() & SIN_MASK);
 }
 
-static CopListT *MakeCopperList(BitmapT *screen) {
+static CopListT *MakeCopperList(short i) {
   CopListT *cp = NewCopList((HEIGHT - FAR_Y) * 16 + 200);
-  CopSetupBitplanes(cp, screen, DEPTH);
+  CopSetupBitplanes(cp, screen[i], DEPTH);
   (void)CopSetupSprites(cp);
   return CopListFinish(cp);
 }
 
 static void Init(void) {
-  screen0 = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
-  screen1 = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
+  screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
+  screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
   ITER(k, 0, 7, SetColor(k, BGCOL));
 
-  cp0 = MakeCopperList(screen0);
-  cp1 = MakeCopperList(screen1);
+  cp[0] = MakeCopperList(0);
+  cp[1] = MakeCopperList(1);
+  CopListActivate(cp[1]);
 
-  EnableDMA(DMAF_BLITTER | DMAF_BLITHOG);
-
-  CopListActivate(cp1);
-  EnableDMA(DMAF_RASTER | DMAF_SPRITE);
+  EnableDMA(DMAF_RASTER | DMAF_SPRITE | DMAF_BLITTER | DMAF_BLITHOG);
 }
 
 static void Kill(void) {
   DisableDMA(DMAF_COPPER | DMAF_RASTER | DMAF_SPRITE | DMAF_BLITTER | DMAF_BLITHOG);
 
-  DeleteCopList(cp0);
-  DeleteCopList(cp1);
+  DeleteCopList(cp[0]);
+  DeleteCopList(cp[1]);
 
-  DeleteBitmap(screen0);
-  DeleteBitmap(screen1);
+  DeleteBitmap(screen[0]);
+  DeleteBitmap(screen[1]);
 }
 
 static void DrawLine(void *data asm("a2"), short x1 asm("d2"), short y1 asm("d3"), short x2 asm("d4"), short y2 asm("d5")) {
@@ -224,7 +222,7 @@ static void DrawStripes(short xo, short kxo) {
       short c = mod16(kxo, 7) + 1;
 
       while (--i >= 0) {
-        void *plane = screen0->planes[i];
+        void *plane = screen[0]->planes[i];
 
         if (c & (1 << i)) {
           DrawLine(plane, left->x1, FAR_Y, left->x2, left->y2);
@@ -239,7 +237,7 @@ static void DrawStripes(short xo, short kxo) {
 }
 
 static void FillStripes(u_short plane) {
-  void *bltpt = screen0->planes[plane] + (HEIGHT * WIDTH) / 8 - 2;
+  void *bltpt = screen[0]->planes[plane] + (HEIGHT * WIDTH) / 8 - 2;
   u_short bltsize = ((HEIGHT - FAR_Y - 1) << 6) | (WIDTH >> 4);
 
   WaitBlitter();
@@ -374,12 +372,10 @@ static void ColorizeLowerHalf(CopListT *cp, short yi, short kyo) {
   }
 }
 
-static void MakeFloorCopperList(short yo, short kyo) {
-  CopListT *cp = cp0;
-
+static void MakeFloorCopperList(CopListT *cp, short yo, short kyo) {
   CopListReset(cp);
   {
-    void **planes = screen0->planes;
+    void **planes = screen[0]->planes;
     CopMove32(cp, bplpt[0], (*planes++) + WIDTH * (HEIGHT - 1) / 8);
     CopMove32(cp, bplpt[1], (*planes++) + WIDTH * (HEIGHT - 1) / 8);
     CopMove32(cp, bplpt[2], (*planes++) + WIDTH * (HEIGHT - 1) / 8);
@@ -417,7 +413,7 @@ PROFILE(Thunders);
 static void Render(void) {
   ProfilerStart(Thunders);
 
-  BitmapClearArea(screen0, &((Area2D){0, FAR_Y, WIDTH, HEIGHT - FAR_Y}));
+  BitmapClearArea(screen[0], &((Area2D){0, FAR_Y, WIDTH, HEIGHT - FAR_Y}));
 
   {
     short xo = (N / 4) + normfx(SIN(frameCount * 16) * N * 15 / 64);
@@ -433,15 +429,15 @@ static void Render(void) {
     DrawStripes(xo, kxo);
     FillStripes(0);
     ControlTileColors();
-    MakeFloorCopperList(yo & (TILESIZE - 1), kyo);
+    MakeFloorCopperList(cp[0], yo & (TILESIZE - 1), kyo);
   }
 
   ProfilerStop(Thunders);
 
-  CopListRun(cp0);
+  CopListRun(cp[0]);
   TaskWaitVBlank();
-  { CopListT *tmp = cp0; cp0 = cp1; cp1 = tmp; }
-  { BitmapT *tmp = screen0; screen0 = screen1; screen1 = tmp; }
+  { CopListT *tmp = cp[0]; cp[0] = cp[1]; cp[1] = tmp; }
+  { BitmapT *tmp = screen[0]; screen[0] = screen[1]; screen[1] = tmp; }
 }
 
 EFFECT(Thunders, Load, NULL, Init, Kill, Render, NULL);
