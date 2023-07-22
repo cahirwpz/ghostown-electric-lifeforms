@@ -17,8 +17,6 @@ static CopInsT *bplmod[2][HEIGHT];
 static CopInsT *colors[2][HEIGHT];
 static short active = 0;
 
-static CopInsPairT *sprptr[2];
-
 #include "data/twister-gradient.c"
 #include "data/twister-texture.c"
 #include "data/twister-left.c"
@@ -27,11 +25,12 @@ static CopInsPairT *sprptr[2];
 
 static CopListT *MakeCopperList(short n) {
   CopListT *cp = NewCopList(100 + HEIGHT * 5 + (31 * HEIGHT / 3));
+  CopInsPairT *sprptr = CopSetupSprites(cp);
   short *pixels = texture.pixels;
   short i, j, k;
 
   bplptr[n] = CopSetupBitplanes(cp, &twister, DEPTH);
-  sprptr[n] = CopSetupSprites(cp);
+  
   CopMove16(cp, dmacon, DMAF_SETCLR|DMAF_RASTER);
   CopSetColor(cp, 0, gradient.colors[0]);
 
@@ -50,10 +49,10 @@ static CopListT *MakeCopperList(short n) {
     }
   }
 
-  CopInsSetSprite(&sprptr[n][4], &left[0]);
-  CopInsSetSprite(&sprptr[n][5], &left[1]);
-  CopInsSetSprite(&sprptr[n][6], &right[0]);
-  CopInsSetSprite(&sprptr[n][7], &right[1]);
+  CopInsSetSprite(&sprptr[4], &left[0]);
+  CopInsSetSprite(&sprptr[5], &left[1]);
+  CopInsSetSprite(&sprptr[6], &right[0]);
+  CopInsSetSprite(&sprptr[7], &right[1]);
 
   return CopListFinish(cp);
 }

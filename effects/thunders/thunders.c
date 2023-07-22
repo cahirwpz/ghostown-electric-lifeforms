@@ -27,7 +27,6 @@
 
 static BitmapT *screen0, *screen1;
 static CopListT *cp0, *cp1;
-static CopInsPairT *sprptr;
 static u_short tileColor[SIZE * SIZE];
 static short tileCycle[SIZE * SIZE];
 static short tileEnergy[SIZE * SIZE];
@@ -95,7 +94,7 @@ static void Load(void) {
 static CopListT *MakeCopperList(BitmapT *screen) {
   CopListT *cp = NewCopList((HEIGHT - FAR_Y) * 16 + 200);
   CopSetupBitplanes(cp, screen, DEPTH);
-  CopSetupSprites(cp);
+  (void)CopSetupSprites(cp);
   return CopListFinish(cp);
 }
 
@@ -388,9 +387,8 @@ static void MakeFloorCopperList(short yo, short kyo) {
   CopMove16(cp, bpl1mod, - (WIDTH * 2) / 8);
   CopMove16(cp, bpl2mod, - (WIDTH * 2) / 8);
 
-  sprptr = CopSetupSprites(cp);
- 
   {
+    CopInsPairT *sprptr = CopSetupSprites(cp);
     short i = mod16(frameCount, 10) * 2;
 
     CopInsSetSprite(&sprptr[0], &thunder[i]);

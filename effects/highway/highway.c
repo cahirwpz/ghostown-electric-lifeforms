@@ -31,8 +31,7 @@ typedef struct {
 static Car cars[CARS];
 
 static CopListT *cp;
-static u_short active = 0;
-static CopInsPairT *sprptr;
+static short active = 0;
 static CopInsPairT *bplptr[2];
 static BitmapT *carry;
 
@@ -47,8 +46,8 @@ static BitmapT *lanes[2];
 
 static CopListT *MakeCopperList(void) {
   CopListT *cp = NewCopList(300);
-
-  sprptr = CopSetupSprites(cp);
+  CopInsPairT *sprptr = CopSetupSprites(cp);
+  short i;
 
   CopSetupBitplanes(cp, &city_top, DEPTH);
   CopWait(cp, Y(-18), 0);
@@ -104,6 +103,11 @@ static CopListT *MakeCopperList(void) {
     CopMove16(cp, dmacon, DMAF_SETCLR | DMAF_RASTER);
   }
 
+  for (i = 0; i < 8; i++) {
+    CopInsSetSprite(&sprptr[i], &sprite[i]);
+    SpriteUpdatePos(&sprite[i], X(96 + 16 * i), Y(LANEL_Y + LANE_H + 4));
+  }
+
   return CopListFinish(cp);
 }
 
@@ -122,15 +126,6 @@ static void Init(void) {
   cp = MakeCopperList();
   CopListActivate(cp);
   EnableDMA(DMAF_RASTER | DMAF_BLITTER | DMAF_SPRITE);
-
-  {
-    short i;
-
-    for (i = 0; i < 8; i++) {
-      CopInsSetSprite(&sprptr[i], &sprite[i]);
-      SpriteUpdatePos(&sprite[i], X(96 + 16 * i), Y(LANEL_Y + LANE_H + 4));
-    }
-  }
 }
 
 static void Kill(void) {

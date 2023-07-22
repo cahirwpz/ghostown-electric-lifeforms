@@ -57,8 +57,6 @@ static SpanInfoT spanInfo[HEIGHT];
 static PrismT prisms[PRISMS];
 static short active = 0;
 
-static CopInsPairT *sprptr;
-
 static u_short colorSet[NCOLORS] = {
   0xC0F, 0xF0C, 0x80F, 0xF08
 };
@@ -124,9 +122,8 @@ static void GenerateColorShades(void) {
 
 static CopListT *MakeCopperList(CopLineT **line) {
   CopListT *cp = NewCopList(HEIGHT * 5 + 200);
+  CopInsPairT *sprptr = CopSetupSprites(cp);
   short i;
-
-  sprptr = CopSetupSprites(cp);
 
   for (i = 0; i < HEIGHT; i++) {
     CopWait(cp, Y(i - 1), 0xDE);
@@ -135,8 +132,10 @@ static CopListT *MakeCopperList(CopLineT **line) {
     CopMove32(cp, bplpt[0], rowAddr[0]);
   }
 
-  ITER(i, 0, 7, CopInsSetSprite(&sprptr[i], &sprite[i]));
-  ITER(i, 0, 7, SpriteUpdatePos(&sprite[i], X(96 + 16 * i), Y((256 - 24) / 2)));
+  for (i = 0; i < 8; i++) {
+    CopInsSetSprite(&sprptr[i], &sprite[i]);
+    SpriteUpdatePos(&sprite[i], X(96 + 16 * i), Y((256 - 24) / 2));
+  }
 
   return CopListFinish(cp);
 }
