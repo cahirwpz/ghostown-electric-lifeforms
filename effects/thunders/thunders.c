@@ -30,6 +30,7 @@ static CopListT *cp[2];
 static u_short tileColor[SIZE * SIZE];
 static short tileCycle[SIZE * SIZE];
 static short tileEnergy[SIZE * SIZE];
+static short active;
 
 #include "data/thunders.c"
 #include "data/thunders-floor.c"
@@ -222,7 +223,7 @@ static void DrawStripes(short xo, short kxo) {
       short c = mod16(kxo, 7) + 1;
 
       while (--i >= 0) {
-        void *plane = screen[0]->planes[i];
+        void *plane = screen[active]->planes[i];
 
         if (c & (1 << i)) {
           DrawLine(plane, left->x1, FAR_Y, left->x2, left->y2);
@@ -237,7 +238,7 @@ static void DrawStripes(short xo, short kxo) {
 }
 
 static void FillStripes(u_short plane) {
-  void *bltpt = screen[0]->planes[plane] + (HEIGHT * WIDTH) / 8 - 2;
+  void *bltpt = screen[active]->planes[plane] + (HEIGHT * WIDTH) / 8 - 2;
   u_short bltsize = ((HEIGHT - FAR_Y - 1) << 6) | (WIDTH >> 4);
 
   WaitBlitter();
@@ -375,7 +376,7 @@ static void ColorizeLowerHalf(CopListT *cp, short yi, short kyo) {
 static void MakeFloorCopperList(CopListT *cp, short yo, short kyo) {
   CopListReset(cp);
   {
-    void **planes = screen[0]->planes;
+    void **planes = screen[active]->planes;
     CopMove32(cp, bplpt[0], (*planes++) + WIDTH * (HEIGHT - 1) / 8);
     CopMove32(cp, bplpt[1], (*planes++) + WIDTH * (HEIGHT - 1) / 8);
     CopMove32(cp, bplpt[2], (*planes++) + WIDTH * (HEIGHT - 1) / 8);
@@ -413,7 +414,7 @@ PROFILE(Thunders);
 static void Render(void) {
   ProfilerStart(Thunders);
 
-  BitmapClearArea(screen[0], &((Area2D){0, FAR_Y, WIDTH, HEIGHT - FAR_Y}));
+  BitmapClearArea(screen[active], &((Area2D){0, FAR_Y, WIDTH, HEIGHT - FAR_Y}));
 
   {
     short xo = (N / 4) + normfx(SIN(frameCount * 16) * N * 15 / 64);
@@ -429,15 +430,14 @@ static void Render(void) {
     DrawStripes(xo, kxo);
     FillStripes(0);
     ControlTileColors();
-    MakeFloorCopperList(cp[0], yo & (TILESIZE - 1), kyo);
+    MakeFloorCopperList(cp[active], yo & (TILESIZE - 1), kyo);
   }
 
   ProfilerStop(Thunders);
 
-  CopListRun(cp[0]);
+  CopListRun(cp[active]);
   TaskWaitVBlank();
-  { CopListT *tmp = cp[0]; cp[0] = cp[1]; cp[1] = tmp; }
-  { BitmapT *tmp = screen[0]; screen[0] = screen[1]; screen[1] = tmp; }
+  active ^= 1;
 }
 
 EFFECT(Thunders, Load, NULL, Init, Kill, Render, NULL);

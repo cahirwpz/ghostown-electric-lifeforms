@@ -14,6 +14,7 @@ static const BitmapT *lower;
 static const PaletteT *lower_pal;
 static Point2D lower_pos;
 static Area2D lower_area;
+static short active = 0;
 
 /* 'credits_logo' and 'txt_*' must have empty 16 pixels on the left and on the
  * right. Otherwise Display Data Fetcher will show some artifact when image
@@ -180,10 +181,10 @@ static void Render(void) {
       lower = NULL;
   }
 
-  MakeCopperList(cp[1]);
-  CopListRun(cp[1]);
+  MakeCopperList(cp[active]);
+  CopListRun(cp[active]);
   TaskWaitVBlank();
-  { CopListT *tmp = cp[0]; cp[0] = cp[1]; cp[1] = tmp; }
+  active ^= 1;
 }
 
 EFFECT(Credits, NULL, NULL, Init, Kill, Render, NULL);

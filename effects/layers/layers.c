@@ -15,6 +15,7 @@
 
 static CopListT *cp[2];
 static short fg_y, bg_y, fg_x, bg_x;
+static short active = 0;
 
 #define bg_bplmod ((background_width - (WIDTH + 16)) / 8)
 #define fg_bplmod ((foreground_width - (WIDTH + 16)) / 8)
@@ -183,12 +184,12 @@ static void Render(void) {
   fg_x = normfx(SIN(frameCount * 12) * fg_w) + fg_w;
 
   ProfilerStart(MakeCopperList);
-  MakeCopperList(cp[1]);
+  MakeCopperList(cp[active]);
   ProfilerStop(MakeCopperList);
 
-  CopListRun(cp[1]);
+  CopListRun(cp[active]);
   TaskWaitVBlank();
-  { CopListT *tmp = cp[0]; cp[0] = cp[1]; cp[1] = tmp; }
+  active ^= 1;
 }
 
 EFFECT(Credits, NULL, NULL, Init, Kill, Render, NULL);

@@ -24,10 +24,11 @@
 
 static CopInsPairT *bplptr;
 static CopInsT *chunky[VTILES];
-static BitmapT *screen0, *screen1;
+static BitmapT *screen[2];
 static CopListT *cp;
 static u_short *tilescr;
 static short ntiles;
+static short active;
 
 #include "data/twist.c"
 #include "data/twist-colors.c"
@@ -55,7 +56,7 @@ static CopListT *MakeCopperList(void) {
   CopListT *cp = NewCopList(80 + (HTILES + 4) * VTILES);
 
   /* X(-1) to align with copper induced color changes */
-  bplptr = CopSetupBitplanes(cp, screen1, DEPTH);
+  bplptr = CopSetupBitplanes(cp, screen[1], DEPTH);
   CopWaitV(cp, VP(0));
 
   /* Copper Chunky.
@@ -92,8 +93,8 @@ static CopListT *MakeCopperList(void) {
 }
 
 static void Init(void) {
-  screen0 = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
-  screen1 = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
+  screen[0] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
+  screen[1] = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
   LoadPalette(&tilegfx_pal, 0);
@@ -153,7 +154,7 @@ static void UpdateTiles(void) {
 
 static void RenderTiles(void) {
   u_short *_tilescr = tilescr;
-  u_short *screen = screen0->planes[0];
+  u_short *dst = screen[active]->planes[0];
   u_short bltsize = (8 << 6) + 1;
   void *_tile = tilegfx.planes[0];
   void *custom_ = (void *)&custom->bltbpt;
@@ -178,7 +179,7 @@ static void RenderTiles(void) {
         // WaitBlitter();
         custom->bltbpt = _tile + *tilenums++;
         custom->bltapt = _tile + *tilenums++;
-        custom->bltdpt = screen;
+        custom->bltdpt = dst;
         custom->bltsize = bltsize;
 #else
         asm volatile("movel %0,a0\n"
@@ -191,13 +192,13 @@ static void RenderTiles(void) {
                      "movel %1,a0@+\n"
                      "movew %2,a0@\n"
                      : 
-                     : "a" (custom_), "a" (screen), "d" (bltsize), "d" (_tile), "a" (_tilescr)
+                     : "a" (custom_), "a" (dst), "d" (bltsize), "d" (_tile), "a" (_tilescr)
                      : "a0", "a1", "a2");
 #endif
-        screen++;
+        dst++;
       } while (--x >= 0);
 
-      screen += (WIDTH - WIDTH / 8) / 2;
+      dst += (WIDTH - WIDTH / 8) / 2;
     } while (--y >= 0);
   }
 }
@@ -219,9 +220,9 @@ static void Render(void) {
   }
   ProfilerStop(RenderTiles);
 
-  CopUpdateBitplanes(bplptr, screen0, DEPTH);
+  CopUpdateBitplanes(bplptr, screen[active], DEPTH);
   TaskWaitVBlank();
-  swapr(screen0, screen1);
+  active ^= 1;
 }
 
 EFFECT(Tiles8, Load, NULL, Init, Kill, Render, NULL);
