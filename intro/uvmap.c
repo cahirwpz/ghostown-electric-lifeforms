@@ -336,10 +336,10 @@ static void ChunkyToPlanar(void) {
   c2p_phase++;
 }
 
-static void MakeCopperList(CopListT *cp, short *pixels) {
+static CopListT *MakeCopperList(short *pixels) {
+  CopListT *cp = NewCopList(900 + 256);
   short i, j;
 
-  CopInit(cp);
   bplptr = CopSetupBitplanes(cp, screen[active], DEPTH);
   sprptr = CopSetupSprites(cp);
   for (j = 0; j < 16; j++)
@@ -357,7 +357,7 @@ static void MakeCopperList(CopListT *cp, short *pixels) {
       for (j = 0; j < 16; j++)
         CopSetColor(cp, j, *pixels++);
   }
-  CopEnd(cp);
+  return CopListFinish(cp);
 }
 
 static void VBlank(void) {
@@ -396,8 +396,7 @@ static void Init(short var) {
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(28), WIDTH * 2, HEIGHT * 2);
 
-  cp = NewCopList(900 + 256);
-  MakeCopperList(cp, var ? uvtit_gradient_pixels : uvgut_gradient_pixels);
+  cp = MakeCopperList(var ? uvtit_gradient_pixels : uvgut_gradient_pixels);
   CopListActivate(cp);
 
   if (var) {

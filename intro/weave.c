@@ -75,11 +75,11 @@ static inline void CopSpriteSetHP(CopListT *cp, short n) {
   CopMove16(cp, spr[n * 2 + 1].pos, 0);
 }
 
-static void MakeCopperListFull(StateFullT *state) {
-  short b, y, i;
-  CopListT *cp = state->cp;
+#define CP_FULL_SIZE (HEIGHT * 22 + 100)
 
-  CopInit(cp);
+static void MakeCopperListFull(StateFullT *state) {
+  CopListT *cp = NewCopList(CP_FULL_SIZE);
+  short b, y, i;
 
   /* Setup initial bitplane pointers. */
   for (i = 0; i < DEPTH; i++)
@@ -153,12 +153,14 @@ static void MakeCopperListFull(StateFullT *state) {
     }
   }
 
-  CopEnd(cp);
+  state->cp = CopListFinish(cp);
 }
 
+#define CP_BARS_SIZE 500
+
 static void MakeCopperListBars(StateBarT *bars, bool color) {
+  CopListT *cp = NewCopList(CP_BARS_SIZE);
   short b, by, y, i;
-  CopListT *cp = bars->cp;
 
   for (b = 0; b < BARS; b++) {
     bars->bar[b] = NULL;
@@ -166,8 +168,6 @@ static void MakeCopperListBars(StateBarT *bars, bool color) {
     if (by >= -33)
       break;
   }
-
-  CopInit(cp);
 
   /* Setup initial bitplane pointers. */
   for (i = 0; i < DEPTH; i++)
@@ -201,7 +201,7 @@ static void MakeCopperListBars(StateBarT *bars, bool color) {
     }
   }
 
-  CopEnd(cp);
+  bars->cp = CopListFinish(cp);
 }
 
 static void UpdateBarColor(StateBarT *bars, short step) {
@@ -296,9 +296,6 @@ static void UpdateStripeState(StateFullT *state) {
     } while (--n != -1);
   }
 }
-
-#define CP_FULL_SIZE (HEIGHT * 22 + 100)
-#define CP_BARS_SIZE (500)
 
 /* For both {Copy,Zero}SpriteTiles `t` controls which quarter of stripe,
  * i.e. tile has to be copied or cleared respectively. Note that all 8
@@ -451,14 +448,10 @@ static void Init(void) {
   }
 
   stateFull = MemAlloc(sizeof(StateFullT) * 2, MEMF_PUBLIC|MEMF_CLEAR);
-  stateFull[0].cp = NewCopList(CP_FULL_SIZE);
-  stateFull[1].cp = NewCopList(CP_FULL_SIZE);
   MakeCopperListFull(&stateFull[0]);
   MakeCopperListFull(&stateFull[1]);
 
   stateBars = MemAlloc(sizeof(StateBarT) * 2, MEMF_PUBLIC|MEMF_CLEAR);
-  stateBars[0].cp = NewCopList(CP_BARS_SIZE);
-  stateBars[1].cp = NewCopList(CP_BARS_SIZE);
   MakeCopperListBars(&stateBars[0], false);
   MakeCopperListBars(&stateBars[1], false);
 

@@ -45,10 +45,8 @@ static void Init(void) {
   }
 
   cp = NewCopList(40);
-  CopInit(cp);
   CopSetupBitplanes(cp, screen, DEPTH);
-  CopEnd(cp);
-
+  CopListFinish(cp);
   CopListActivate(cp);
 
   EnableDMA(DMAF_RASTER);

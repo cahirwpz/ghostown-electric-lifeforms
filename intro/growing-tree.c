@@ -198,10 +198,9 @@ static void Init(void) {
   custom->bplcon2 = BPLCON2_PF1P2;
 
   cp = NewCopList(50);
-  CopInit(cp);
   bplptr = CopSetupBitplanes(cp, screen, DEPTH);
   sprptr = CopSetupSprites(cp);
-  CopEnd(cp);
+  CopListFinish(cp);
 
   CopListActivate(cp);
 

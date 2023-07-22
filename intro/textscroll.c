@@ -30,7 +30,6 @@ extern uint8_t Text[];
 
 static CopListT *MakeCopperList(CopInsPairT **linebpl) {
   CopListT *cp = NewCopList(100 + 3 * HEIGHT);
-  CopInit(cp);
   CopSetupBitplanes(cp, scroll, DEPTH);
   {
     void *ptr = scroll->planes[0];
@@ -47,8 +46,7 @@ static CopListT *MakeCopperList(CopInsPairT **linebpl) {
       linebpl[y] = CopMove32(cp, bplpt[0], ptr);
     }
   }
-  CopEnd(cp);
-  return cp;
+  return CopListFinish(cp);
 }
 
 static void Init(void) {

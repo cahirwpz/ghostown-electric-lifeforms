@@ -218,13 +218,13 @@ static void BlitFunc(const BitmapT *sourceA, const BitmapT *sourceB,
   custom->bltsize = BLTSIZE;
 }
 
-void MakeCopperList(CopListT *cp) {
-  short i;
+static CopListT *MakeCopperList(void) {
+  CopListT *cp = NewCopList(1310);
   short *color = wireworld_pcb_pal_pixels;
   short display_bg = TrackValueGet(&WireworldDisplayBg, frameCount);
   short pal_start = display_bg ? 8 : 0;
+  short i;
 
-  CopInit(cp);
   // initially previous states are empty
   // save addresses of these instructions to change bitplane
   // order when new state gets generated
@@ -282,7 +282,8 @@ void MakeCopperList(CopListT *cp) {
     CopMove16(cp, bpl2mod, 0);
     CopWaitSafe(cp, Y(i + 1), 0);
   }
-  CopEnd(cp);
+
+  return CopListFinish(cp);
 }
 
 static void UpdateBitplanePointers(void) {
@@ -426,8 +427,7 @@ static void SharedPreInit(void) {
 
   SetupPlayfield(MODE_LORES, DISP_DEPTH, X(0), Y(0), DISP_WIDTH, DISP_HEIGHT);
 
-  cp = NewCopList(1310);
-  MakeCopperList(cp);
+  cp = MakeCopperList();
   CopListActivate(cp);
 
   EnableDMA(DMAF_RASTER | DMAF_SPRITE);

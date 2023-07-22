@@ -288,11 +288,10 @@ static void Init(void) {
   KillLogo();
 
   cp = NewCopList(100);
-  CopInit(cp);
   bplptr = CopSetupBitplanes(cp, screen, DEPTH);
   CopMove16(cp, bpl1mod, (WIDTH - S_WIDTH) / 8);
   CopMove16(cp, bpl2mod, (WIDTH - S_WIDTH) / 8);
-  CopEnd(cp);
+  CopListFinish(cp);
  
   CopListActivate(cp);
   
