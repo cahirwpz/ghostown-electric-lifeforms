@@ -70,7 +70,7 @@ void PixmapToBitmap(BitmapT *bm, short width, short height, short depth,
   bm->depth = depth;
   bm->bytesPerRow = bytesPerRow;
   bm->bplSize = bplSize;
-  bm->flags = BM_DISPLAYABLE | BM_STATIC;
+  bm->flags = BM_STATIC;
 
   BitmapSetPointers(bm, pixels);
 

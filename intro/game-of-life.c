@@ -325,8 +325,7 @@ static void GameOfLife(void *boards) {
 static short scene_count = 0;
 
 static void LoadBackground(const BitmapT *bg, u_short x, u_short y, short idx) {
-  BitmapT *tmp = NewBitmapCustom(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH,
-                                 BM_DISPLAYABLE);
+  BitmapT *tmp = NewBitmap(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH, 0);
   BitmapClear(tmp); // comment for cool effects!
   BitmapCopy(tmp, x, y, bg);
   WaitBlitter();
@@ -397,19 +396,16 @@ static void SharedPreInit(void) {
   }
 
   for (i = 0; i < BOARD_COUNT; i++)
-    boards[i] = NewBitmapCustom(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH,
-                                BM_DISPLAYABLE);
+    boards[i] = NewBitmap(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH, 0);
 
   for (i = 0; i < PREV_STATES_DEPTH; i++) {
     // only needs half the vertical resolution, other half
     // achieved via copper line doubling
-    prev_states[i] =
-      NewBitmapCustom(DISP_WIDTH, DISP_HEIGHT / 2, BOARD_DEPTH, BM_DISPLAYABLE);
+    prev_states[i] = NewBitmap(DISP_WIDTH, DISP_HEIGHT / 2, BOARD_DEPTH, 0);
   }
 
   for (i = 0; i < 2; i++)
-    background[i] =
-      NewBitmapCustom(DISP_WIDTH, DISP_HEIGHT / 2, BOARD_DEPTH, BM_DISPLAYABLE);
+    background[i] = NewBitmap(DISP_WIDTH, DISP_HEIGHT / 2, BOARD_DEPTH, 0);
 
   states_head = 0;
   current_board = boards[0];

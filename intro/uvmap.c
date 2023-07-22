@@ -377,8 +377,8 @@ static void VBlank(void) {
 static void Init(short var) {
   short i;
 
-  screen[0] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH);
-  screen[1] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH);
+  screen[0] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, BM_CLEAR);
+  screen[1] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, BM_CLEAR);
 
   texFstHi = MemAlloc(texture_out_width * texture_out_height * 4,
                       MEMF_PUBLIC|MEMF_CLEAR);

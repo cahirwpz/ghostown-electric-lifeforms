@@ -185,7 +185,7 @@ static void Init(void) {
   branches = MemAlloc(sizeof(BranchT) * MAXBRANCHES, MEMF_PUBLIC);
   lastBranch = branches;
 
-  screen = NewBitmap(WIDTH, HEIGHT, DEPTH);
+  screen = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
 
