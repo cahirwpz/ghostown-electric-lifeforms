@@ -397,7 +397,7 @@ static void Init(void) {
     SpriteUpdatePos(&whirl[i], hp, Y((HEIGHT - whirl_height) / 2));
   }
 
-  screen = NewBitmap(WIDTH, HEIGHT * 4, DEPTH);
+  screen = NewBitmap(WIDTH, HEIGHT * 4, DEPTH, BM_CLEAR);
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
   LoadPalette(currPal, 0);

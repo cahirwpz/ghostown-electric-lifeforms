@@ -244,7 +244,7 @@ static void Load(void) {
 
   EnableDMA(DMAF_BLITTER);
   /* bitmap width aligned to word */
-  logo_blit = NewBitmap(ghostown_logo.width, ghostown_logo.height, 1);
+  logo_blit = NewBitmap(ghostown_logo.width, ghostown_logo.height, 1, BM_CLEAR);
   BlitSimple(ghostown_logo.planes[0], ghostown_logo.planes[1],
              ghostown_logo.planes[2], logo_blit,
              ABC | ANBC | ABNC | ANBNC | NABC | NANBC | NABNC); 
@@ -276,7 +276,7 @@ static void Init(void) {
   for (i = 0; i < 16; i++)
     SetColor(i, BGCOLOR);
 
-  screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1);  
+  screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1, BM_CLEAR);
   EnableDMA(DMAF_BLITTER);
   if (TrackValueGet(&TileMoverBlit, frameCount) == 1)
     BlitBitmap(S_WIDTH / 2 - 96 - 8, S_HEIGHT / 2 - 66, logo_blit);

@@ -30,7 +30,7 @@ static void Load(void) {
 }
 
 static void Init(void) {
-  screen = NewBitmap(WIDTH, HEIGHT, DEPTH);
+  screen = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
 
   memcpy(screen->planes[0], electric_lifeforms.planes[0],
          WIDTH * HEIGHT * DEPTH / 8);

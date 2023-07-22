@@ -127,12 +127,10 @@ static void Init(void) {
   CalculateTiles(tiles, SIN_PI/3, SIN_PI, -SIN_PI/3, SIN_PI/12, 0);
 
 #if MOTIONBLUR
-  screen0 = NewBitmap(WIDTH, HEIGHT, DEPTH + SHADOW);
+  screen0 = NewBitmap(WIDTH, HEIGHT, DEPTH + SHADOW, BM_CLEAR);
 #else
-  screen0 = NewBitmapCustom(WIDTH, HEIGHT, DEPTH,
-                            BM_CLEAR|BM_DISPLAYABLE|BM_INTERLEAVED);
-  screen1 = NewBitmapCustom(WIDTH, HEIGHT, DEPTH,
-                            BM_CLEAR|BM_DISPLAYABLE|BM_INTERLEAVED);
+  screen0 = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR | BM_INTERLEAVED);
+  screen1 = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR | BM_INTERLEAVED);
 #endif
 
 #if MOTIONBLUR

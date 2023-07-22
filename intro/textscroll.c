@@ -52,7 +52,7 @@ static CopListT *MakeCopperList(CopInsPairT **linebpl) {
 }
 
 static void Init(void) {
-  scroll = NewBitmap(WIDTH, HEIGHT + 16, 1);
+  scroll = NewBitmap(WIDTH, HEIGHT + 16, 1, BM_CLEAR);
 
   line_start = Text;
 
