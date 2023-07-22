@@ -70,7 +70,7 @@ static void DrawOsc(BitmapT *osc, P61_OscData *data) {
 static void Init(void) {
   KeyboardInit();
 
-  screen = NewBitmap(WIDTH, HEIGHT, DEPTH, 0);
+  screen = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
 
   ITER(i, 0, 3, osc[i] = NewBitmap(64, 64, 1, BM_CLEAR));
 
