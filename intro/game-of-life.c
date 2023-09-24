@@ -97,6 +97,8 @@
 #include "data/chip.c"
 #include "data/wireworld-pcb-pal.c"
 
+static const __data PaletteT wireworld_chip_pal = wireworld_chip_pal_struct;
+
 #include "bitmaps.h"
 
 extern TrackT GOLGame;
@@ -220,7 +222,7 @@ static void BlitFunc(const BitmapT *sourceA, const BitmapT *sourceB,
 
 static CopListT *MakeCopperList(void) {
   CopListT *cp = NewCopList(1310);
-  short *color = wireworld_pcb_pal_pixels;
+  short *color = wireworld_gradient_pixels;
   short display_bg = TrackValueGet(&WireworldDisplayBg, frameCount);
   short pal_start = display_bg ? 8 : 0;
   short i;
@@ -379,7 +381,7 @@ static inline void ChipFadeIn(short phase) {
   for (i = 16; i < 32; i++)
     CopInsSet16(
       palptr + i,
-      ColorTransition(0x000, wireworld_chip_pal.colors[i - 16], 15 - phase));
+      ColorTransition(0x000, wireworld_chip_colors[i - 16], 15 - phase));
 }
 
 static void SharedPreInit(void) {

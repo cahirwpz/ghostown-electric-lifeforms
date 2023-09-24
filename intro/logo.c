@@ -20,11 +20,11 @@ static CopListT *cp;
 static BitmapT *screen;
 BitmapT ghostown_logo;
 
-static const PaletteT *ghostown_logo_pal[] = {
-  NULL,
-  &ghostown_logo_1_pal,
-  &ghostown_logo_2_pal,
-  &ghostown_logo_3_pal,
+static const PaletteT ghostown_logo_pal[] = {
+  {NULL, 0},
+  ghostown_logo_1_pal_struct,
+  ghostown_logo_2_pal_struct,
+  ghostown_logo_3_pal_struct,
 };
 
 extern TrackT GhostownLogoPal;
@@ -60,8 +60,8 @@ static void SharedInit(bool out) {
   CopListActivate(cp);
 
   for (i = 0; i < (1 << DEPTH); i++)
-    SetColor(i, out ? ghostown_logo_3_pal.colors[i]
-                    : ghostown_logo_1_pal.colors[0]);
+    SetColor(i, out ? ghostown_logo_3_colors[i]
+                    : ghostown_logo_1_colors[0]);
 
   EnableDMA(DMAF_RASTER);
 }
@@ -101,13 +101,13 @@ static void Render(short out) {
       short i;
 
       for (i = 0; i < (1 << DEPTH); i++) {
-        short prev = (num == 1) ? ghostown_logo_1_pal.colors[0]
-                                : ghostown_logo_pal[num - 1]->colors[i];
-        short curr = ghostown_logo_pal[num]->colors[i];
+        short prev = (num == 1) ? ghostown_logo_1_colors[0]
+                                : ghostown_logo_pal[num - 1].colors[i];
+        short curr = ghostown_logo_pal[num].colors[i];
         SetColor(i, ColorTransition(prev, curr, frame));
       }
     } else {
-      LoadPalette(ghostown_logo_pal[num], 0);
+      LoadPalette(&ghostown_logo_pal[num], 0);
     }
   }
 

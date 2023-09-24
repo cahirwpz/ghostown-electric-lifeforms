@@ -430,16 +430,17 @@ def do_palette(im, desc):
 
     cmap = [pal[i * 3:(i + 1) * 3] for i in range(colors)]
 
-    print("#define %s_count %d\n" % (name, len(cmap)))
+    print(f"#define {name}_colors_count {len(cmap)}\n")
 
-    print('%sconst __data PaletteT %s = {' %
-          ('' if shared else 'static ', name))
-    print('  .count = %d,' % len(cmap))
-    print('  .colors = {')
+    static = '' if shared else 'static '
+
+    print(f'{static}__data u_short {name}_colors[{name}_colors_count] = {{')
     for r, g, b in cmap:
-        print('    0x%x%x%x,' % (r >> 4, g >> 4, b >> 4))
-    print('  }')
-    print('};')
+        print('  0x%x%x%x,' % (r >> 4, g >> 4, b >> 4))
+    print('};\n')
+
+    print(f'#define {name}_pal_struct \\')
+    print(f'  (PaletteT){{ {name}_colors, {name}_colors_count }}')
 
 
 if __name__ == '__main__':

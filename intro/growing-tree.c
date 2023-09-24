@@ -30,6 +30,9 @@ static u_short nrPal = 0;
 #include "data/fruit-2.c"
 #include "data/grass.c"
 
+static const __data PaletteT electric_pal = tree_electric_pal_struct;
+static const __data PaletteT organic_pal = tree_organic_pal_struct;
+
 typedef struct Branch {
   short pos_x, pos_y; // Q12.4
   union { // Q4.12
@@ -173,10 +176,10 @@ static void VBlank(void) {
   (void)TrackValueGet(&TreeFade, frameCount);
 
   if ((val = FromCurrKeyFrame(&TreeFade)) < 16)
-    FadeBlack(nrPal ? &tree_pal_electric : &tree_pal_organic, 0, val);
+    FadeBlack(nrPal ? &electric_pal : &organic_pal, 0, val);
   
   if ((val = TillNextKeyFrame(&TreeFade)) < 16)
-    FadeBlack(nrPal ? &tree_pal_electric : &tree_pal_organic, 0, val);
+    FadeBlack(nrPal ? &electric_pal : &organic_pal, 0, val);
 }
 
 static void Init(void) {

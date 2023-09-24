@@ -16,10 +16,10 @@ static CopListT *cp;
 static BitmapT *screen;
 static BitmapT electric_lifeforms;
 
-static const PaletteT *electric_lifeforms_pal[] = {
-  NULL,
-  &electric_lifeforms_1_pal,
-  &electric_lifeforms_2_pal
+static const PaletteT electric_lifeforms_pal[] = {
+  { NULL, 0 },
+  electric_lifeforms_1_pal_struct,
+  electric_lifeforms_2_pal_struct,
 };
 
 extern TrackT ElectricLifeformsLogoPal;
@@ -41,7 +41,7 @@ static void Init(void) {
     short i = 0;
 
     for (i = 0; i < (1 << DEPTH); i++)
-      SetColor(i, electric_lifeforms_1_pal.colors[0]);
+      SetColor(i, electric_lifeforms_1_colors[0]);
   }
 
   cp = NewCopList(40);
@@ -73,13 +73,13 @@ static void Render(void) {
       // Initially, we want to fade in the full palette.
       // Then, only flicker the right side of the bitmap.
       for (i = initialFadeIn ? 0 : 5; i < (1 << DEPTH); i++) {
-        short prev = (num == 1) ? electric_lifeforms_1_pal.colors[0]
-          : electric_lifeforms_pal[num - 1]->colors[i];
-        short curr = electric_lifeforms_pal[num]->colors[i];
+        short prev = (num == 1) ? electric_lifeforms_1_colors[0]
+          : electric_lifeforms_pal[num - 1].colors[i];
+        short curr = electric_lifeforms_pal[num].colors[i];
         SetColor(i, ColorTransition(prev, curr, frame));
       }
     } else {
-      LoadPalette(electric_lifeforms_pal[num], 0);
+      LoadPalette(&electric_lifeforms_pal[num], 0);
       initialFadeIn = false;
     }
   }

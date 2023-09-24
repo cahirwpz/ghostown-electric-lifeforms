@@ -264,7 +264,7 @@ static void VBlank(void) {
   if (frameTillEnd < 16) {
     FadeBlack(currPal, 0, frameTillEnd); 
   } else if ((val = TrackValueGet(&TileMoverBgBlip, frameCount))) {
-    SetColor(0, tilemover_bg_pal.colors[blip_sequence[val]]);
+    SetColor(0, tilemover_bg_colors[blip_sequence[val]]);
   }
 }
 
