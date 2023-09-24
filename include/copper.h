@@ -214,9 +214,6 @@ CopInsT *CopLoadColorArray(CopListT *list, const u_short *colors, short count,
 #define CopLoadColors(list, colors, start) \
   CopLoadColorArray((list), (colors), nitems(colors), (start))
 
-#define CopLoadPalette(list, pal, start) \
-  CopLoadColorArray((list), (pal)->colors, (pal)->count, (start))
-
 void CopSetupMode(CopListT *list, u_short mode, u_short depth);
 /* Arguments must be always specified in low resolution coordinates. */
 void CopSetupDisplayWindow(CopListT *list, u_short mode, 

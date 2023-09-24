@@ -42,33 +42,33 @@ static u_short *turmite_credits_bpl[] = {
   _turmite_credits_3_bpl,
 };
 
-static const PaletteT *active_pal[] = {
+static const u_short *active_pal[] = {
   NULL,
-  &pal_gold,
-  &pal_green,
-  &pal_red,
+  gold_colors,
+  green_colors,
+  red_colors,
 };
 
 static short active_pal_index = 1;
 
-static const PaletteT *turmite_pal[][4] = {
+static const u_short *turmite_pal[][4] = {
   [1] = {
     NULL,
-    &pal_gold_light,
-    &pal_gold,
-    &pal_gold_dark,
+    gold_light_colors,
+    gold_colors,
+    gold_dark_colors,
   },
   [2] = {
     NULL,
-    &pal_green_light,
-    &pal_green,
-    &pal_green_dark,
+    green_light_colors,
+    green_colors,
+    green_dark_colors,
   },
   [3] = {
     NULL,
-    &pal_red_light,
-    &pal_red,
-    &pal_red_dark,
+    red_light_colors,
+    red_colors,
+    red_dark_colors,
   }
 };
 
@@ -568,18 +568,17 @@ static void VBlank(void) {
 
   UpdateFrameCount();
 
-  if ((val = TrackValueGet(&TurmitePal, frameFromStart))) {
-    const PaletteT *pal = turmite_pal[active_pal_index][blip_sequence[val]];
-    LoadPalette(pal, 0);
-  }
+  if ((val = TrackValueGet(&TurmitePal, frameFromStart)))
+    LoadColorArray(turmite_pal[active_pal_index][blip_sequence[val]],
+                   colors_count, 0);
 
   (void)TrackValueGet(&TurmiteFade, frameCount);
 
   if ((val = FromCurrKeyFrame(&TurmiteFade)) < 16)
-    FadeBlack(active_pal[active_pal_index], 0, val);
+    FadeBlack(active_pal[active_pal_index], colors_count, 0, val);
 
   if ((val = TillNextKeyFrame(&TurmiteFade)) < 16)
-    FadeBlack(active_pal[active_pal_index], 0, val);
+    FadeBlack(active_pal[active_pal_index], colors_count, 0, val);
 }
 
 static void Init(void) {
@@ -590,7 +589,7 @@ static void Init(void) {
   SetupDisplayWindow(MODE_LORES, X(32), Y(0), WIDTH, HEIGHT);
   SetupBitplaneFetch(MODE_LORES, X(32), WIDTH);
   SetupMode(MODE_LORES, DEPTH);
-  LoadPalette(&pal_gold, 0);
+  LoadColors(gold_colors, 0);
 
   EnableDMA(DMAF_BLITTER);
   ChooseTurmiteBoard(1);

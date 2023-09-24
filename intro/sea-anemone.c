@@ -87,38 +87,38 @@ extern TrackT SeaAnemonePalPulse;
 extern TrackT SeaAnemoneGradient;
 extern TrackT SeaAnemoneFade;
 
-static const PaletteT *sea_anemone_palettes[] = {
+static const u_short *sea_anemone_palettes[] = {
   NULL,
-  &pal_green,
-  &pal_blue,
-  &pal_red,
-  &pal_gold,
+  green_colors,
+  blue_colors,
+  red_colors,
+  gold_colors,
 };
 
-static const PaletteT *sea_anemone_pal[][4] = {
+static const u_short *sea_anemone_pal[][4] = {
   [1] = {
     NULL,
-    &pal_green_light,
-    &pal_green,
-    &pal_green_dark,
+    green_light_colors,
+    green_colors,
+    green_dark_colors,
   },
   [2] = { 
     NULL,
-    &pal_blue_light,
-    &pal_blue,
-    &pal_blue_dark,
+    blue_light_colors,
+    blue_colors,
+    blue_dark_colors,
   },
   [3] = {
     NULL,
-    &pal_red_light,
-    &pal_red,
-    &pal_red_dark,
+    red_light_colors,
+    red_colors,
+    red_dark_colors,
   },
   [4] = {
     NULL,
-    &pal_gold_light,
-    &pal_gold,
-    &pal_gold_dark,
+    gold_light_colors,
+    gold_colors,
+    gold_dark_colors,
   }
 };
 
@@ -298,7 +298,7 @@ static __code u_short gradient[anemone_gradient_colors_count];
 
 static void GradientUpdate(short step) {
   const u_char *ptr = anemone_gradient_color;
-  const short from = sea_anemone_palettes[active_index]->colors[0];
+  const short from = sea_anemone_palettes[active_index][0];
   short i;
 
   for (i = 0; i < anemone_gradient_colors_count; i++)
@@ -317,7 +317,7 @@ static void GradientUpdate(short step) {
 }
 
 static void GradientClear(short step) {
-  const short to = sea_anemone_palettes[active_index]->colors[0];
+  const short to = sea_anemone_palettes[active_index][0];
   short bgcol = ColorTransition(0, to, step);
   short i;
 
@@ -341,15 +341,15 @@ static void VBlank(void) {
 
   if ((val = FromCurrKeyFrame(&SeaAnemoneFade)) < 16) {
     GradientClear(val);
-    FadeBlack(sea_anemone_palettes[active_index], 0, val);
-    FadeBlack(&whirl_pal_struct, 16, val);
+    FadeBlack(sea_anemone_palettes[active_index], colors_count, 0, val);
+    FadeBlack(whirl_colors, whirl_colors_count, 0, val);
   } else if ((val = TillNextKeyFrame(&SeaAnemoneFade)) < 16) {
     GradientClear(val);
-    FadeBlack(sea_anemone_palettes[active_index], 0, val);
-    FadeBlack(&whirl_pal_struct, 16, val);
+    FadeBlack(sea_anemone_palettes[active_index], colors_count, 0, val);
+    FadeBlack(whirl_colors, whirl_colors_count, 0, val);
   } else if ((val = TrackValueGet(&SeaAnemonePalPulse, frameFromStart))) {
-    const PaletteT *pal = sea_anemone_pal[active_index][blip_sequence[val]];
-    LoadPalette(pal, 0);
+    LoadColorArray(sea_anemone_pal[active_index][blip_sequence[val]],
+                   colors_count, 0);
   } else if ((val = TrackValueGet(&SeaAnemoneGradient, frameFromStart))) {
     GradientUpdate(gradient_envelope[val]);
   }
@@ -384,7 +384,7 @@ static void Init(void) {
   screen = NewBitmap(WIDTH, HEIGHT * 4, DEPTH, BM_CLEAR);
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
-  LoadPalette(&pal_red, 0);
+  LoadColors(red_colors, 0);
   LoadColors(whirl_colors, 16);
 
   cp[0] = MakeCopperList(0);

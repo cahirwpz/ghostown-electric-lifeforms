@@ -11,7 +11,7 @@
 static BitmapT *foreground;
 static CopListT *cp[2];
 static const BitmapT *lower;
-static PaletteT *lower_pal;
+static u_short *lower_pal;
 static Point2D lower_pos;
 static Area2D lower_area;
 static short active = 0;
@@ -102,7 +102,7 @@ static void MakeCopperList(CopListT *cp) {
      * I found 'X(56) / 2' to be the least working horizontal position,
      * but I cannot provide any sound explanation why is it so? */
     CopWaitSafe(cp, LOGO_Y - 1, X(56) / 2);
-    CopLoadPalette(cp, lower_pal, 0);
+    CopLoadColorArray(cp, lower_pal, logo_colors_count, 0);
     CopSetupMode(cp, MODE_LORES, lower->depth);
     CopSetupBitplaneArea(cp, MODE_LORES, lower->depth,
                          lower, X(lower_pos.x), Y(lower_pos.y), &lower_area);
@@ -141,27 +141,27 @@ static void Render(void) {
   if (frameCount > 600) {
     short i = div16(frameCount - 250, 8) & 3;
     lower = &logo;
-    lower_pal = &logo_pal_struct;
+    lower_pal = logo_colors;
     BitmapCopy(foreground, 80, 0, dance[i + 4]);
   } else if (frameCount > 500) {
     lower = member[4];
-    lower_pal = &member_pal_struct;
+    lower_pal = member_colors;
     BitmapCopy(foreground, 80, 0, dance[4]);
   } else if (frameCount > 400) {
     lower = member[3];
-    lower_pal = &member_pal_struct;
+    lower_pal = member_colors;
     BitmapCopy(foreground, 80, 0, dance[3]);
   } else if (frameCount > 300) {
     lower = member[2];
-    lower_pal = &member_pal_struct;
+    lower_pal = member_colors;
     BitmapCopy(foreground, 80, 0, dance[2]);
   } else if (frameCount > 200) {
     lower = member[1];
-    lower_pal = &member_pal_struct;
+    lower_pal = member_colors;
     BitmapCopy(foreground, 80, 0, dance[1]);
   } else if (frameCount > 100) {
     lower = member[0];
-    lower_pal = &member_pal_struct;
+    lower_pal = member_colors;
     BitmapCopy(foreground, 80, 0, dance[0]);
   } else {
     lower = NULL;

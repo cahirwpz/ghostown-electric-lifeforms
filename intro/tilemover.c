@@ -39,7 +39,7 @@
 
 static __code BitmapT *screen;
 static __code int active = 0;
-static __code const PaletteT *currPal;
+static __code const u_short *currPal;
 static CopListT *cp;
 static CopInsPairT *bplptr;
 
@@ -58,14 +58,12 @@ static short tiles[NFLOWFIELDS][NTILES];
 #include "palettes.h"
 #include "bitmaps.h"
 
-typedef const PaletteT *TilemoverPalT[5];
-
-static TilemoverPalT tilemover_palettes = {
+static const u_short *tilemover_palettes[] = {
   NULL,
-  &pal_blue,    
-  &pal_red,     
-  &pal_green,
-  &pal_gold
+  blue_colors,    
+  red_colors,
+  green_colors,
+  gold_colors,
 };
 
 static const short blip_sequence[] = {
@@ -262,7 +260,7 @@ static void VBlank(void) {
   UpdateFrameCount();
 
   if (frameTillEnd < 16) {
-    FadeBlack(currPal, 0, frameTillEnd); 
+    FadeBlack(currPal, colors_count, 0, frameTillEnd); 
   } else if ((val = TrackValueGet(&TileMoverBgBlip, frameCount))) {
     SetColor(0, tilemover_bg_colors[blip_sequence[val]]);
   }
@@ -419,7 +417,7 @@ static void Render(void) {
   
   if (current_pal) {
     currPal = tilemover_palettes[current_pal];
-    LoadPalette(currPal, 0);
+    LoadColorArray(currPal, colors_count, 0);
     SetColor(0, BGCOLOR);
     // Spinning torus needs to have screen cleared out to avoid
     // ugly visual artifacts.

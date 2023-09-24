@@ -20,11 +20,11 @@ static CopListT *cp;
 static BitmapT *screen;
 BitmapT ghostown_logo;
 
-static const PaletteT ghostown_logo_pal[] = {
-  {NULL, 0},
-  ghostown_logo_1_pal_struct,
-  ghostown_logo_2_pal_struct,
-  ghostown_logo_3_pal_struct,
+static const u_short *ghostown_logo_pal[] = {
+  NULL,
+  ghostown_logo_1_colors,
+  ghostown_logo_2_colors,
+  ghostown_logo_3_colors,
 };
 
 extern TrackT GhostownLogoPal;
@@ -102,12 +102,12 @@ static void Render(short out) {
 
       for (i = 0; i < (1 << DEPTH); i++) {
         short prev = (num == 1) ? ghostown_logo_1_colors[0]
-                                : ghostown_logo_pal[num - 1].colors[i];
-        short curr = ghostown_logo_pal[num].colors[i];
+                                : ghostown_logo_pal[num - 1][i];
+        short curr = ghostown_logo_pal[num][i];
         SetColor(i, ColorTransition(prev, curr, frame));
       }
     } else {
-      LoadPalette(&ghostown_logo_pal[num], 0);
+      LoadColorArray(ghostown_logo_pal[num], ghostown_logo_1_colors_count, 0);
     }
   }
 

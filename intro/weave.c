@@ -356,16 +356,16 @@ static void Load(void) {
   }
 }
 
-static const PaletteT barPalArray[] = {
-  bar_bright_pal_struct,
-  bar_pal_struct,
-  bar_dark_pal_struct,
+static const u_short *barPalArray[] = {
+  bar_bright_colors,
+  bar_colors,
+  bar_dark_colors,
 };
 
-static const PaletteT stripePalArray[] = {
-  stripes_bright_pal_struct,
-  stripes_pal_struct,
-  stripes_dark_pal_struct,
+static const u_short *stripePalArray[] = {
+  stripes_bright_colors,
+  stripes_colors,
+  stripes_dark_colors,
 };
 
 static const short palIdxSeq[] = {
@@ -393,7 +393,7 @@ static void VBlank(void) {
     if (palIdx < 0)
       continue;
     stripePalIdx[i]++;
-    LoadColorArray(&stripePalArray[palIdx].colors[m], 4, 16 + m);
+    LoadColorArray(&stripePalArray[palIdx][m], 4, 16 + m);
   }
 
   if ((val = TrackValueGet(&WeaveBarPulse, frameFromStart))) {
@@ -410,7 +410,7 @@ static void VBlank(void) {
     barPalIdx[i]++;
     {
       CopInsT *ins = stateFull[active ^ 1].bars.palette[i];
-      const u_short *col = &barPalArray[palIdx].colors[(i & 1) ? 16 : 0];
+      const u_short *col = &barPalArray[palIdx][(i & 1) ? 16 : 0];
       for (m = 0; m < 16; m++) {
         CopInsSet16(ins++, *col++);
       }
