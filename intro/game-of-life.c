@@ -97,8 +97,6 @@
 #include "data/chip.c"
 #include "data/wireworld-pcb-pal.c"
 
-static const __data PaletteT wireworld_chip_pal = wireworld_chip_pal_struct;
-
 #include "bitmaps.h"
 
 extern TrackT GOLGame;
@@ -249,7 +247,7 @@ static CopListT *MakeCopperList(void) {
   palptr = CopSetColor(cp, 0, 0);
   for (i = 1; i < 32; i++)
     CopSetColor(cp, i, 0);
-  // CopLoadPal(cp, &wireworld_chip_pal, 16);
+  // CopLoadColors(cp, wireworld_chip_colors, 16);
 
   for (i = 1; i <= DISP_HEIGHT; i += 2) {
     // vertical pixel doubling
@@ -599,7 +597,7 @@ static void GolStep(void) {
       sizeof(wireworld_chip_cycling) / sizeof(wireworld_chip_cycling[0]);
     if (TrackValueGet(&WireworldFadeIn, frameCount) == 0)
       ColorCyclingStep(&palptr[16], wireworld_chip_cycling, cycling_len,
-                       &wireworld_chip_pal);
+                       wireworld_chip_colors);
   } else {
     short logo_idx = TrackValueGet(&GOLLogoType, frameCount);
     CopInsSet32(&bplptr[3], background[logo_idx]->planes[0]);

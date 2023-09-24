@@ -29,7 +29,7 @@ static ColorCyclingT wireworld_chip_cycling[] = {
 };
 
 static void ColorCyclingStep(CopInsT *ins, ColorCyclingT *rots,
-                             short len, const PaletteT *pal)
+                             short len, const u_short *colors)
 {
   // From https://wiki.amigaos.net/wiki/ILBM_IFF_Interleaved_Bitmap#CRNG
   // "The field rate determines the speed at which the colors will step when
@@ -51,7 +51,7 @@ static void ColorCyclingStep(CopInsT *ins, ColorCyclingT *rots,
     for (i = rot->len; i >= 0; i--) {
       short cn = rot->indices[n];
       short ci = rot->indices[i];
-      CopInsSet16(&ins[ci], pal->colors[cn]);
+      CopInsSet16(&ins[ci], colors[cn]);
 
       n++;
       if (n >= rot->len)
