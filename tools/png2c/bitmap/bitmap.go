@@ -1,0 +1,167 @@
+package bitmap
+
+import (
+	_ "embed"
+	"fmt"
+	"image"
+	"strings"
+	"text/template"
+
+	"ghostown.pl/png2c/util"
+)
+
+//go:embed template.tpl
+var tpl string
+
+func Make(in *image.Paletted, cfg image.Config, opts map[string]any) string {
+	o := bindParams(opts)
+	out, err := template.New("bitmap_template").Parse(tpl)
+	if err != nil {
+		panic(err)
+	}
+
+	depth := util.GetDepth(in.Pix)
+	if o.LimitDepth {
+		depth = min(o.Depth, depth)
+	}
+	crash := false
+	// in.Palette = util.CleanPalette(in.Palette)
+	img := in
+	if o.SubImage {
+		r := in.SubImage(image.Rectangle{
+			Min: image.Point{X: o.StartX, Y: o.StartY},
+			Max: image.Point{X: o.StartX + o.Width, Y: o.StartY + o.Height},
+		}).(*image.Paletted)
+
+		img = image.NewPaletted(r.Rect, in.Palette)
+		cfg.Width = img.Rect.Dx()
+		cfg.Height = img.Rect.Dy()
+
+		crash = true
+		// panic(o.Width)
+	}
+
+	if o.Width != cfg.Width || o.Height != cfg.Height || o.Depth != depth {
+		got := fmt.Sprintf("%vx%vx%v", o.Width, o.Height, o.Depth)
+		exp := fmt.Sprintf("%vx%vx%v", cfg.Width, cfg.Height, depth)
+		panic(fmt.Sprintf("image size is wrong: expected %q, got %q", exp, got))
+	}
+
+	bpl := util.Planar(img.Pix, o.Width, o.Height, depth, crash)
+
+	if o.Interleaved {
+		for i := 0; i < depth*o.WordsPerRow*o.Height; i = i + o.WordsPerRow {
+			words := []string{}
+			for x := 0; x < o.WordsPerRow; x++ {
+				f := fmt.Sprintf("0x%04x", bpl[i+x])
+				words = append(words, f)
+			}
+			o.BplData = append(o.BplData, strings.Join(words, ","))
+		}
+	} else {
+		for i := 0; i < depth*o.WordsPerRow; i = i + o.WordsPerRow {
+			j := i
+			for y := 0; y < o.Height; y++ {
+				words := []string{}
+				for x := 0; x < o.WordsPerRow; x++ {
+					f := fmt.Sprintf("0x%04x", bpl[j+x])
+					words = append(words, f)
+				}
+				o.BplData = append(o.BplData, strings.Join(words, ","))
+				j += o.WordsPerRow * depth
+			}
+		}
+	}
+
+	flags := []string{"BM_STATIC"}
+	if o.CpuOnly {
+		flags = append(flags, "BM_CPUONLY")
+	}
+	if o.Interleaved {
+		flags = append(flags, "BM_INTERLEAVED")
+	}
+	o.Flags = strings.Join(flags, "|")
+	o.Flags += ","
+
+	for i := 0; i < depth; i++ {
+		offset := 0
+		if o.Interleaved {
+			offset = i * o.BytesPerRow
+		} else {
+			offset = i * o.BplSize
+		}
+		ptr := fmt.Sprintf("(void *)_%s_bpl + %v", o.Name, offset)
+		o.BplPointers = append(o.BplPointers, ptr)
+	}
+
+	var buf strings.Builder
+	err = out.Execute(&buf, o)
+	if err != nil {
+		panic(err)
+	}
+
+	return buf.String()
+}
+
+func bindParams(p map[string]any) (out Opts) {
+	out.Name = p["name"].(string)
+	out.Width = p["width"].(int)
+	out.Height = p["height"].(int)
+	out.Depth = p["depth"].(int)
+
+	if v, ok := p["interleaved"]; ok {
+		out.Interleaved = v.(bool)
+	}
+	if v, ok := p["limit_depth"]; ok {
+		out.LimitDepth = v.(bool)
+	}
+	if v, ok := p["cpu_only"]; ok {
+		out.CpuOnly = v.(bool)
+	}
+	if v, ok := p["shared"]; ok {
+		out.Shared = v.(bool)
+	}
+	if v, ok := p["onlydata"]; ok {
+		out.OnlyData = v.(bool)
+	}
+	if v, ok := p["displayable"]; ok {
+		out.Displayable = v.(bool)
+	}
+
+	if coords, _ := p["extract_at"].([]int); coords[0] >= 0 {
+		out.SubImage = true
+		out.StartX = coords[0]
+		out.StartY = coords[1]
+	}
+
+	out.BytesPerRow = ((out.Width + 15) & ^15) / 8
+	out.WordsPerRow = out.BytesPerRow / 2
+	out.BplSize = out.BytesPerRow * out.Height
+	out.Size = out.BplSize * out.Depth
+
+	return out
+}
+
+type Opts struct {
+	Name        string
+	Width       int
+	Height      int
+	Depth       int
+	Interleaved bool
+	LimitDepth  bool
+	CpuOnly     bool
+	Shared      bool
+	OnlyData    bool
+	Displayable bool
+	BytesPerRow int
+	WordsPerRow int
+	Flags       string
+	Planes      string
+	BplSize     int
+	Size        int
+	SubImage    bool
+	StartX      int
+	StartY      int
+	BplData     []string
+	BplPointers []string
+}
