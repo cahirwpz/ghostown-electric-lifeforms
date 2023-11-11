@@ -77,7 +77,7 @@ func ParseOpts(s string, params ...Param) map[string]any {
 }
 
 func cast(p Param, out map[string]any) map[string]any {
-	if p.CastType != TYPE_BOOL {
+	if p.CastType == TYPE_INT {
 		names := strings.Split(p.Name, ",")
 		values := strings.Split(p.Value.(string), "x")
 		if len(values) == len(names) {

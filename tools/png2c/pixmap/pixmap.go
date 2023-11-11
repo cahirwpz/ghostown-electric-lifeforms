@@ -45,7 +45,7 @@ func Make(in image.Image, cfg image.Config, opts map[string]any) string {
 		var data []uint16
 
 		if o.Bpp == 4 {
-			o.Size = o.Width * o.Height / 2
+			//o.Size = o.Width * o.Height / 2
 			o.Type = "PM_CMAP4"
 			data = chunky4(pm, pm.Pix, o.Width, o.Height)
 			o.Stride = (o.Width + 1) / 2
@@ -66,6 +66,7 @@ func Make(in image.Image, cfg image.Config, opts map[string]any) string {
 			}
 			o.PixData = append(o.PixData, strings.Join(row, ", "))
 		}
+		o.Size = o.Stride * o.Height
 	}
 	if rgbm, _ := in.(*image.RGBA); rgbm != nil {
 		o.IsRGB = true

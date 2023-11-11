@@ -88,8 +88,9 @@ func main() {
 		}
 		for _, flag := range paletteVar {
 			opts := pms.ParseOpts(flag,
-				pms.Param{Name: p.OPT_NAME, CastType: pms.TYPE_STRING},
-				pms.Param{Name: p.OPT_COUNT, CastType: pms.TYPE_INT},
+				pms.Param{Name: "name", CastType: pms.TYPE_STRING},
+				pms.Param{Name: "count", CastType: pms.TYPE_INT},
+				pms.Param{Name: "shared", CastType: pms.TYPE_BOOL, Value: false},
 			)
 
 			out += p.Make(pm, cfg, opts)

@@ -11,7 +11,7 @@ static {{ if not .CpuOnly }}__data_chip{{ end }} u_short _{{ .Name }}_bpl[] = {
 #define {{ .Name }}_bplSize {{ .BplSize }}
 #define {{ .Name }}_size {{ .Size}}
 {{ if not .OnlyData }}
-const {{if .Shared }} static {{ end }} __data BitmapT {{ .Name }} = {
+{{if not .Shared }} static {{ end }} const  __data BitmapT {{ .Name }} = {
 	.width = {{ .Width }},
 	.height = {{ .Height }},
 	.depth = {{ .Depth }},

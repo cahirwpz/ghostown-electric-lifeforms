@@ -11,20 +11,20 @@ import (
 //go:embed template.tpl
 var tpl string
 
-const (
-	OPT_NAME  = "name"
-	OPT_COUNT = "count"
-)
-
 type Palette struct {
 	Name   string
 	Count  int
+	Shared bool
 	Colors []string
 }
 
 func Make(in *image.Paletted, cfg image.Config, opts map[string]any) string {
-	name := opts[OPT_NAME].(string)
-	count := opts[OPT_COUNT].(int)
+	var out Palette
+	name := opts["name"].(string)
+	count := opts["count"].(int)
+	if v, ok := opts["shared"]; ok {
+		out.Shared = v.(bool)
+	}
 
 	tmpl, err := template.New("pal_template").Parse(tpl)
 	if err != nil {
@@ -38,7 +38,6 @@ func Make(in *image.Paletted, cfg image.Config, opts map[string]any) string {
 		panic(msg)
 	}
 
-	var out Palette
 	for _, v := range p {
 		r, g, b, _ := v.RGBA()
 		c := fmt.Sprintf("0x%x%x%x", r>>8/16, g>>8/16, b>>8/16)
