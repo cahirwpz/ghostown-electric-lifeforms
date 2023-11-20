@@ -78,7 +78,7 @@ static inline void CopSpriteSetHP(CopListT *cp, short n) {
 #define CP_FULL_SIZE (HEIGHT * 22 + 100)
 
 static void MakeCopperListFull(StateFullT *state) {
-  CopListT *cp = NewCopList(CP_FULL_SIZE);
+  CopListT *cp = state->cp ? CopListReset(state->cp) : NewCopList(CP_FULL_SIZE);
   short b, y, i;
 
   /* Setup initial bitplane pointers. */
@@ -156,10 +156,10 @@ static void MakeCopperListFull(StateFullT *state) {
   state->cp = CopListFinish(cp);
 }
 
-#define CP_BARS_SIZE 500
+#define CP_BARS_SIZE 400
 
 static void MakeCopperListBars(StateBarT *bars, bool color) {
-  CopListT *cp = NewCopList(CP_BARS_SIZE);
+  CopListT *cp = bars->cp ? CopListReset(bars->cp) : NewCopList(CP_BARS_SIZE);
   short b, by, y, i;
 
   for (b = 0; b < BARS; b++) {
