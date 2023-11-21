@@ -9,6 +9,18 @@ import (
 	"math"
 )
 
+func CutImage(startX, startY, width, height int, img image.Config, pix []uint8) []uint8 {
+	offset := img.Width*startY + startX
+	out := []uint8{}
+
+	for i := 0; i < height; i++ {
+		out = append(out, pix[offset:offset+width]...)
+		offset += img.Width
+	}
+
+	return out
+}
+
 func CleanPalette(pal color.Palette) color.Palette {
 	colors := map[color.Color]color.Color{}
 	for _, p := range pal {
@@ -31,7 +43,8 @@ func GetDepth(pix []uint8) int {
 			pal[p] = p
 		}
 	}
-	return int(math.Log2(float64(len(pal))))
+
+	return int(math.Ceil(math.Log2(float64(len(pal)))))
 }
 
 func DecodePNG(file []byte) (image.Image, image.Config, error) {
@@ -48,14 +61,13 @@ func DecodePNG(file []byte) (image.Image, image.Config, error) {
 	return img, cfg, nil
 }
 
-func Planar(pix []uint8, width, height, depth int, crash bool) []uint16 {
+func Planar(pix []uint8, width, height, depth int) []uint16 {
 	data := make([]uint16, 0, len(pix))
 	padding := make([]uint8, 16-(width&15))
 
 	for offset := 0; offset < width*height; offset = offset + width {
 		row := make([]uint8, width+len(padding))
 		r := pix[offset : offset+width]
-		// row = r
 		if width&15 != 0 {
 			for i, v := range r {
 				row[i] = v
@@ -66,9 +78,6 @@ func Planar(pix []uint8, width, height, depth int, crash bool) []uint16 {
 
 		for p := 0; p < depth; p++ {
 			bits := make([]uint16, len(row))
-			// if crash {
-			// 	panic(len(row))
-			// }
 			for i, byte := range row {
 				bits[i] = uint16(byte >> p & 1)
 			}

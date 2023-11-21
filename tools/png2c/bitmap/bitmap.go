@@ -24,30 +24,21 @@ func Make(in *image.Paletted, cfg image.Config, opts map[string]any) string {
 	if o.LimitDepth {
 		depth = min(o.Depth, depth)
 	}
-	crash := false
-	// in.Palette = util.CleanPalette(in.Palette)
-	img := in
+
+	pix := in.Pix
 	if o.SubImage {
-		r := in.SubImage(image.Rectangle{
-			Min: image.Point{X: o.StartX, Y: o.StartY},
-			Max: image.Point{X: o.StartX + o.Width, Y: o.StartY + o.Height},
-		}).(*image.Paletted)
-
-		img = image.NewPaletted(r.Rect, in.Palette)
-		cfg.Width = img.Rect.Dx()
-		cfg.Height = img.Rect.Dy()
-
-		crash = true
-		// panic(o.Width)
+		pix = util.CutImage(o.StartX, o.StartY, o.Width, o.Height, cfg, in.Pix)
+		cfg.Width = o.Width
+		cfg.Height = o.Height
 	}
 
-	if o.Width != cfg.Width || o.Height != cfg.Height || o.Depth != depth {
+	if o.Width != cfg.Width || o.Height != cfg.Height || o.Depth < depth {
 		got := fmt.Sprintf("%vx%vx%v", o.Width, o.Height, o.Depth)
 		exp := fmt.Sprintf("%vx%vx%v", cfg.Width, cfg.Height, depth)
 		panic(fmt.Sprintf("image size is wrong: expected %q, got %q", exp, got))
 	}
 
-	bpl := util.Planar(img.Pix, o.Width, o.Height, depth, crash)
+	bpl := util.Planar(pix, o.Width, o.Height, depth)
 
 	if o.Interleaved {
 		for i := 0; i < depth*o.WordsPerRow*o.Height; i = i + o.WordsPerRow {
