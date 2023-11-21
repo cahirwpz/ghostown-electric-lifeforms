@@ -26,14 +26,13 @@ func Make(in *image.Paletted, cfg image.Config, opts map[string]any) string {
 		panic(fmt.Sprintf("image size is wrong: expected %q, got %q", exp, got))
 	}
 
-	// panic(in.Pix)
 	depth := util.GetDepth(in.Pix)
 	if !o.Attached && depth != 2 {
 		panic(fmt.Sprintf("image depth is %v, expected 2!", depth))
 	}
 
 	var stride int = ((o.Width + 15) & ^15) / 16
-	bpl := util.Planar(in.Pix, o.Width, o.Height, depth, false)
+	bpl := util.Planar(in.Pix, o.Width, o.Height, depth)
 	n := o.Width / 16
 	if o.Attached {
 		n = n * 2

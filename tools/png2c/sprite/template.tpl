@@ -11,6 +11,16 @@ static __data_chip SprDataT {{.Name}}_sprdat = {
 	}
 };
 {{ end }}
+
+{{ if eq .Count 1 }}
+static __data SpriteT {{.Name}} = {
+  {{ range .Sprites }}
+    .sprdat = &{{.Name}}_sprdat,
+    .height = {{.Height}},
+    .attached = {{.Attached}},
+  {{end }}
+};
+{{else}}
 static __data SpriteT {{.Name}}[{{.Count}}] = {
   {{ range .Sprites -}}
   {
@@ -20,3 +30,4 @@ static __data SpriteT {{.Name}}[{{.Count}}] = {
   },
   {{end }}
 };
+{{end}}
