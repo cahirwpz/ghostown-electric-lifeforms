@@ -29,7 +29,6 @@ func Make(in image.Image, cfg image.Config, opts map[string]any) string {
 			panic("Expected color mapped image!")
 		}
 
-		// pm.Palette = util.CleanPalette(pm.Palette)
 		bpp := int(math.Ceil(math.Log2(float64(len(pm.Palette)))))
 		if o.LimitBpp {
 			bpp = min(o.Bpp, bpp)
@@ -45,7 +44,6 @@ func Make(in image.Image, cfg image.Config, opts map[string]any) string {
 		var data []uint16
 
 		if o.Bpp == 4 {
-			//o.Size = o.Width * o.Height / 2
 			o.Type = "PM_CMAP4"
 			data = chunky4(pm, pm.Pix, o.Width, o.Height)
 			o.Stride = (o.Width + 1) / 2

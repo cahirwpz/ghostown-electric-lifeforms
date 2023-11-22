@@ -21,22 +21,22 @@ func CutImage(startX, startY, width, height int, img image.Config, pix []uint8) 
 	return out
 }
 
-func CleanPalette(pal color.Palette) color.Palette {
-	colors := map[color.Color]color.Color{}
-	for _, p := range pal {
-		if _, ok := colors[p]; !ok {
-			colors[p] = p
-		}
+func CleanPalette(pix []uint8, pal color.Palette) color.Palette {
+	ci := getColorIndexes(pix)
+	out := color.Palette{}
+	for _, i := range ci {
+		out = append(out, pal[i])
 	}
 
-	out := color.Palette{}
-	for _, o := range colors {
-		out = append(out, o)
-	}
 	return out
 }
 
 func GetDepth(pix []uint8) int {
+	pal := getColorIndexes(pix)
+	return int(math.Ceil(math.Log2(float64(len(pal)))))
+}
+
+func getColorIndexes(pix []uint8) map[uint8]uint8 {
 	pal := map[uint8]uint8{}
 	for _, p := range pix {
 		if _, ok := pal[p]; !ok {
@@ -44,7 +44,7 @@ func GetDepth(pix []uint8) int {
 		}
 	}
 
-	return int(math.Ceil(math.Log2(float64(len(pal)))))
+	return pal
 }
 
 func DecodePNG(file []byte) (image.Image, image.Config, error) {
