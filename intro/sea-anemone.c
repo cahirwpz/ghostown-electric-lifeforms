@@ -74,10 +74,11 @@ static const ArmShapeT squares = {
   &square16
 };
 
-static const ArmShapeT *shapes[4] = {
+static const ArmShapeT *shapes[5] = {
   NULL,
   &circles,
   &squares,
+  &circles,
   &circles,
 };
 
@@ -342,11 +343,11 @@ static void VBlank(void) {
   if ((val = FromCurrKeyFrame(&SeaAnemoneFade)) < 16) {
     GradientClear(val);
     FadeBlack(sea_anemone_palettes[active_index], colors_count, 0, val);
-    FadeBlack(whirl_colors, whirl_colors_count, 0, val);
+    FadeBlack(whirl_colors, whirl_colors_count, 16, val);
   } else if ((val = TillNextKeyFrame(&SeaAnemoneFade)) < 16) {
     GradientClear(val);
     FadeBlack(sea_anemone_palettes[active_index], colors_count, 0, val);
-    FadeBlack(whirl_colors, whirl_colors_count, 0, val);
+    FadeBlack(whirl_colors, whirl_colors_count, 16, val);
   } else if ((val = TrackValueGet(&SeaAnemonePalPulse, frameFromStart))) {
     LoadColorArray(sea_anemone_pal[active_index][blip_sequence[val]],
                    colors_count, 0);
