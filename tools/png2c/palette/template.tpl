@@ -1,10 +1,7 @@
-#define {{ .Name }}_count {{ .Count }}
+#define {{ .Name }}_colors_count {{ .Count }}
 
-{{if not .Shared }} static {{ end }} const __data PaletteT {{ .Name }} = {
-  .count = {{ .Count }},
-  .colors = {
-    {{ range .Colors }}
-      {{- . -}},
-    {{ end -}}
-  }
+{{if not .Shared }} static {{ end }} __data u_short {{ .Name }}_colors[{{ .Count }}] = {
+  {{ range .Colors }}
+    {{- . -}},
+  {{ end -}}
 };
