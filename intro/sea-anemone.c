@@ -74,14 +74,13 @@ static const ArmShapeT squares = {
   &square16
 };
 
-static const ArmShapeT *shapes[4] = {
+static const ArmShapeT *shapes[5] = {
   NULL,
   &circles,
   &squares,
   &circles,
+  &circles,
 };
-
-static const ArmShapeT *active_shape = &circles;
 
 extern TrackT SeaAnemoneVariant;
 extern TrackT SeaAnemonePal;
@@ -89,53 +88,43 @@ extern TrackT SeaAnemonePalPulse;
 extern TrackT SeaAnemoneGradient;
 extern TrackT SeaAnemoneFade;
 
-typedef const PaletteT *SeaAnemonePalT[5];
-
-static const SeaAnemonePalT sea_anemone_palettes = {
-  NULL, 
-  &pal_green,
-  &pal_blue,
-  &pal_red,
-  &pal_gold,
-};
-
-static const SeaAnemonePalT anemone1_pal = {
+static const u_short *sea_anemone_palettes[] = {
   NULL,
-  &pal_green_light,
-  &pal_green,
-  &pal_green_dark,
+  green_colors,
+  blue_colors,
+  red_colors,
+  gold_colors,
 };
 
-static const SeaAnemonePalT anemone4_pal = {
-  NULL,
-  &pal_gold_light,
-  &pal_gold,
-  &pal_gold_dark,
+static const u_short *sea_anemone_pal[][4] = {
+  [1] = {
+    NULL,
+    green_light_colors,
+    green_colors,
+    green_dark_colors,
+  },
+  [2] = { 
+    NULL,
+    blue_light_colors,
+    blue_colors,
+    blue_dark_colors,
+  },
+  [3] = {
+    NULL,
+    red_light_colors,
+    red_colors,
+    red_dark_colors,
+  },
+  [4] = {
+    NULL,
+    gold_light_colors,
+    gold_colors,
+    gold_dark_colors,
+  }
 };
 
-static const SeaAnemonePalT anemone2_pal = {
-  NULL,
-  &pal_blue_light,
-  &pal_blue,
-  &pal_blue_dark,
-};
+static int active_index = 1;
 
-static const SeaAnemonePalT anemone3_pal = {
-  NULL,
-  &pal_red_light,
-  &pal_red,
-  &pal_red_dark,
-};
-
-static const SeaAnemonePalT *sea_anemone_pal[5] = {
-  NULL,
-  &anemone1_pal,
-  &anemone2_pal,
-  &anemone3_pal,
-  &anemone4_pal
-};
-
-static const SeaAnemonePalT *active_pal = &anemone1_pal;
 static const short blip_sequence[] = {
   0, 2,
   1, 1, 1, 1, 1, 1, 1,
@@ -149,9 +138,6 @@ static const short gradient_envelope[] = {
   14, 13, 12, 11, 10, 9,
   8, 7, 6, 5, 4, 3, 2, 1, 0,
 };
-
-// For the background gradient
-static __code const PaletteT *currPal = &pal_red;
 
 static inline int fastrand(void) {
   static int m[2] = { 0x3E50B28C, 0xD461A7F9 };
@@ -309,15 +295,15 @@ static void ArmMove(ArmT *arm, short angle) {
   arm->diameter--;
 }
 
-static __code u_short gradient[anemone_gradient_pal_count];
+static __code u_short gradient[anemone_gradient_colors_count];
 
 static void GradientUpdate(short step) {
   const u_char *ptr = anemone_gradient_color;
-  const short from = currPal->colors[0];
+  const short from = sea_anemone_palettes[active_index][0];
   short i;
 
-  for (i = 0; i < anemone_gradient_pal_count; i++)
-    gradient[i] = ColorTransition(from, anemone_gradient_pal.colors[i], step);
+  for (i = 0; i < anemone_gradient_colors_count; i++)
+    gradient[i] = ColorTransition(from, anemone_gradient_colors[i], step);
 
   {
     CopInsT **insptr0 = colins[0];
@@ -332,7 +318,7 @@ static void GradientUpdate(short step) {
 }
 
 static void GradientClear(short step) {
-  const short to = currPal->colors[0];
+  const short to = sea_anemone_palettes[active_index][0];
   short bgcol = ColorTransition(0, to, step);
   short i;
 
@@ -356,14 +342,15 @@ static void VBlank(void) {
 
   if ((val = FromCurrKeyFrame(&SeaAnemoneFade)) < 16) {
     GradientClear(val);
-    FadeBlack(currPal, 0, val);
-    FadeBlack(&whirl_pal, 16, val);
+    FadeBlack(sea_anemone_palettes[active_index], colors_count, 0, val);
+    FadeBlack(whirl_colors, whirl_colors_count, 16, val);
   } else if ((val = TillNextKeyFrame(&SeaAnemoneFade)) < 16) {
     GradientClear(val);
-    FadeBlack(currPal, 0, val);
-    FadeBlack(&whirl_pal, 16, val);
+    FadeBlack(sea_anemone_palettes[active_index], colors_count, 0, val);
+    FadeBlack(whirl_colors, whirl_colors_count, 16, val);
   } else if ((val = TrackValueGet(&SeaAnemonePalPulse, frameFromStart))) {
-    LoadPalette((*active_pal)[blip_sequence[val]], 0);
+    LoadColorArray(sea_anemone_pal[active_index][blip_sequence[val]],
+                   colors_count, 0);
   } else if ((val = TrackValueGet(&SeaAnemoneGradient, frameFromStart))) {
     GradientUpdate(gradient_envelope[val]);
   }
@@ -398,8 +385,8 @@ static void Init(void) {
   screen = NewBitmap(WIDTH, HEIGHT * 4, DEPTH, BM_CLEAR);
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
-  LoadPalette(currPal, 0);
-  LoadPalette(&whirl_pal, 16);
+  LoadColors(red_colors, 0);
+  LoadColors(whirl_colors, 16);
 
   cp[0] = MakeCopperList(0);
   cp[1] = MakeCopperList(1);
@@ -551,9 +538,7 @@ static void Render(void) {
   }
 
   if ((val = TrackValueGet(&SeaAnemonePal, frameFromStart))) {
-    currPal = sea_anemone_palettes[val];
-    active_pal = sea_anemone_pal[val];
-    active_shape = shapes[val];
+    active_index = val;
   }
 
   ProfilerStart(SeaAnemone);
@@ -580,7 +565,7 @@ static void Render(void) {
     ResetSprites();
   }
 
-  SeaAnemone(&AnemoneArms, *active_shape);
+  SeaAnemone(&AnemoneArms, *shapes[active_index]);
   CopListRun(cp[active]); 
   ProfilerStop(SeaAnemone);
 

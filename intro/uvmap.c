@@ -406,7 +406,7 @@ static void Init(short var) {
       CopInsSetSprite(&sprptr[i], &electric[i]);
     }
 
-    LoadPalette(&electric_pal, 16);
+    LoadColors(electric_colors, 16);
   }
 
   EnableDMA(DMAF_RASTER);

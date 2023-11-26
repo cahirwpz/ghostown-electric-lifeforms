@@ -5,8 +5,6 @@
 #include <gfx.h>
 #include <line.h>
 
-#include "data/loader.c"
-
 #define _SYSTEM
 #include <system/memory.h>
 #include <system/interrupt.h>
@@ -79,6 +77,9 @@ static void DecodeSamples(u_char *smp, int size) {
 #endif
 
 #if KLANG == 1
+
+#include "data/loader.c"
+
 extern u_int AK_Progress;
 extern u_int AK_ProgressLen;
 void AK_Generate(void *TmpBuf asm("a1"));
@@ -104,7 +105,7 @@ INTSERVER(ProgressBarInterrupt, 0, (IntFuncT)ProgressBarUpdate, NULL);
 #define DEPTH 1
 
 static void GenerateSamples(void *buf) {
-  BitmapT *screen = NewBitmap(WIDTH, HEIGHT, DEPTH);
+  BitmapT *screen = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
   CopListT *cp = NewCopList(40);
 
   CpuLineSetup(screen, 0);
@@ -114,7 +115,7 @@ static void GenerateSamples(void *buf) {
   CpuLine(X2 + 2, Y1 - 1, X2 + 2, Y2 + 1);
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
-  LoadPalette(&loader_pal, 0);
+  LoadColors(loader_colors, 0);
 
   EnableDMA(DMAF_BLITTER);
   BitmapCopy(screen, (WIDTH - loader_width) / 2, Y1 - loader_height - 16,
@@ -122,9 +123,8 @@ static void GenerateSamples(void *buf) {
   WaitBlitter();
   DisableDMA(DMAF_BLITTER);
 
-  CopInit(cp);
-  CopSetupBitplanes(cp, NULL, screen, DEPTH);
-  CopEnd(cp);
+  CopSetupBitplanes(cp, screen, DEPTH);
+  CopListFinish(cp);
   CopListActivate(cp);
 
   EnableDMA(DMAF_RASTER);

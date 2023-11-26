@@ -220,7 +220,7 @@ static void BlitFunc(const BitmapT *sourceA, const BitmapT *sourceB,
 
 static CopListT *MakeCopperList(void) {
   CopListT *cp = NewCopList(1310);
-  short *color = wireworld_pcb_pal_pixels;
+  short *color = wireworld_gradient_pixels;
   short display_bg = TrackValueGet(&WireworldDisplayBg, frameCount);
   short pal_start = display_bg ? 8 : 0;
   short i;
@@ -247,7 +247,7 @@ static CopListT *MakeCopperList(void) {
   palptr = CopSetColor(cp, 0, 0);
   for (i = 1; i < 32; i++)
     CopSetColor(cp, i, 0);
-  // CopLoadPal(cp, &wireworld_chip_pal, 16);
+  // CopLoadColors(cp, wireworld_chip_colors, 16);
 
   for (i = 1; i <= DISP_HEIGHT; i += 2) {
     // vertical pixel doubling
@@ -379,7 +379,7 @@ static inline void ChipFadeIn(short phase) {
   for (i = 16; i < 32; i++)
     CopInsSet16(
       palptr + i,
-      ColorTransition(0x000, wireworld_chip_pal.colors[i - 16], 15 - phase));
+      ColorTransition(0x000, wireworld_chip_colors[i - 16], 15 - phase));
 }
 
 static void SharedPreInit(void) {
@@ -597,7 +597,7 @@ static void GolStep(void) {
       sizeof(wireworld_chip_cycling) / sizeof(wireworld_chip_cycling[0]);
     if (TrackValueGet(&WireworldFadeIn, frameCount) == 0)
       ColorCyclingStep(&palptr[16], wireworld_chip_cycling, cycling_len,
-                       &wireworld_chip_pal);
+                       wireworld_chip_colors);
   } else {
     short logo_idx = TrackValueGet(&GOLLogoType, frameCount);
     CopInsSet32(&bplptr[3], background[logo_idx]->planes[0]);

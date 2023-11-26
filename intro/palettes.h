@@ -1,22 +1,26 @@
 #ifndef __PALETTES_H__
 #define __PALETTES_H__
 
-#include <palette.h>
+#include <types.h>
 
-extern const PaletteT pal_gold;
-extern const PaletteT pal_gold_dark;
-extern const PaletteT pal_gold_light;
+#define colors_count 16
 
-extern const PaletteT pal_green;
-extern const PaletteT pal_green_dark;
-extern const PaletteT pal_green_light;
+typedef u_short ColorsT[colors_count];
 
-extern const PaletteT pal_blue;
-extern const PaletteT pal_blue_dark;
-extern const PaletteT pal_blue_light;
+extern ColorsT gold_colors;
+extern ColorsT gold_dark_colors;
+extern ColorsT gold_light_colors;
 
-extern const PaletteT pal_red;
-extern const PaletteT pal_red_dark;
-extern const PaletteT pal_red_light;
+extern ColorsT green_colors;
+extern ColorsT green_dark_colors;
+extern ColorsT green_light_colors;
+
+extern ColorsT blue_colors;
+extern ColorsT blue_dark_colors;
+extern ColorsT blue_light_colors;
+
+extern ColorsT red_colors;
+extern ColorsT red_dark_colors;
+extern ColorsT red_light_colors;
 
 #endif /* !__PALETTES_H__ */

@@ -39,9 +39,9 @@ static CopListT *MakeCopperList(CopInsPairT **linebpl) {
       CopWaitSafe(cp, Y(y), 0);
       if ((y & 7) == 0) {
         if (y <= 6 * 8)
-          CopSetColor(cp, 1, font_pal.colors[7 - (y >> 3)]);
+          CopSetColor(cp, 1, font_colors[7 - (y >> 3)]);
         if (HEIGHT - y <= 6 * 8)
-          CopSetColor(cp, 1, font_pal.colors[7 - ((HEIGHT - y) >> 3)]);
+          CopSetColor(cp, 1, font_colors[7 - ((HEIGHT - y) >> 3)]);
       }
       linebpl[y] = CopMove32(cp, bplpt[0], ptr);
     }
@@ -55,7 +55,7 @@ static void Init(void) {
   line_start = Text;
 
   SetupPlayfield(MODE_HIRES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
-  LoadPalette(&font_pal, 0);
+  LoadColors(font_colors, 0);
 
   linebpl = MemAlloc(sizeof(CopInsPairT *) * 2 * HEIGHT, MEMF_PUBLIC);
   cp[0] = MakeCopperList((*linebpl)[0]);

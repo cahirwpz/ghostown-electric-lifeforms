@@ -113,7 +113,7 @@ static void MakeCopperListFull(StateFullT *state) {
       CopMove16(cp, bplcon1, 0);
     } else if (my == 8) {
       state->bars.palette[b] =
-        CopLoadColorArray(cp, &bar_pal.colors[(y & 64) ? 16 : 0], 16, 0);
+        CopLoadColorArray(cp, &bar_colors[(y & 64) ? 16 : 0], 16, 0);
     } else if (my == 16) {
       /* Advance bitplane pointers to display consecutive lines. */
       CopMove16(cp, bpl1mod, bar_bplmod);
@@ -188,7 +188,7 @@ static void MakeCopperListBars(StateBarT *bars, bool color) {
       for (i = 0; i < DEPTH; i++)
         CopMove32(cp, bplpt[i], NULL);
       CopMove16(cp, bplcon1, 0);
-      CopLoadColorArray(cp, &bar_pal.colors[(b & 1) && color ? 16 : 0], 16, 0);
+      CopLoadColorArray(cp, &bar_colors[(b & 1) && color ? 16 : 0], 16, 0);
     } else if (y == by) {
       /* Advance bitplane pointers to display consecutive lines. */
       CopMove16(cp, bpl1mod, bar_bplmod);
@@ -207,8 +207,8 @@ static void MakeCopperListBars(StateBarT *bars, bool color) {
 static void UpdateBarColor(StateBarT *bars, short step) {
   CopInsT *ins1 = bars->palette[1];
   CopInsT *ins3 = bars->palette[3];
-  const u_short *from = &bar_pal.colors[0];
-  const u_short *to = &bar_pal.colors[16];
+  const u_short *from = &bar_colors[0];
+  const u_short *to = &bar_colors[16];
   short i;
 
   for (i = 0; i < 16; i++) {
@@ -356,16 +356,16 @@ static void Load(void) {
   }
 }
 
-static const PaletteT *barPalArray[] = {
-  &bar_bright_pal,
-  &bar_pal,
-  &bar_dark_pal,
+static const u_short *barPalArray[] = {
+  bar_bright_colors,
+  bar_colors,
+  bar_dark_colors,
 };
 
-static const PaletteT *stripePalArray[] = {
-  &stripes_bright_pal,
-  &stripes_pal,
-  &stripes_dark_pal,
+static const u_short *stripePalArray[] = {
+  stripes_bright_colors,
+  stripes_colors,
+  stripes_dark_colors,
 };
 
 static const short palIdxSeq[] = {
@@ -374,15 +374,6 @@ static const short palIdxSeq[] = {
 
 static short barPalIdx[4];
 static short stripePalIdx[4];
-
-static void LoadColorArray(const u_short *col, short ncols, u_int start) {
-  short n = ncols - 1;
-  volatile u_short *colreg = custom->color + start;
-
-  do {
-    *colreg++ = *col++;
-  } while (--n != -1);
-}
 
 static void VBlank(void) {
   short val;
@@ -402,7 +393,7 @@ static void VBlank(void) {
     if (palIdx < 0)
       continue;
     stripePalIdx[i]++;
-    LoadColorArray(&stripePalArray[palIdx]->colors[m], 4, 16 + m);
+    LoadColorArray(&stripePalArray[palIdx][m], 4, 16 + m);
   }
 
   if ((val = TrackValueGet(&WeaveBarPulse, frameFromStart))) {
@@ -419,7 +410,7 @@ static void VBlank(void) {
     barPalIdx[i]++;
     {
       CopInsT *ins = stateFull[active ^ 1].bars.palette[i];
-      const u_short *col = &barPalArray[palIdx]->colors[(i & 1) ? 16 : 0];
+      const u_short *col = &barPalArray[palIdx][(i & 1) ? 16 : 0];
       for (m = 0; m < 16; m++) {
         CopInsSet16(ins++, *col++);
       }
@@ -433,8 +424,8 @@ static void Init(void) {
   SetupDisplayWindow(MODE_LORES, X(16), Y(0), WIDTH, HEIGHT);
   SetupBitplaneFetch(MODE_LORES, X(0), WIDTH + 16);
   SetupMode(MODE_LORES, DEPTH);
-  LoadPalette(&bar_pal, 0);
-  LoadPalette(&stripes_pal, 16);
+  LoadColors(bar_colors, 0);
+  LoadColors(stripes_colors, 16);
 
   /* Place sprites 0-3 above playfield, and 4-7 below playfield. */
   custom->bplcon2 = BPLCON2_PF2PRI | BPLCON2_PF2P1 | BPLCON2_PF1P1;
