@@ -7,6 +7,7 @@ import (
 	"image/color"
 	"image/png"
 	"math"
+	"slices"
 )
 
 func CutImage(startX, startY, width, height int, img image.Config, pix []uint8) []uint8 {
@@ -22,31 +23,13 @@ func CutImage(startX, startY, width, height int, img image.Config, pix []uint8) 
 }
 
 func CleanPalette(pix []uint8, pal color.Palette) color.Palette {
-	ci := getColorIndexes(pix)
-	out := color.Palette{}
-	for i := range pal {
-		if _, ok := ci[uint8(i)]; ok {
-			out = append(out, pal[i])
-		}
-	}
+	ci := slices.Max(pix) + 1
 
-	return out
+	return pal[0:ci]
 }
 
 func GetDepth(pix []uint8) int {
-	pal := getColorIndexes(pix)
-	return int(math.Ceil(math.Log2(float64(len(pal)))))
-}
-
-func getColorIndexes(pix []uint8) map[uint8]uint8 {
-	pal := map[uint8]uint8{}
-	for _, p := range pix {
-		if _, ok := pal[p]; !ok {
-			pal[p] = p
-		}
-	}
-
-	return pal
+	return int(math.Ceil(math.Log2(float64(slices.Max(pix) + 1))))
 }
 
 func DecodePNG(file []byte) (image.Image, image.Config, error) {

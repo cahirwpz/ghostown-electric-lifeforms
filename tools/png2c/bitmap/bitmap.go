@@ -33,8 +33,8 @@ func Make(in *image.Paletted, cfg image.Config, opts map[string]any) string {
 	}
 
 	if o.Width != cfg.Width || o.Height != cfg.Height || o.Depth < depth {
-		got := fmt.Sprintf("%vx%vx%v", o.Width, o.Height, o.Depth)
-		exp := fmt.Sprintf("%vx%vx%v", cfg.Width, cfg.Height, depth)
+		got := fmt.Sprintf("%vx%vx%v", cfg.Width, cfg.Height, depth)
+		exp := fmt.Sprintf("%vx%vx%v", o.Width, o.Height, o.Depth)
 		panic(fmt.Sprintf("image size is wrong: expected %q, got %q", exp, got))
 	}
 
