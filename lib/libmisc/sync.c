@@ -90,12 +90,14 @@ short TrackValueGet(TrackT *track, short frame) {
         return curr->value + normfx(track->delta * k);
       }
 
+#if 0
     case TRACK_QUADRATIC:
       {
         short t = div16(shift12(step), track->interval);
         short k = normfx(t * t);
         return curr->value + normfx(track->delta * k);
       }
+#endif
 
     case TRACK_TRIGGER:
       {

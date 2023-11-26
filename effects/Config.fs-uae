@@ -5,6 +5,7 @@ fade_in_duration = 0
 fade_out_duration = 0
 accuracy = 1
 amiga_model = A500
+#amiga_model = A1200
 # A500 A500+ A600 A1200 A1200/020 A3000 A4000/040
 # chip_memory = 512
 # slow_memory = 512

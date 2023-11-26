@@ -309,6 +309,7 @@ static void ArenaMemFree(ArenaT *ar, void *ptr) {
   MutexUnlock(&MemMtx);
 }
 
+#if 0
 static void *ArenaMemResize(ArenaT *ar, void *old_ptr, u_int size) {
   void *new_ptr = NULL;
   u_int reqsz, sz;
@@ -364,6 +365,7 @@ static void *ArenaMemResize(ArenaT *ar, void *old_ptr, u_int size) {
   Debug("%s(%p, %ld) = %p", __func__, old_ptr, size, new_ptr);
   return new_ptr;
 }
+#endif
 
 #if MEMDEBUG
 #define Msg(...) if (verbose) Log(__VA_ARGS__)
@@ -455,6 +457,7 @@ void MemFree(void *p) {
     ArenaMemFree(ArenaOf(p), p);
 }
 
+#if 0
 void *MemResize(void *old_ptr, u_int size) {
   void *new_ptr;
   ArenaT *ar;
@@ -482,6 +485,7 @@ void *MemResize(void *old_ptr, u_int size) {
 
   return NULL;
 }
+#endif
 
 #if MEMDEBUG
 void MemCheck(int verbose) {
