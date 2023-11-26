@@ -5,8 +5,6 @@
 #include <gfx.h>
 #include <line.h>
 
-#include "data/loader.c"
-
 #define _SYSTEM
 #include <system/memory.h>
 #include <system/interrupt.h>
@@ -79,6 +77,9 @@ static void DecodeSamples(u_char *smp, int size) {
 #endif
 
 #if KLANG == 1
+
+#include "data/loader.c"
+
 extern u_int AK_Progress;
 extern u_int AK_ProgressLen;
 void AK_Generate(void *TmpBuf asm("a1"));
