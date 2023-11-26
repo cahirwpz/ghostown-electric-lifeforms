@@ -25,48 +25,6 @@ func Make(in image.Image, cfg image.Config, opts map[string]any) string {
 		panic(fmt.Sprintf("Wrong specification: bits per pixel: %v!", o.Bpp))
 	}
 
-	if pm, _ := in.(*image.Paletted); pm != nil {
-		if o.Bpp > 8 {
-			panic("Expected color mapped image!")
-		}
-
-		bpp := util.GetDepth(pm.Pix)
-		if o.LimitBpp {
-			bpp = min(o.Bpp, bpp)
-		}
-
-		if o.Width != cfg.Width || o.Height != cfg.Height || o.Bpp < bpp {
-			got := fmt.Sprintf("%vx%vx%v", o.Width, o.Height, o.Bpp)
-			exp := fmt.Sprintf("%vx%vx%v", cfg.Width, cfg.Height, bpp)
-			panic(fmt.Sprintf("image size is wrong: expected %q, got %q", exp, got))
-		}
-
-		o.Stride = o.Width
-		var data []uint16
-
-		if o.Bpp == 4 {
-			o.Type = "PM_CMAP4"
-			data = chunky4(pm, pm.Pix, o.Width, o.Height)
-			o.Stride = (o.Width + 1) / 2
-		} else {
-			o.Type = "PM_CMAP8"
-			var pix16 = make([]uint16, 0, len(pm.Pix))
-			for _, v := range pm.Pix {
-				pix16 = append(pix16, uint16(v))
-			}
-			data = pix16
-		}
-
-		for i := 0; i < o.Stride*o.Height; i += o.Stride {
-			row := []string{}
-			for _, v := range data[i : i+o.Stride] {
-				o := fmt.Sprintf("0x%02x", v)
-				row = append(row, o)
-			}
-			o.PixData = append(o.PixData, strings.Join(row, ", "))
-		}
-		o.Size = o.Stride * o.Height
-	}
 	if rgbm, _ := in.(*image.RGBA); rgbm != nil {
 		o.IsRGB = true
 		if o.Bpp <= 8 {
@@ -91,6 +49,55 @@ func Make(in image.Image, cfg image.Config, opts map[string]any) string {
 			}
 			o.PixData = append(o.PixData, strings.Join(row, ", "))
 		}
+	} else {
+		var pix []uint8
+		if pm, _ := in.(*image.Paletted); pm != nil {
+			pix = pm.Pix
+		} else if gray, _ := in.(*image.Gray); gray != nil {
+			pix = gray.Pix
+		} else {
+			panic("Expected color mapped or grayscale image!")
+		}
+		if o.Bpp > 8 {
+			panic("Depth too big!")
+		}
+
+		bpp := util.GetDepth(pix)
+		if o.LimitBpp {
+			bpp = min(o.Bpp, bpp)
+		}
+
+		if o.Width != cfg.Width || o.Height != cfg.Height || o.Bpp < bpp {
+			got := fmt.Sprintf("%vx%vx%v", o.Width, o.Height, o.Bpp)
+			exp := fmt.Sprintf("%vx%vx%v", cfg.Width, cfg.Height, bpp)
+			panic(fmt.Sprintf("image size is wrong: expected %q, got %q", exp, got))
+		}
+
+		o.Stride = o.Width
+		var data []uint16
+
+		if o.Bpp == 4 {
+			o.Type = "PM_CMAP4"
+			data = chunky4(in, pix, o.Width, o.Height)
+			o.Stride = (o.Width + 1) / 2
+		} else {
+			o.Type = "PM_CMAP8"
+			var pix16 = make([]uint16, 0, len(pix))
+			for _, v := range pix {
+				pix16 = append(pix16, uint16(v))
+			}
+			data = pix16
+		}
+
+		for i := 0; i < o.Stride*o.Height; i += o.Stride {
+			row := []string{}
+			for _, v := range data[i : i+o.Stride] {
+				o := fmt.Sprintf("0x%02x", v)
+				row = append(row, o)
+			}
+			o.PixData = append(o.PixData, strings.Join(row, ", "))
+		}
+		o.Size = o.Stride * o.Height
 	}
 
 	var buf strings.Builder
@@ -102,14 +109,18 @@ func Make(in image.Image, cfg image.Config, opts map[string]any) string {
 	return buf.String()
 }
 
-func chunky4(im *image.Paletted, pix []uint8, width, height int) (out []uint16) {
+func chunky4(im image.Image, pix []uint8, width, height int) (out []uint16) {
 	for y := 0; y < height; y++ {
 		for x := 0; x < ((width + 1) & ^1); x += 2 {
-			var x0 uint8 = im.ColorIndexAt(x, y) & 15
-			var x1 uint8
-			if x+1 < width {
-				x1 = im.ColorIndexAt(x+1, y) & 15
-			} else {
+			var x0, x1 uint8
+			if gray, _ := im.(*image.Gray); gray != nil {
+				x0 = gray.GrayAt(x, y).Y & 15
+				x1 = gray.GrayAt(x+1, y).Y & 15
+			} else if pm, _ := im.(*image.Paletted); pm != nil {
+				x0 = pm.ColorIndexAt(x, y) & 15
+				x1 = pm.ColorIndexAt(x+1, y) & 15
+			}
+			if x+1 >= width {
 				x1 = 0
 			}
 			out = append(out, uint16((x0<<4)|x1))
