@@ -98,18 +98,16 @@ static void UnLoadEffects(EffectT **effects) {
   }
 }
 
-void FadeBlack(const PaletteT *pal, u_int start, short step) {
+void FadeBlack(const u_short *colors, short count, u_int start, short step) {
   volatile short *reg = &custom->color[start];
-  const short *col = pal->colors;
-  short n = pal->count;
   
   if (step < 0)
     step = 0;
   if (step > 15)
     step = 15;
 
-  while (--n >= 0) {
-    short to = *col++;
+  while (--count >= 0) {
+    short to = *colors++;
 
     short r = ((to >> 4) & 0xf0) | step;
     short g = (to & 0xf0) | step;

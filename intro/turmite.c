@@ -42,45 +42,35 @@ static u_short *turmite_credits_bpl[] = {
   _turmite_credits_3_bpl,
 };
 
-typedef const PaletteT *TurmitePalT[4];
-
-static TurmitePalT turmite_palettes = {
+static const u_short *active_pal[] = {
   NULL,
-  &pal_gold,
-  &pal_green,
-  &pal_red,
+  gold_colors,
+  green_colors,
+  red_colors,
 };
 
-static TurmitePalT turmite1_pal = {
-  NULL,
-  &pal_gold_light,
-  &pal_gold,
-  &pal_gold_dark,
-};
-
-static TurmitePalT turmite2_pal = {
-  NULL,
-  &pal_green_light,
-  &pal_green,
-  &pal_green_dark,
-};
-
-static TurmitePalT turmite3_pal = {
-  NULL,
-  &pal_red_light,
-  &pal_red,
-  &pal_red_dark,
-};
-
-static TurmitePalT *turmite_pal[4] = {
-  NULL,
-  &turmite1_pal,
-  &turmite2_pal,
-  &turmite3_pal,
-};
-
-static TurmitePalT *active_pal = &turmite1_pal;
 static short active_pal_index = 1;
+
+static const u_short *turmite_pal[][4] = {
+  [1] = {
+    NULL,
+    gold_light_colors,
+    gold_colors,
+    gold_dark_colors,
+  },
+  [2] = {
+    NULL,
+    green_light_colors,
+    green_colors,
+    green_dark_colors,
+  },
+  [3] = {
+    NULL,
+    red_light_colors,
+    red_colors,
+    red_dark_colors,
+  }
+};
 
 static const short blip_sequence[] = {
   0, 2, 1, 1, 1, 2, 2, 2, 3, 3, 3
@@ -571,7 +561,6 @@ static void ChooseTurmiteBoard(short i) {
   TheTurmite[1] = turmite_types[i][1];
   ResetTurmite(TheTurmite[0], POS(60, 60));
   ResetTurmite(TheTurmite[1], POS(160, 160));
-  active_pal = turmite_pal[i];
 }
 
 static void VBlank(void) {
@@ -580,15 +569,16 @@ static void VBlank(void) {
   UpdateFrameCount();
 
   if ((val = TrackValueGet(&TurmitePal, frameFromStart)))
-    LoadPalette((*active_pal)[blip_sequence[val]], 0);
+    LoadColorArray(turmite_pal[active_pal_index][blip_sequence[val]],
+                   colors_count, 0);
 
   (void)TrackValueGet(&TurmiteFade, frameCount);
 
   if ((val = FromCurrKeyFrame(&TurmiteFade)) < 16)
-    FadeBlack(turmite_palettes[active_pal_index], 0, val);
+    FadeBlack(active_pal[active_pal_index], colors_count, 0, val);
 
   if ((val = TillNextKeyFrame(&TurmiteFade)) < 16)
-    FadeBlack(turmite_palettes[active_pal_index], 0, val);
+    FadeBlack(active_pal[active_pal_index], colors_count, 0, val);
 }
 
 static void Init(void) {
@@ -599,7 +589,7 @@ static void Init(void) {
   SetupDisplayWindow(MODE_LORES, X(32), Y(0), WIDTH, HEIGHT);
   SetupBitplaneFetch(MODE_LORES, X(32), WIDTH);
   SetupMode(MODE_LORES, DEPTH);
-  LoadPalette(&pal_gold, 0);
+  LoadColors(gold_colors, 0);
 
   EnableDMA(DMAF_BLITTER);
   ChooseTurmiteBoard(1);

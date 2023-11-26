@@ -173,10 +173,12 @@ static void VBlank(void) {
   (void)TrackValueGet(&TreeFade, frameCount);
 
   if ((val = FromCurrKeyFrame(&TreeFade)) < 16)
-    FadeBlack(nrPal ? &tree_pal_electric : &tree_pal_organic, 0, val);
+    FadeBlack(nrPal ? electric_colors : organic_colors,
+              electric_colors_count, 0, val);
   
   if ((val = TillNextKeyFrame(&TreeFade)) < 16)
-    FadeBlack(nrPal ? &tree_pal_electric : &tree_pal_organic, 0, val);
+    FadeBlack(nrPal ? electric_colors : organic_colors,
+              electric_colors_count, 0, val);
 }
 
 static void Init(void) {
