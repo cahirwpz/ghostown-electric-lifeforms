@@ -18,7 +18,7 @@ static inline short TillNextKeyFrame(TrackT *track) {
   return NextKeyFrame(track) - frameCount;
 }
 
-void FadeBlack(const PaletteT *pal, u_int start, short step);
+void FadeBlack(const u_short *colors, short count, u_int start, short step);
 
 void PixmapToBitmap(BitmapT *bm, short width, short height, short depth,
                     void *pixels);

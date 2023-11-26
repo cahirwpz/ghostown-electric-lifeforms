@@ -14,7 +14,7 @@ def coerce(name, typ, value):
 
 
 def convert(name, cast, value, result):
-    if type(cast) == tuple:
+    if isinstance(cast, tuple):
         names = name.split(',')
         values = value.split('x')
         if len(names) > 1:
@@ -131,7 +131,7 @@ def do_bitmap(im, desc):
                   ('width,height,depth', (int, int, int)),
                   ('extract_at', (int, int), (0, 0)),
                   ('interleaved', bool, False),
-                  ('displayable', bool, True),
+                  ('cpuonly', bool, False),
                   ('shared', bool, False),
                   ('limit_depth', bool, False),
                   ('onlydata', bool, False))
@@ -142,7 +142,7 @@ def do_bitmap(im, desc):
     has_depth = param['depth']
     x, y = param['extract_at']
     interleaved = param['interleaved']
-    displayable = param['displayable']
+    cpuonly = param['cpuonly']
     shared = param['shared']
     limit_depth = param['limit_depth']
     onlydata = param['onlydata']
@@ -169,7 +169,7 @@ def do_bitmap(im, desc):
     bplSize = bytesPerRow * height
     bpl = planar(pix, width, height, depth)
 
-    data_chip = '__data_chip' if displayable else ''
+    data_chip = '' if cpuonly else '__data_chip'
 
     print(f'static {data_chip} u_short _{name}_bpl[] = {{')
     if interleaved:
@@ -204,8 +204,8 @@ def do_bitmap(im, desc):
     print(f'  .bytesPerRow = {bytesPerRow},')
     print(f'  .bplSize = {bplSize},')
     flags = ['BM_STATIC']
-    if displayable:
-        flags.append('BM_DISPLAYABLE')
+    if cpuonly:
+        flags.append('BM_CPUONLY')
     if interleaved:
         flags.append('BM_INTERLEAVED')
     print('  .flags = %s,' % '|'.join(flags))
@@ -429,17 +429,16 @@ def do_palette(im, desc):
         colors = max(colors, has_colors)
 
     cmap = [pal[i * 3:(i + 1) * 3] for i in range(colors)]
+    count = len(cmap)
 
-    print("#define %s_count %d\n" % (name, len(cmap)))
+    print(f"#define {name}_colors_count {count}\n")
 
-    print('%sconst __data PaletteT %s = {' %
-          ('' if shared else 'static ', name))
-    print('  .count = %d,' % len(cmap))
-    print('  .colors = {')
+    static = '' if shared else 'static '
+
+    print(f'{static}__data u_short {name}_colors[{count}] = {{')
     for r, g, b in cmap:
-        print('    0x%x%x%x,' % (r >> 4, g >> 4, b >> 4))
-    print('  }')
-    print('};')
+        print('  0x%x%x%x,' % (r >> 4, g >> 4, b >> 4))
+    print('};\n')
 
 
 if __name__ == '__main__':

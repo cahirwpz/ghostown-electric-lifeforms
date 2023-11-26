@@ -26,17 +26,16 @@ static BitmapT *screen;
 static u_char board[WIDTH * HEIGHT];
 
 static void Init(void) {
-  screen = NewBitmap(WIDTH, HEIGHT, DEPTH);
+  screen = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
 
   SetupDisplayWindow(MODE_LORES, X(32), Y(0), WIDTH, HEIGHT);
   SetupBitplaneFetch(MODE_LORES, X(32), WIDTH);
   SetupMode(MODE_LORES, DEPTH);
-  LoadPalette(&turmite_pal, 0);
+  LoadColors(turmite_colors, 0);
 
   cp = NewCopList(100);
-  CopInit(cp);
-  CopSetupBitplanes(cp, NULL, screen, DEPTH);
-  CopEnd(cp);
+  CopSetupBitplanes(cp, screen, DEPTH);
+  CopListFinish(cp);
   CopListActivate(cp);
 
   EnableDMA(DMAF_RASTER);
@@ -261,4 +260,4 @@ static void Render(void) {
   WaitVBlank();
 }
 
-EFFECT(Turmite, NULL, NULL, Init, Kill, Render);
+EFFECT(Turmite, NULL, NULL, Init, Kill, Render, NULL);

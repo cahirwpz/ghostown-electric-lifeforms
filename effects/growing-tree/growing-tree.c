@@ -12,7 +12,7 @@
 #define DEPTH 2
 
 static CopListT *cp;
-static CopInsT *bplptr[DEPTH];
+static CopInsPairT *bplptr;
 static BitmapT *screen;
 
 #include "data/fruit.c"
@@ -144,7 +144,7 @@ static void GreetsInit(void) {
 }
 
 static void Init(void) {
-  screen = NewBitmap(WIDTH, HEIGHT, DEPTH);
+  screen = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
 
@@ -152,9 +152,8 @@ static void Init(void) {
   GreetsInit();
 
   cp = NewCopList(50);
-  CopInit(cp);
-  CopSetupBitplanes(cp, bplptr, screen, DEPTH);
-  CopEnd(cp);
+  bplptr = CopSetupBitplanes(cp, screen, DEPTH);
+  CopListFinish(cp);
   CopListActivate(cp);
 
   EnableDMA(DMAF_RASTER | DMAF_BLITTER);
@@ -447,4 +446,4 @@ static void Render(void) {
   TaskWaitVBlank();
 }
 
-EFFECT(GrowingTree, NULL, NULL, Init, Kill, Render);
+EFFECT(GrowingTree, NULL, NULL, Init, Kill, Render, NULL);

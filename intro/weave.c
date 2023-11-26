@@ -53,7 +53,7 @@ typedef struct StateBar {
 typedef struct StateFull {
   StateBarT bars;
   CopListT *cp;
-  CopInsT *sprite;
+  CopInsPairT *sprite;
   /* for each line five horizontal positions */
   short ampl;
   u_short *stripes[HEIGHT];
@@ -75,11 +75,11 @@ static inline void CopSpriteSetHP(CopListT *cp, short n) {
   CopMove16(cp, spr[n * 2 + 1].pos, 0);
 }
 
-static void MakeCopperListFull(StateFullT *state) {
-  short b, y, i;
-  CopListT *cp = state->cp;
+#define CP_FULL_SIZE (HEIGHT * 22 + 100)
 
-  CopInit(cp);
+static void MakeCopperListFull(StateFullT *state) {
+  CopListT *cp = state->cp ? CopListReset(state->cp) : NewCopList(CP_FULL_SIZE);
+  short b, y, i;
 
   /* Setup initial bitplane pointers. */
   for (i = 0; i < DEPTH; i++)
@@ -96,7 +96,7 @@ static void MakeCopperListFull(StateFullT *state) {
 
   CopWait(cp, Y(-1), 0);
 
-  state->sprite = cp->curr;
+  state->sprite = CopInsPtr(cp);
   for (i = 0; i < NSPRITES; i++)
     CopMove32(cp, sprpt[i], stripe[i].sprdat->data);
 
@@ -113,7 +113,7 @@ static void MakeCopperListFull(StateFullT *state) {
       CopMove16(cp, bplcon1, 0);
     } else if (my == 8) {
       state->bars.palette[b] =
-        CopLoadColorArray(cp, &bar_pal.colors[(y & 64) ? 16 : 0], 16, 0);
+        CopLoadColorArray(cp, &bar_colors[(y & 64) ? 16 : 0], 16, 0);
     } else if (my == 16) {
       /* Advance bitplane pointers to display consecutive lines. */
       CopMove16(cp, bpl1mod, bar_bplmod);
@@ -153,12 +153,14 @@ static void MakeCopperListFull(StateFullT *state) {
     }
   }
 
-  CopEnd(cp);
+  state->cp = CopListFinish(cp);
 }
 
+#define CP_BARS_SIZE 400
+
 static void MakeCopperListBars(StateBarT *bars, bool color) {
+  CopListT *cp = bars->cp ? CopListReset(bars->cp) : NewCopList(CP_BARS_SIZE);
   short b, by, y, i;
-  CopListT *cp = bars->cp;
 
   for (b = 0; b < BARS; b++) {
     bars->bar[b] = NULL;
@@ -166,8 +168,6 @@ static void MakeCopperListBars(StateBarT *bars, bool color) {
     if (by >= -33)
       break;
   }
-
-  CopInit(cp);
 
   /* Setup initial bitplane pointers. */
   for (i = 0; i < DEPTH; i++)
@@ -188,7 +188,7 @@ static void MakeCopperListBars(StateBarT *bars, bool color) {
       for (i = 0; i < DEPTH; i++)
         CopMove32(cp, bplpt[i], NULL);
       CopMove16(cp, bplcon1, 0);
-      CopLoadColorArray(cp, &bar_pal.colors[(b & 1) && color ? 16 : 0], 16, 0);
+      CopLoadColorArray(cp, &bar_colors[(b & 1) && color ? 16 : 0], 16, 0);
     } else if (y == by) {
       /* Advance bitplane pointers to display consecutive lines. */
       CopMove16(cp, bpl1mod, bar_bplmod);
@@ -201,14 +201,14 @@ static void MakeCopperListBars(StateBarT *bars, bool color) {
     }
   }
 
-  CopEnd(cp);
+  bars->cp = CopListFinish(cp);
 }
 
 static void UpdateBarColor(StateBarT *bars, short step) {
   CopInsT *ins1 = bars->palette[1];
   CopInsT *ins3 = bars->palette[3];
-  const u_short *from = &bar_pal.colors[0];
-  const u_short *to = &bar_pal.colors[16];
+  const u_short *from = &bar_colors[0];
+  const u_short *to = &bar_colors[16];
   short i;
 
   for (i = 0; i < 16; i++) {
@@ -243,7 +243,7 @@ static void UpdateBarState(StateBarT *bars) {
         offset += bar_bytesPerRow * 33;
 
       for (j = 0; j < DEPTH; j++, ins += 2)
-        CopInsSet32(ins, bar.planes[j] + offset);
+        CopInsSet32((CopInsPairT *)ins, bar.planes[j] + offset);
       CopInsSet16(ins, (shift << 4) | shift);
     }
 
@@ -252,13 +252,13 @@ static void UpdateBarState(StateBarT *bars) {
 }
 
 static void UpdateSpriteState(StateFullT *state) {
-  CopInsT *ins = state->sprite;
+  CopInsPairT *ins = state->sprite;
   int t = frameCount * 2;
   int fu = t & 63;
   int fd = ~t & 63;
   short i;
 
-  for (i = 0; i < NSPRITES; i++, ins += 2)
+  for (i = 0; i < NSPRITES; i++, ins++)
     CopInsSet32(ins, stripe[i].sprdat->data + ((i & 2) ? fd : fu));
 }
 
@@ -296,9 +296,6 @@ static void UpdateStripeState(StateFullT *state) {
     } while (--n != -1);
   }
 }
-
-#define CP_FULL_SIZE (HEIGHT * 22 + 100)
-#define CP_BARS_SIZE (500)
 
 /* For both {Copy,Zero}SpriteTiles `t` controls which quarter of stripe,
  * i.e. tile has to be copied or cleared respectively. Note that all 8
@@ -359,16 +356,16 @@ static void Load(void) {
   }
 }
 
-static const PaletteT *barPalArray[] = {
-  &bar_bright_pal,
-  &bar_pal,
-  &bar_dark_pal,
+static const u_short *barPalArray[] = {
+  bar_bright_colors,
+  bar_colors,
+  bar_dark_colors,
 };
 
-static const PaletteT *stripePalArray[] = {
-  &stripes_bright_pal,
-  &stripes_pal,
-  &stripes_dark_pal,
+static const u_short *stripePalArray[] = {
+  stripes_bright_colors,
+  stripes_colors,
+  stripes_dark_colors,
 };
 
 static const short palIdxSeq[] = {
@@ -377,15 +374,6 @@ static const short palIdxSeq[] = {
 
 static short barPalIdx[4];
 static short stripePalIdx[4];
-
-static void LoadColorArray(const u_short *col, short ncols, u_int start) {
-  short n = ncols - 1;
-  volatile u_short *colreg = custom->color + start;
-
-  do {
-    *colreg++ = *col++;
-  } while (--n != -1);
-}
 
 static void VBlank(void) {
   short val;
@@ -405,7 +393,7 @@ static void VBlank(void) {
     if (palIdx < 0)
       continue;
     stripePalIdx[i]++;
-    LoadColorArray(&stripePalArray[palIdx]->colors[m], 4, 16 + m);
+    LoadColorArray(&stripePalArray[palIdx][m], 4, 16 + m);
   }
 
   if ((val = TrackValueGet(&WeaveBarPulse, frameFromStart))) {
@@ -422,7 +410,7 @@ static void VBlank(void) {
     barPalIdx[i]++;
     {
       CopInsT *ins = stateFull[active ^ 1].bars.palette[i];
-      const u_short *col = &barPalArray[palIdx]->colors[(i & 1) ? 16 : 0];
+      const u_short *col = &barPalArray[palIdx][(i & 1) ? 16 : 0];
       for (m = 0; m < 16; m++) {
         CopInsSet16(ins++, *col++);
       }
@@ -436,8 +424,8 @@ static void Init(void) {
   SetupDisplayWindow(MODE_LORES, X(16), Y(0), WIDTH, HEIGHT);
   SetupBitplaneFetch(MODE_LORES, X(0), WIDTH + 16);
   SetupMode(MODE_LORES, DEPTH);
-  LoadPalette(&bar_pal, 0);
-  LoadPalette(&stripes_pal, 16);
+  LoadColors(bar_colors, 0);
+  LoadColors(stripes_colors, 16);
 
   /* Place sprites 0-3 above playfield, and 4-7 below playfield. */
   custom->bplcon2 = BPLCON2_PF2PRI | BPLCON2_PF2P1 | BPLCON2_PF1P1;
@@ -451,14 +439,10 @@ static void Init(void) {
   }
 
   stateFull = MemAlloc(sizeof(StateFullT) * 2, MEMF_PUBLIC|MEMF_CLEAR);
-  stateFull[0].cp = NewCopList(CP_FULL_SIZE);
-  stateFull[1].cp = NewCopList(CP_FULL_SIZE);
   MakeCopperListFull(&stateFull[0]);
   MakeCopperListFull(&stateFull[1]);
 
   stateBars = MemAlloc(sizeof(StateBarT) * 2, MEMF_PUBLIC|MEMF_CLEAR);
-  stateBars[0].cp = NewCopList(CP_BARS_SIZE);
-  stateBars[1].cp = NewCopList(CP_BARS_SIZE);
   MakeCopperListBars(&stateBars[0], false);
   MakeCopperListBars(&stateBars[1], false);
 

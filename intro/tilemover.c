@@ -39,9 +39,9 @@
 
 static __code BitmapT *screen;
 static __code int active = 0;
-static __code const PaletteT *currPal;
+static __code const u_short *currPal;
 static CopListT *cp;
-static CopInsT *bplptr[DEPTH + 1];
+static CopInsPairT *bplptr;
 
 /* 1 bit version of logo for blitting */
 static BitmapT *logo_blit;
@@ -58,14 +58,12 @@ static short tiles[NFLOWFIELDS][NTILES];
 #include "palettes.h"
 #include "bitmaps.h"
 
-typedef const PaletteT *TilemoverPalT[5];
-
-static TilemoverPalT tilemover_palettes = {
+static const u_short *tilemover_palettes[] = {
   NULL,
-  &pal_blue,    
-  &pal_red,     
-  &pal_green,
-  &pal_gold
+  blue_colors,    
+  red_colors,
+  green_colors,
+  gold_colors,
 };
 
 static const short blip_sequence[] = {
@@ -229,7 +227,7 @@ static void UpdateBitplanePointers(void) {
   short j = active;
 
   for (i = DEPTH - 1; i >= 0; i--) {
-    CopInsSet32(bplptr[i], screen->planes[j] + offset);
+    CopInsSet32(&bplptr[i], screen->planes[j] + offset);
     j--;
     if (j < 0)
       j += DEPTH + 1;
@@ -244,7 +242,7 @@ static void Load(void) {
 
   EnableDMA(DMAF_BLITTER);
   /* bitmap width aligned to word */
-  logo_blit = NewBitmap(ghostown_logo.width, ghostown_logo.height, 1);
+  logo_blit = NewBitmap(ghostown_logo.width, ghostown_logo.height, 1, BM_CLEAR);
   BlitSimple(ghostown_logo.planes[0], ghostown_logo.planes[1],
              ghostown_logo.planes[2], logo_blit,
              ABC | ANBC | ABNC | ANBNC | NABC | NANBC | NABNC); 
@@ -262,9 +260,9 @@ static void VBlank(void) {
   UpdateFrameCount();
 
   if (frameTillEnd < 16) {
-    FadeBlack(currPal, 0, frameTillEnd); 
+    FadeBlack(currPal, colors_count, 0, frameTillEnd); 
   } else if ((val = TrackValueGet(&TileMoverBgBlip, frameCount))) {
-    SetColor(0, tilemover_bg_pal.colors[blip_sequence[val]]);
+    SetColor(0, tilemover_bg_colors[blip_sequence[val]]);
   }
 }
 
@@ -276,7 +274,7 @@ static void Init(void) {
   for (i = 0; i < 16; i++)
     SetColor(i, BGCOLOR);
 
-  screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1);  
+  screen = NewBitmap(WIDTH, HEIGHT, DEPTH + 1, BM_CLEAR);
   EnableDMA(DMAF_BLITTER);
   if (TrackValueGet(&TileMoverBlit, frameCount) == 1)
     BlitBitmap(S_WIDTH / 2 - 96 - 8, S_HEIGHT / 2 - 66, logo_blit);
@@ -288,11 +286,10 @@ static void Init(void) {
   KillLogo();
 
   cp = NewCopList(100);
-  CopInit(cp);
-  CopSetupBitplanes(cp, bplptr, screen, DEPTH);
+  bplptr = CopSetupBitplanes(cp, screen, DEPTH);
   CopMove16(cp, bpl1mod, (WIDTH - S_WIDTH) / 8);
   CopMove16(cp, bpl2mod, (WIDTH - S_WIDTH) / 8);
-  CopEnd(cp);
+  CopListFinish(cp);
  
   CopListActivate(cp);
   
@@ -420,7 +417,7 @@ static void Render(void) {
   
   if (current_pal) {
     currPal = tilemover_palettes[current_pal];
-    LoadPalette(currPal, 0);
+    LoadColorArray(currPal, colors_count, 0);
     SetColor(0, BGCOLOR);
     // Spinning torus needs to have screen cleared out to avoid
     // ugly visual artifacts.

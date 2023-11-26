@@ -110,13 +110,12 @@ static BitmapT *current_board;
 // current board = boards[0], the rest is intermediate results
 static BitmapT *boards[BOARD_COUNT];
 
-// pointers to copper instructions, for rewriting bitplane pointers
-static CopInsT *bplptr[DISP_DEPTH];
+// pointers to copper instructions, for rewriting bitplane & sprite pointers
+static CopInsPairT *bplptr;
+static CopInsPairT *sprptr;
 
 // pointers to copper instructions, for setting colors
 static CopInsT *palptr;
-
-static CopInsT *sprptr[8];
 
 // circular buffer of previous game states as they would be rendered (with
 // horizontally doubled pixels)
@@ -219,35 +218,36 @@ static void BlitFunc(const BitmapT *sourceA, const BitmapT *sourceB,
   custom->bltsize = BLTSIZE;
 }
 
-void MakeCopperList(CopListT *cp) {
-  short i;
-  short *color = wireworld_pcb_pal_pixels;
+static CopListT *MakeCopperList(void) {
+  CopListT *cp = NewCopList(1310);
+  short *color = wireworld_gradient_pixels;
   short display_bg = TrackValueGet(&WireworldDisplayBg, frameCount);
   short pal_start = display_bg ? 8 : 0;
+  short i;
 
-  CopInit(cp);
   // initially previous states are empty
   // save addresses of these instructions to change bitplane
   // order when new state gets generated
+  bplptr = CopInsPtr(cp);
   for (i = 0; i < DISP_DEPTH; i++)
-    bplptr[i] = CopMove32(cp, bplpt[i], prev_states[i]->planes[0]);
+    CopMove32(cp, bplpt[i], prev_states[i]->planes[0]);
 
-  CopSetupSprites(cp, sprptr);
+  sprptr = CopSetupSprites(cp);
   for (i = 0; i < 8; i++) {
     SpriteT *spr = &wireworld_chip[i];
     SpriteUpdatePos(spr, X(DISP_WIDTH / 2 + (i / 2) * 16 - 33),
                     Y(DISP_HEIGHT / 2 - spr->height / 2));
     if (wireworld && TrackValueGet(&WireworldBg, frameCount) == 1) {
-      CopInsSetSprite(sprptr[i], spr);
+      CopInsSetSprite(&sprptr[i], spr);
     } else {
-      CopInsSet32(sprptr[i], NullSprData);
+      CopInsSet32(&sprptr[i], NullSprData);
     }
   }
 
   palptr = CopSetColor(cp, 0, 0);
   for (i = 1; i < 32; i++)
     CopSetColor(cp, i, 0);
-  // CopLoadPal(cp, &wireworld_chip_pal, 16);
+  // CopLoadColors(cp, wireworld_chip_colors, 16);
 
   for (i = 1; i <= DISP_HEIGHT; i += 2) {
     // vertical pixel doubling
@@ -282,7 +282,8 @@ void MakeCopperList(CopListT *cp) {
     CopMove16(cp, bpl2mod, 0);
     CopWaitSafe(cp, Y(i + 1), 0);
   }
-  CopEnd(cp);
+
+  return CopListFinish(cp);
 }
 
 static void UpdateBitplanePointers(void) {
@@ -299,7 +300,7 @@ static void UpdateBitplanePointers(void) {
     if (last >= prev_states_depth)
       last -= prev_states_depth;
     cur = prev_states[last];
-    CopInsSet32(bplptr[i], cur->planes[0]);
+    CopInsSet32(&bplptr[i], cur->planes[0]);
   }
   states_head++;
   if (states_head >= prev_states_depth)
@@ -325,8 +326,7 @@ static void GameOfLife(void *boards) {
 static short scene_count = 0;
 
 static void LoadBackground(const BitmapT *bg, u_short x, u_short y, short idx) {
-  BitmapT *tmp = NewBitmapCustom(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH,
-                                 BM_DISPLAYABLE);
+  BitmapT *tmp = NewBitmap(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH, 0);
   BitmapClear(tmp); // comment for cool effects!
   BitmapCopy(tmp, x, y, bg);
   WaitBlitter();
@@ -379,7 +379,7 @@ static inline void ChipFadeIn(short phase) {
   for (i = 16; i < 32; i++)
     CopInsSet16(
       palptr + i,
-      ColorTransition(0x000, wireworld_chip_pal.colors[i - 16], 15 - phase));
+      ColorTransition(0x000, wireworld_chip_colors[i - 16], 15 - phase));
 }
 
 static void SharedPreInit(void) {
@@ -397,19 +397,16 @@ static void SharedPreInit(void) {
   }
 
   for (i = 0; i < BOARD_COUNT; i++)
-    boards[i] = NewBitmapCustom(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH,
-                                BM_DISPLAYABLE);
+    boards[i] = NewBitmap(EXT_BOARD_WIDTH, EXT_BOARD_HEIGHT, BOARD_DEPTH, 0);
 
   for (i = 0; i < PREV_STATES_DEPTH; i++) {
     // only needs half the vertical resolution, other half
     // achieved via copper line doubling
-    prev_states[i] =
-      NewBitmapCustom(DISP_WIDTH, DISP_HEIGHT / 2, BOARD_DEPTH, BM_DISPLAYABLE);
+    prev_states[i] = NewBitmap(DISP_WIDTH, DISP_HEIGHT / 2, BOARD_DEPTH, 0);
   }
 
   for (i = 0; i < 2; i++)
-    background[i] =
-      NewBitmapCustom(DISP_WIDTH, DISP_HEIGHT / 2, BOARD_DEPTH, BM_DISPLAYABLE);
+    background[i] = NewBitmap(DISP_WIDTH, DISP_HEIGHT / 2, BOARD_DEPTH, 0);
 
   states_head = 0;
   current_board = boards[0];
@@ -430,8 +427,7 @@ static void SharedPreInit(void) {
 
   SetupPlayfield(MODE_LORES, DISP_DEPTH, X(0), Y(0), DISP_WIDTH, DISP_HEIGHT);
 
-  cp = NewCopList(1310);
-  MakeCopperList(cp);
+  cp = MakeCopperList();
   CopListActivate(cp);
 
   EnableDMA(DMAF_RASTER | DMAF_SPRITE);
@@ -475,7 +471,7 @@ static void InitWireworld(void) {
     LoadBackground(desired_bg, 0, 0, 0);
     BitmapClear(background[1]); // important!
     WaitBlitter();
-    CopInsSet32(bplptr[3], background[1]->planes[0]);
+    CopInsSet32(&bplptr[3], background[1]->planes[0]);
     InitWireworldFadein();
   }
 
@@ -601,10 +597,10 @@ static void GolStep(void) {
       sizeof(wireworld_chip_cycling) / sizeof(wireworld_chip_cycling[0]);
     if (TrackValueGet(&WireworldFadeIn, frameCount) == 0)
       ColorCyclingStep(&palptr[16], wireworld_chip_cycling, cycling_len,
-                       &wireworld_chip_pal);
+                       wireworld_chip_colors);
   } else {
     short logo_idx = TrackValueGet(&GOLLogoType, frameCount);
-    CopInsSet32(bplptr[3], background[logo_idx]->planes[0]);
+    CopInsSet32(&bplptr[3], background[logo_idx]->planes[0]);
     TransitionPal(palette_gol + 1);
     ColorFadingStep(palette_gol);
   }

@@ -18,9 +18,9 @@ extern TrackT TreeVariant;
 extern TrackT TreeFade;
 
 static CopListT *cp;
-static CopInsT *bplptr[DEPTH];
+static CopInsPairT *bplptr;
+static CopInsPairT *sprptr;
 static BitmapT *screen;
-static CopInsT *sprptr[8];
 
 static u_short nrPal = 0;
 
@@ -173,10 +173,12 @@ static void VBlank(void) {
   (void)TrackValueGet(&TreeFade, frameCount);
 
   if ((val = FromCurrKeyFrame(&TreeFade)) < 16)
-    FadeBlack(nrPal ? &tree_pal_electric : &tree_pal_organic, 0, val);
+    FadeBlack(nrPal ? electric_colors : organic_colors,
+              electric_colors_count, 0, val);
   
   if ((val = TillNextKeyFrame(&TreeFade)) < 16)
-    FadeBlack(nrPal ? &tree_pal_electric : &tree_pal_organic, 0, val);
+    FadeBlack(nrPal ? electric_colors : organic_colors,
+              electric_colors_count, 0, val);
 }
 
 static void Init(void) {
@@ -185,7 +187,7 @@ static void Init(void) {
   branches = MemAlloc(sizeof(BranchT) * MAXBRANCHES, MEMF_PUBLIC);
   lastBranch = branches;
 
-  screen = NewBitmap(WIDTH, HEIGHT, DEPTH);
+  screen = NewBitmap(WIDTH, HEIGHT, DEPTH, BM_CLEAR);
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(0), WIDTH, HEIGHT);
 
@@ -198,10 +200,9 @@ static void Init(void) {
   custom->bplcon2 = BPLCON2_PF1P2;
 
   cp = NewCopList(50);
-  CopInit(cp);
-  CopSetupBitplanes(cp, bplptr, screen, DEPTH);
-  CopSetupSprites(cp, sprptr);
-  CopEnd(cp);
+  bplptr = CopSetupBitplanes(cp, screen, DEPTH);
+  sprptr = CopSetupSprites(cp);
+  CopListFinish(cp);
 
   CopListActivate(cp);
 
@@ -495,7 +496,7 @@ static void Render(void) {
     GreetsNextTrack();
 
     for (i = 0; i < NSPRITES; i++)
-      CopInsSetSprite(sprptr[i], &grass[i]);
+      CopInsSetSprite(&sprptr[i], &grass[i]);
 
     MakeBranch(WIDTH / 2, HEIGHT - fruit_height / 2 - 1);
   }

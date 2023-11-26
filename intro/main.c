@@ -71,7 +71,7 @@ void PixmapToBitmap(BitmapT *bm, short width, short height, short depth,
   bm->depth = depth;
   bm->bytesPerRow = bytesPerRow;
   bm->bplSize = bplSize;
-  bm->flags = BM_DISPLAYABLE | BM_STATIC;
+  bm->flags = BM_STATIC;
 
   BitmapSetPointers(bm, pixels);
 
@@ -99,18 +99,16 @@ static void UnLoadEffects(EffectT **effects) {
   }
 }
 
-void FadeBlack(const PaletteT *pal, u_int start, short step) {
+void FadeBlack(const u_short *colors, short count, u_int start, short step) {
   volatile short *reg = &custom->color[start];
-  const short *col = pal->colors;
-  short n = pal->count;
   
   if (step < 0)
     step = 0;
   if (step > 15)
     step = 15;
 
-  while (--n >= 0) {
-    short to = *col++;
+  while (--count >= 0) {
+    short to = *colors++;
 
     short r = ((to >> 4) & 0xf0) | step;
     short g = (to & 0xf0) | step;
@@ -150,8 +148,8 @@ static void RunEffects(void) {
 
   frameCount = SYNCPOS(pos);
   SetFrameCounter(frameCount);
-  PtSongPos = pos >> 8;
-  PtPatternPos = (pos & 0x3f) << 4;
+  PtData.mt_SongPos = pos >> 8;
+  PtData.mt_PatternPos = (pos & 0x3f) << 4;
   PtEnable = -1;
 
   AddIntServer(INTB_VERTB, VBlankInterrupt);

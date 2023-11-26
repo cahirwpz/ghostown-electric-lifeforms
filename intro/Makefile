@@ -28,8 +28,11 @@ BUILD-FILES := audiovq
 CLEAN-FILES := main.o \
 	data/bar.c data/bar-*.c data/stripes.c data/stripes-*.c \
 	data/$(MODULE)*.o data/$(MODULE).{smp,trk}* data/text-scroll-font.c \
-	data/intro.c data/electric-lifeforms-0[1-2].c data/greets-*.c \
-	data/fruit-*.c data/anemone-gradient.c data/anemone-gradient-data.c \
+	data/intro.c \
+	data/electric-lifeforms-0[1-2].c data/electric-small.c \
+	data/greets-*.c data/fruit-*.c \
+	data/anemone-gradient.c \
+	data/anemone-gradient-data.c \
 	data/ghostown-logo-crop.c \
 	data/logo-electrons.c data/electric-lifeforms.c \
 	data/ghostown-logo-0[1-3].c \
@@ -51,40 +54,40 @@ SOURCES := main.c weave.c textscroll.c turmite.c logo.c growing-tree.c \
 	   samples.c palettes.c bitmaps.c
 MAIN := #
 
-PNG2C.bar := --pixmap bar,480x67x4,+limit_bpp,+onlydata,+displayable --palette bar_pal,32
-PNG2C.bar-dark := --palette bar_dark_pal,32
-PNG2C.bar-bright := --palette bar_bright_pal,32
-PNG2C.stripes := --bitmap stripes,128x64x2,+limit_depth,+interleaved,-displayable --palette stripes_pal,16
-PNG2C.stripes-dark := --palette stripes_dark_pal,16
-PNG2C.stripes-bright := --palette stripes_bright_pal,16
-PNG2C.text-scroll-font := --bitmap font,768x8x1,-displayable --palette font_pal,8,+store_unused
-PNG2C.turmite-credits-1 := --bitmap turmite_credits_1,256x256x1,+onlydata,-displayable
-PNG2C.turmite-credits-2 := --bitmap turmite_credits_2,256x256x1,+onlydata,-displayable
-PNG2C.turmite-credits-3 := --bitmap turmite_credits_3,256x256x1,+onlydata,-displayable
-PNG2C.electric-lifeforms-01 := --pixmap electric_lifeforms,320x256x4,+onlydata --palette electric_lifeforms_1_pal,8
-PNG2C.electric-lifeforms-02 := --palette electric_lifeforms_2_pal,8
-PNG2C.tree-pal-organic := --palette tree_pal_organic,32
-PNG2C.tree-pal-electric := --palette tree_pal_electric,32
+PNG2C.bar := --pixmap bar,480x67x4,+limit_bpp,+onlydata,+displayable --palette bar,32
+PNG2C.bar-dark := --palette bar_dark,32
+PNG2C.bar-bright := --palette bar_bright,32
+PNG2C.stripes := --bitmap stripes,128x64x2,+limit_depth,+interleaved,+cpuonly --palette stripes,16
+PNG2C.stripes-dark := --palette stripes_dark,16
+PNG2C.stripes-bright := --palette stripes_bright,16
+PNG2C.text-scroll-font := --bitmap font,768x8x1,+cpuonly --palette font,8,+store_unused
+PNG2C.turmite-credits-1 := --bitmap turmite_credits_1,256x256x1,+onlydata,+cpuonly
+PNG2C.turmite-credits-2 := --bitmap turmite_credits_2,256x256x1,+onlydata,+cpuonly
+PNG2C.turmite-credits-3 := --bitmap turmite_credits_3,256x256x1,+onlydata,+cpuonly
+PNG2C.electric-lifeforms-01 := --pixmap electric_lifeforms,320x256x4,+onlydata --palette electric_lifeforms_1,8
+PNG2C.electric-lifeforms-02 := --palette electric_lifeforms_2,8
+PNG2C.tree-pal-organic := --palette organic,32
+PNG2C.tree-pal-electric := --palette electric,32
 PNG2C.fruit-1 := --bitmap fruit_1,16x16x2,+onlydata
 PNG2C.fruit-2 := --bitmap fruit_2,16x16x2,+onlydata
 PNG2C.grass := --sprite grass,32,8
-PNG2C.electric-small := --sprite electric,32,5 --palette electric_pal,16,+store_unused
-PNG2C.tilemover-pal := --palette tilemover_pal,16
+PNG2C.electric-small := --sprite electric,32,5 --palette electric,16,+store_unused
+PNG2C.tilemover-pal := --palette tilemover,16
 PNG2C.ghostown-logo-crop := --pixmap ghostown_logo,192x131x4,+onlydata,+displayable
-PNG2C.ghostown-logo-01 := --palette ghostown_logo_1_pal,8
-PNG2C.ghostown-logo-02 := --palette ghostown_logo_2_pal,8
-PNG2C.ghostown-logo-03 := --palette ghostown_logo_3_pal,8
+PNG2C.ghostown-logo-01 := --palette ghostown_logo_1,8
+PNG2C.ghostown-logo-02 := --palette ghostown_logo_2,8
+PNG2C.ghostown-logo-03 := --palette ghostown_logo_3,8
 ELECTRONS2C.wireworld-fullscreen := --name pcb_electrons
 PNG2C.wireworld-fullscreen := --bitmap wireworld_pcb,160x128x1,+limit_depth
 ELECTRONS2C.wireworld-vitruvian := --name vitruvian_electrons
 PNG2C.wireworld-vitruvian := --bitmap wireworld_vitruvian,160x128x1,+limit_depth
-PNG2C.chip := --sprite wireworld_chip,64,4,+attached --palette wireworld_chip_pal,16
-PNG2C.wireworld-pcb-pal := --pixmap wireworld_pcb_pal,4x32x12,+onlydata
-PNG2C.loader := --bitmap loader,64x64x1 --palette loader_pal,2
+PNG2C.chip := --sprite wireworld_chip,64,4,+attached --palette wireworld_chip,16
+PNG2C.wireworld-pcb-pal := --pixmap wireworld_gradient,4x32x12,+onlydata
+PNG2C.loader := --bitmap loader,64x64x1
 PNG2C.electric := --bitmap electric_logo,160x64x1,+shared
 PNG2C.lifeforms := --bitmap lifeforms_logo,160x64x1,+shared
-PNG2C.anemone-gradient := --palette anemone_gradient_pal,16
-PNG2C.whirl := --sprite whirl,64,4 --palette whirl_pal,16,+store_unused
+PNG2C.anemone-gradient := --palette anemone_gradient,16
+PNG2C.whirl := --sprite whirl,64,4 --palette whirl,16,+store_unused
 
 PNG2C.circles := \
 	--bitmap circle1,3x3x1,extract_at=0x0 \
@@ -122,30 +125,30 @@ PNG2C.squares := \
 	--bitmap square15,31x31x1,extract_at=0x238 \
 	--bitmap square16,33x33x1,extract_at=0x270
 
-PNG2C.pal-gold := --palette pal_gold,16,+shared
-PNG2C.pal-gold-dark := --palette pal_gold_dark,16,+shared
-PNG2C.pal-gold-light := --palette pal_gold_light,16,+shared
+PNG2C.pal-gold := --palette gold,16,+shared
+PNG2C.pal-gold-dark := --palette gold_dark,16,+shared
+PNG2C.pal-gold-light := --palette gold_light,16,+shared
 
-PNG2C.pal-blue := --palette pal_blue,16,+shared
-PNG2C.pal-blue-dark := --palette pal_blue_dark,16,+shared
-PNG2C.pal-blue-light := --palette pal_blue_light,16,+shared
+PNG2C.pal-blue := --palette blue,16,+shared
+PNG2C.pal-blue-dark := --palette blue_dark,16,+shared
+PNG2C.pal-blue-light := --palette blue_light,16,+shared
 
-PNG2C.pal-green := --palette pal_green,16,+shared
-PNG2C.pal-green-dark := --palette pal_green_dark,16,+shared
-PNG2C.pal-green-light := --palette pal_green_light,16,+shared
+PNG2C.pal-green := --palette green,16,+shared
+PNG2C.pal-green-dark := --palette green_dark,16,+shared
+PNG2C.pal-green-light := --palette green_light,16,+shared
 
-PNG2C.pal-red := --palette pal_red,16,+shared
-PNG2C.pal-red-dark := --palette pal_red_dark,16,+shared
-PNG2C.pal-red-light := --palette pal_red_light,16,+shared
+PNG2C.pal-red := --palette red,16,+shared
+PNG2C.pal-red-dark := --palette red_dark,16,+shared
+PNG2C.pal-red-light := --palette red_light,16,+shared
 
-PNG2C.anemone-gradient-pal := --palette anemone_gradient_pal,16
+PNG2C.anemone-gradient-pal := --palette anemone_gradient,16
 
 PNG2C.tilemover-windmills := --bitmap tilemover_windmills,32x32x1
 PNG2C.tilemover-wave := --bitmap tilemover_wave,192x64x1
 PNG2C.tilemover-drops := --bitmap tilemover_drops,16x16x1
-PNG2C.tilemover-bg-pal := --palette tilemover_bg_pal,6
+PNG2C.tilemover-bg-pal := --palette tilemover_bg,6
 
-PNG2C.texture-inside := --pixmap texture_in,64x64x8,+onlydata --palette texture_pal,16
+PNG2C.texture-inside := --pixmap texture_in,64x64x8,+onlydata
 PNG2C.texture-outside := --pixmap texture_out,64x64x8,+onlydata
 PNG2C.uvgut-gradient := --pixmap uvgut_gradient,16x16x12,+onlydata
 PNG2C.uvtit-gradient := --pixmap uvtit_gradient,16x16x12,+onlydata

@@ -25,8 +25,8 @@ static __code u_short active = 0;
 static __code volatile short c2p_phase;
 static __code void **c2p_bpl;
 static CopListT *cp;
-static CopInsT *bplptr[DEPTH];
-static CopInsT *sprptr[8];
+static CopInsPairT *bplptr;
+static CopInsPairT *sprptr;
 
 #include "data/electric-small.c"
 #include "data/texture-inside.c"
@@ -323,10 +323,10 @@ static void ChunkyToPlanar(void) {
       break;
 
     case 6:
-      CopInsSet32(bplptr[0], bpl[2]);
-      CopInsSet32(bplptr[1], bpl[3]);
-      CopInsSet32(bplptr[2], bpl[2] + BLTSIZE / 2);
-      CopInsSet32(bplptr[3], bpl[3] + BLTSIZE / 2);
+      CopInsSet32(&bplptr[0], bpl[2]);
+      CopInsSet32(&bplptr[1], bpl[3]);
+      CopInsSet32(&bplptr[2], bpl[2] + BLTSIZE / 2);
+      CopInsSet32(&bplptr[3], bpl[3] + BLTSIZE / 2);
       break;
 
     default:
@@ -336,12 +336,12 @@ static void ChunkyToPlanar(void) {
   c2p_phase++;
 }
 
-static void MakeCopperList(CopListT *cp, short *pixels) {
+static CopListT *MakeCopperList(short *pixels) {
+  CopListT *cp = NewCopList(900 + 256);
   short i, j;
 
-  CopInit(cp);
-  CopSetupBitplanes(cp, bplptr, screen[active], DEPTH);
-  CopSetupSprites(cp, sprptr);
+  bplptr = CopSetupBitplanes(cp, screen[active], DEPTH);
+  sprptr = CopSetupSprites(cp);
   for (j = 0; j < 16; j++)
     CopSetColor(cp, j, *pixels++);
   for (i = 0; i < HEIGHT * 2; i++) {
@@ -357,7 +357,7 @@ static void MakeCopperList(CopListT *cp, short *pixels) {
       for (j = 0; j < 16; j++)
         CopSetColor(cp, j, *pixels++);
   }
-  CopEnd(cp);
+  return CopListFinish(cp);
 }
 
 static void VBlank(void) {
@@ -377,8 +377,8 @@ static void VBlank(void) {
 static void Init(short var) {
   short i;
 
-  screen[0] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH);
-  screen[1] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH);
+  screen[0] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, BM_CLEAR);
+  screen[1] = NewBitmap(WIDTH * 2, HEIGHT * 2, DEPTH, BM_CLEAR);
 
   texFstHi = MemAlloc(texture_out_width * texture_out_height * 4,
                       MEMF_PUBLIC|MEMF_CLEAR);
@@ -396,18 +396,17 @@ static void Init(short var) {
 
   SetupPlayfield(MODE_LORES, DEPTH, X(0), Y(28), WIDTH * 2, HEIGHT * 2);
 
-  cp = NewCopList(900 + 256);
-  MakeCopperList(cp, var ? uvtit_gradient_pixels : uvgut_gradient_pixels);
+  cp = MakeCopperList(var ? uvtit_gradient_pixels : uvgut_gradient_pixels);
   CopListActivate(cp);
 
   if (var) {
     for (i = 0; i < electric_sprites; i++) {
       short hp = X(i * 16 + (320 - electric_sprites * 16) / 2);
       SpriteUpdatePos(&electric[i], hp, Y((256 - electric_height) / 2));
-      CopInsSetSprite(sprptr[i], &electric[i]);
+      CopInsSetSprite(&sprptr[i], &electric[i]);
     }
 
-    LoadPalette(&electric_pal, 16);
+    LoadColors(electric_colors, 16);
   }
 
   EnableDMA(DMAF_RASTER);
