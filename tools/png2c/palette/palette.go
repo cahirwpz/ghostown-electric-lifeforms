@@ -21,10 +21,13 @@ func Make(in *image.Paletted, cfg image.Config, opts map[string]any) string {
 	}
 
 	p := in.Palette
-	if !o.StoreUnused {
+	if o.StoreUnused {
+		// Trim colors that are not part of the palette
+		p = in.Palette[0:o.Count]
+	} else {
 		p = util.CleanPalette(in.Pix, p)
 	}
-	// o.Count = len(p)
+
 	if len(p) > o.Count {
 		msg := fmt.Sprintf("Expected max %v colors, got %v", o.Count, len(p))
 		panic(msg)

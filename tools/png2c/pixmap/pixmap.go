@@ -5,9 +5,10 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	"math"
 	"strings"
 	"text/template"
+
+	"ghostown.pl/png2c/util"
 )
 
 //go:embed template.tpl
@@ -29,7 +30,7 @@ func Make(in image.Image, cfg image.Config, opts map[string]any) string {
 			panic("Expected color mapped image!")
 		}
 
-		bpp := int(math.Ceil(math.Log2(float64(len(pm.Palette)))))
+		bpp := util.GetDepth(pm.Pix)
 		if o.LimitBpp {
 			bpp = min(o.Bpp, bpp)
 		}

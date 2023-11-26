@@ -24,8 +24,10 @@ func CutImage(startX, startY, width, height int, img image.Config, pix []uint8) 
 func CleanPalette(pix []uint8, pal color.Palette) color.Palette {
 	ci := getColorIndexes(pix)
 	out := color.Palette{}
-	for _, i := range ci {
-		out = append(out, pal[i])
+	for i := range pal {
+		if _, ok := ci[uint8(i)]; ok {
+			out = append(out, pal[i])
+		}
 	}
 
 	return out

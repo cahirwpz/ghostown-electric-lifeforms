@@ -91,6 +91,7 @@ func main() {
 				pms.Param{Name: "name", CastType: pms.TYPE_STRING},
 				pms.Param{Name: "count", CastType: pms.TYPE_INT},
 				pms.Param{Name: "shared", CastType: pms.TYPE_BOOL, Value: false},
+				pms.Param{Name: "store_unused", CastType: pms.TYPE_BOOL, Value: false},
 			)
 
 			out += p.Make(pm, cfg, opts)
