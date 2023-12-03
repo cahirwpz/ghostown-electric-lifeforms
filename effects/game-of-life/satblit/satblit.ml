@@ -69,27 +69,40 @@ let run_at i =
   done;
   !v
 
+(* due to how indexing was originally handled (first 2 blits were not counted
+   and index 4 was treated as previous generation) this corrects the indexing to
+   treat index 0 as having the previous generation and includes the first 2 blits *)
+let one_hot_to_amiga n =
+  if n < 4 then
+    n + 3
+  else if n = 4 then
+    0
+  else
+    n + 2
+
 let () = 
   if Sys.argv.(2) = "-o" then dump_dimacs ()
   else if Sys.argv.(2) = "-d" then begin
     read_dimacs ();
-    Printf.printf "X0 = LUT (number of set bits in Lo):\n";
-    dump_lut lut_a1;
-    Printf.printf "X1 = LUT (number of set bits in Lo):\n";
-    dump_lut lut_a2;
-    Printf.printf "X2 = LUT (number of set bits in Hi):\n";
-    dump_lut lut_b1;
-    Printf.printf "X3 = LUT (number of set bits in Hi):\n";
-    dump_lut lut_b2;
-    Printf.printf "X4 = (previous bit set)\n";
+    Printf.printf "PHASE_SIMPLE(0, 1, FULL_ADDER, BlitAdjacentHorizontal),\n";
+    Printf.printf "PHASE_SIMPLE(0, 2, FULL_ADDER_CARRY, BlitAdjacentHorizontal),\n";
+    Printf.printf "PHASE_SIMPLE(1, 3, %s, BlitAdjacentVertical),\n" (string_of_lut4 lut_a1);
+    Printf.printf "PHASE_SIMPLE(1, 4, %s, BlitAdjacentVertical),\n" (string_of_lut4 lut_a2);
+    Printf.printf "PHASE_SIMPLE(2, 5, %s, BlitAdjacentVertical),\n" (string_of_lut4 lut_b1);
+    Printf.printf "PHASE_SIMPLE(2, 6, %s, BlitAdjacentVertical),\n" (string_of_lut4 lut_b2);
     for i = 0 to blit_n - 1 do
       let (sa, sb, sc) = sels.(i) in
-      Printf.printf "X%d LUT (X%d, X%d, X%d):\n"
-        (i + 5)
-        (one_hot_sel_n sc)
-        (one_hot_sel_n sb)
-        (one_hot_sel_n sa);
-      dump_lut luts.(i)
+      Printf.printf "PHASE(%d, %d, %d, %d, %s, BlitFunc),\n" 
+        ((one_hot_sel_n sc) |> one_hot_to_amiga)
+        ((one_hot_sel_n sb) |> one_hot_to_amiga)
+        ((one_hot_sel_n sa) |> one_hot_to_amiga)
+        (* if last blit then output to bitplane 0 (next generation overwrites previous generation) *)
+        (if i <> blit_n - 1 then
+          (i + 7)
+        else
+          0
+        )
+        (string_of_lut8 luts.(i));
     done
   end else if Sys.argv.(2) = "-t" then begin
     read_dimacs ();

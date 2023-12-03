@@ -20,6 +20,7 @@ val input : int -> (var list * int) list
 val set_true  : var -> unit
 val set_false : var -> unit
 
-val dump_lut : lut -> unit
+val string_of_lut4 : lut -> string
+val string_of_lut8 : lut -> string
 val one_hot_sel_n : one_hot_sel -> int
 val lut_lookup_n : lut -> int -> int

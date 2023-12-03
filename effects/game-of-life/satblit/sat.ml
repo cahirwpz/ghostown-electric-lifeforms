@@ -99,10 +99,24 @@ let input n =
 let set_true x  = add_clause [ pos x ]
 let set_false x = add_clause [ neg x ]
 
-let dump_lut (Lut(_, xs)) =
-  xs |> List.iteri (fun i x ->
-    Printf.printf "%d -> %d\n" i
-      (if Hashtbl.find values x then 1 else 0))
+let minterms = ["NANBNC"; "NANBC"; "NABNC"; "NABC"; "ANBNC"; "ANBC"; "ABNC"; "ABC"]
+let string_of_lut4 (Lut(_, xs)) =
+  minterms |> List.mapi (fun i minterm ->
+    let n_bits = (i land 0x1) + ((i lsr 1) land 0x1) + ((i lsr 2) land 0x1) in
+    let x = List.nth xs n_bits in
+    if Hashtbl.find values x then
+      minterm
+    else
+      ""
+  ) |> List.filter (fun s -> s <> "") |> String.concat " | "
+
+let string_of_lut8 (Lut(_, xs)) =
+  List.map2 (fun x minterm ->
+    if Hashtbl.find values x then
+      minterm
+    else
+      ""
+  ) xs minterms |> List.filter (fun s -> s <> "") |> String.concat " | "
 
 let one_hot_sel_n (OHSel xs) =
   xs
