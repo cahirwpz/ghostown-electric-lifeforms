@@ -10,7 +10,8 @@ This is done by:
 
 ## Prerequisites
 
-Any SAT-solver. `minisat` is a go to, but some more powerful ones might be required for more complex rulesets.
+- OCaml and the `ocamlbuild` build system
+- Any SAT-solver. `minisat` is a go to, but some more powerful ones might be required for more complex rulesets.
 
 ## Compiling
 
