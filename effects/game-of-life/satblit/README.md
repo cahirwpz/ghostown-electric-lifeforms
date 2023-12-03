@@ -48,12 +48,9 @@ Otherwise if the formula was not satisfiable and `UNSATISFIABLE` was printed the
 3. Convert SAT-solver output to blitter passes:
 
 ```
-./satblit.native <N> -d <survive> <born> < solveroutput.sat
+./satblit.native <N> -d < solveroutput.sat
 ```
 
-Meaning of the options is the same as in step 1.
-Values have to be the same as those used to generate the input in step 1. corresponding to the output from step 2.
-
-4. Interpreting the results
-
-TODO
+Value of `N` has to be the same as the one used to generate the input in step 1. corresponding to the output from step 2.
+Result is a list of macros of blitter configs that have to be run in sequence in order to calculate the next generation.
+They are used in a structure describing a set of blitter passes, see [here](https://github.com/cahirwpz/ghostown-electric-lifeforms/blob/478ca16e16fb5fd6446b255df8066ed984248b18/intro/gol-games.c#L48) for an example.
