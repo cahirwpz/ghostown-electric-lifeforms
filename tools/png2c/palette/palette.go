@@ -35,7 +35,7 @@ func Make(in *image.Paletted, cfg image.Config, opts map[string]any) string {
 
 	for _, v := range p {
 		r, g, b, _ := v.RGBA()
-		c := fmt.Sprintf("0x%x%x%x", r>>8/16, g>>8/16, b>>8/16)
+		c := (r>>8/16)<<8 | (g>>8/16)<<4 | (b >> 8 / 16)
 		o.Colors = append(o.Colors, c)
 	}
 
@@ -66,6 +66,7 @@ type Opts struct {
 	Name        string
 	Count       int
 	Shared      bool
-	Colors      []string
 	StoreUnused bool
+	// Template-specific data.
+	Colors []uint32
 }
