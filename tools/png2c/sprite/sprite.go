@@ -4,8 +4,6 @@ import (
 	_ "embed"
 	"fmt"
 	"image"
-	"strings"
-	"text/template"
 
 	"ghostown.pl/png2c/util"
 )
@@ -15,17 +13,15 @@ var tpl string
 
 func Make(in *image.Paletted, cfg image.Config, opts map[string]any) string {
 	o := bindParams(opts)
-	out, err := template.New("bitmap_template").Parse(tpl)
-	if err != nil {
-		panic(err)
-	}
 
+	// Validate image' size
 	if o.Width != cfg.Width || o.Height != cfg.Height {
 		got := fmt.Sprintf("%vx%v", cfg.Height, cfg.Width)
 		exp := fmt.Sprintf("%vx%v", o.Height, o.Width)
 		panic(fmt.Sprintf("image size is wrong: expected %q, got %q", exp, got))
 	}
 
+	// Validate depth
 	depth := util.GetDepth(in.Pix)
 	if !o.Attached && depth != 2 {
 		panic(fmt.Sprintf("image depth is %v, expected 2!", depth))
@@ -38,6 +34,7 @@ func Make(in *image.Paletted, cfg image.Config, opts map[string]any) string {
 		n = n * 2
 	}
 
+	// Calculate the sprite data
 	o.Count = n
 	o.Sprites = make([]Sprite, n)
 	for i := 0; i < n; i++ {
@@ -71,13 +68,9 @@ func Make(in *image.Paletted, cfg image.Config, opts map[string]any) string {
 		o.Sprites[i].Height = o.Height
 	}
 
-	var buf strings.Builder
-	err = out.Execute(&buf, o)
-	if err != nil {
-		panic(err)
-	}
+	out := util.CompileTemplate(tpl, o)
 
-	return buf.String()
+	return out
 }
 
 func bindParams(p map[string]any) (out Opts) {
@@ -93,15 +86,17 @@ func bindParams(p map[string]any) (out Opts) {
 }
 
 type Opts struct {
-	Count   int
-	Sprites []Sprite
+	Count int
 	Sprite
+	// Template-specific data
+	Sprites []Sprite
 }
 
 type Sprite struct {
 	Name     string
 	Height   int
-	Width    int
 	Attached bool
-	Data     []string
+	// Template-specific data
+	Data  []string
+	Width int
 }
