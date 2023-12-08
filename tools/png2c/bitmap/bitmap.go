@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"image"
 	"strings"
-	"text/template"
 
 	"ghostown.pl/png2c/util"
 )
@@ -15,16 +14,14 @@ var tpl string
 
 func Make(in *image.Paletted, cfg image.Config, opts map[string]any) string {
 	o := bindParams(opts)
-	out, err := template.New("bitmap_template").Parse(tpl)
-	if err != nil {
-		panic(err)
-	}
 
+	// Set and validate depth
 	depth := util.GetDepth(in.Pix)
 	if o.LimitDepth {
 		depth = min(o.Depth, depth)
 	}
 
+	// Crop the image if needed (--extract_at option)
 	pix := in.Pix
 	if o.SubImage {
 		pix = util.CutImage(o.StartX, o.StartY, o.Width, o.Height, cfg, in.Pix)
@@ -32,15 +29,15 @@ func Make(in *image.Paletted, cfg image.Config, opts map[string]any) string {
 		cfg.Height = o.Height
 	}
 
+	// Validate the image' size
 	if o.Width != cfg.Width || o.Height != cfg.Height || o.Depth < depth {
 		got := fmt.Sprintf("%vx%vx%v", cfg.Width, cfg.Height, depth)
 		exp := fmt.Sprintf("%vx%vx%v", o.Width, o.Height, o.Depth)
 		panic(fmt.Sprintf("image size is wrong: expected %q, got %q", exp, got))
 	}
 
-	// Binary data
+	// Calculate the binary data
 	bpl := util.Planar(pix, o.Width, o.Height, depth)
-
 	if o.Interleaved {
 		for i := 0; i < depth*o.WordsPerRow*o.Height; i = i + o.WordsPerRow {
 			words := []string{}
@@ -86,13 +83,9 @@ func Make(in *image.Paletted, cfg image.Config, opts map[string]any) string {
 		o.BplPointers = append(o.BplPointers, ptr)
 	}
 
-	var buf strings.Builder
-	err = out.Execute(&buf, o)
-	if err != nil {
-		panic(err)
-	}
+	out := util.CompileTemplate(tpl, o)
 
-	return buf.String()
+	return out
 }
 
 func bindParams(p map[string]any) (out Opts) {
@@ -145,6 +138,7 @@ type Opts struct {
 	Shared      bool
 	OnlyData    bool
 	Displayable bool
+	// Template-specific data
 	BytesPerRow int
 	WordsPerRow int
 	Flags       string

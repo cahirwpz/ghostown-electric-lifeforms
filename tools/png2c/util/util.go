@@ -8,7 +8,24 @@ import (
 	"image/png"
 	"math"
 	"slices"
+	"strings"
+	"text/template"
 )
+
+func CompileTemplate(tpl string, data any) string {
+	tmpl, err := template.New("template").Parse(tpl)
+	if err != nil {
+		panic(err)
+	}
+
+	var buf strings.Builder
+	err = tmpl.Execute(&buf, data)
+	if err != nil {
+		panic(err)
+	}
+
+	return buf.String()
+}
 
 func CutImage(startX, startY, width, height int, img image.Config, pix []uint8) []uint8 {
 	offset := img.Width*startY + startX

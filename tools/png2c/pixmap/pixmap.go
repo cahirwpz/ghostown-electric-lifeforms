@@ -6,7 +6,6 @@ import (
 	"image"
 	"image/color"
 	"strings"
-	"text/template"
 
 	"ghostown.pl/png2c/util"
 )
@@ -16,32 +15,32 @@ var tpl string
 
 func Make(in image.Image, cfg image.Config, opts map[string]any) string {
 	o := bindParams(opts)
-	out, err := template.New("bitmap_template").Parse(tpl)
-	if err != nil {
-		panic(err)
-	}
 
+	// Validate bpp
 	if o.Bpp != 4 && o.Bpp != 8 && o.Bpp != 12 {
 		panic(fmt.Sprintf("Wrong specification: bits per pixel: %v!", o.Bpp))
 	}
 
+	// Handle RGB images
 	if rgbm, _ := in.(*image.RGBA); rgbm != nil {
 		o.IsRGB = true
 		if o.Bpp <= 8 {
 			panic("Expected RGB true color image!")
 		}
 
+		// Validate image' size
 		if o.Width != cfg.Width || o.Height != cfg.Height {
 			got := fmt.Sprintf("%vx%vx%v", o.Width, o.Height, o.Bpp)
 			exp := fmt.Sprintf("%vx%vx%v", cfg.Width, cfg.Height, o.Bpp)
 			panic(fmt.Sprintf("image size is wrong: expected %q, got %q", exp, got))
 		}
+
+		// Calculate the data
 		o.Size = o.Width * o.Height
 		o.Type = "PM_RGB12"
 		o.Stride = o.Width
 		// Binary data
 		dataRGB := rgb12(*rgbm, o.Height, o.Width)
-
 		for i := 0; i < o.Stride*o.Height; i += o.Stride {
 			row := []string{}
 			for _, v := range dataRGB[i : i+o.Stride] {
@@ -50,6 +49,7 @@ func Make(in image.Image, cfg image.Config, opts map[string]any) string {
 			}
 			o.PixData = append(o.PixData, strings.Join(row, ", "))
 		}
+		// Handle paletted and grayscale images
 	} else {
 		var pix []uint8
 		if pm, _ := in.(*image.Paletted); pm != nil {
@@ -59,24 +59,26 @@ func Make(in image.Image, cfg image.Config, opts map[string]any) string {
 		} else {
 			panic("Expected color mapped or grayscale image!")
 		}
+
+		// Set and validate bpp
 		if o.Bpp > 8 {
 			panic("Depth too big!")
 		}
-
 		bpp := util.GetDepth(pix)
 		if o.LimitBpp {
 			bpp = min(o.Bpp, bpp)
 		}
 
+		// Validate image' size
 		if o.Width != cfg.Width || o.Height != cfg.Height || o.Bpp < bpp {
 			got := fmt.Sprintf("%vx%vx%v", o.Width, o.Height, o.Bpp)
 			exp := fmt.Sprintf("%vx%vx%v", cfg.Width, cfg.Height, bpp)
 			panic(fmt.Sprintf("image size is wrong: expected %q, got %q", exp, got))
 		}
 
+		// Calculate the data
 		o.Stride = o.Width
 		var data []uint16
-
 		if o.Bpp == 4 {
 			o.Type = "PM_CMAP4"
 			data = chunky4(in, pix, o.Width, o.Height)
@@ -101,13 +103,9 @@ func Make(in image.Image, cfg image.Config, opts map[string]any) string {
 		o.Size = o.Stride * o.Height
 	}
 
-	var buf strings.Builder
-	err = out.Execute(&buf, o)
-	if err != nil {
-		panic(err)
-	}
+	out := util.CompileTemplate(tpl, o)
 
-	return buf.String()
+	return out
 }
 
 func chunky4(im image.Image, pix []uint8, width, height int) (out []uint16) {
@@ -176,9 +174,10 @@ type Opts struct {
 	LimitBpp    bool
 	Displayable bool
 	OnlyData    bool
-	Size        int
-	Stride      int
-	Type        string
-	PixData     []string
-	IsRGB       bool
+	// Template-specific data
+	Size    int
+	Stride  int
+	Type    string
+	PixData []string
+	IsRGB   bool
 }
