@@ -32,6 +32,7 @@ func Make(in *image.Paletted, cfg image.Config, opts map[string]any) string {
 	}
 
 	var stride int = ((o.Width + 15) & ^15) / 16
+	// Binary data
 	bpl := util.Planar(in.Pix, o.Width, o.Height, depth)
 	n := o.Width / 16
 	if o.Attached {

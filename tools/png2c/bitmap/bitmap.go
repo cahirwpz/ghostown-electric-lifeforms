@@ -38,6 +38,7 @@ func Make(in *image.Paletted, cfg image.Config, opts map[string]any) string {
 		panic(fmt.Sprintf("image size is wrong: expected %q, got %q", exp, got))
 	}
 
+	// Binary data
 	bpl := util.Planar(pix, o.Width, o.Height, depth)
 
 	if o.Interleaved {

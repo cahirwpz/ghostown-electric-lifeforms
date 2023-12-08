@@ -39,6 +39,7 @@ func Make(in image.Image, cfg image.Config, opts map[string]any) string {
 		o.Size = o.Width * o.Height
 		o.Type = "PM_RGB12"
 		o.Stride = o.Width
+		// Binary data
 		dataRGB := rgb12(*rgbm, o.Height, o.Width)
 
 		for i := 0; i < o.Stride*o.Height; i += o.Stride {
