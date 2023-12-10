@@ -21,6 +21,7 @@ func Make(in *image.Paletted, cfg image.Config, opts map[string]any) string {
 		p = in.Palette[0:o.Count]
 	} else {
 		p = util.CleanPalette(in.Pix, p)
+		o.Count = len(p)
 	}
 
 	if len(p) > o.Count {

@@ -95,7 +95,7 @@ func bindParams(p map[string]any) (out Opts) {
 	if v, ok := p["limit_depth"]; ok {
 		out.LimitDepth = v.(bool)
 	}
-	if v, ok := p["cpu_only"]; ok {
+	if v, ok := p["cpuonly"]; ok {
 		out.CpuOnly = v.(bool)
 	}
 	if v, ok := p["shared"]; ok {

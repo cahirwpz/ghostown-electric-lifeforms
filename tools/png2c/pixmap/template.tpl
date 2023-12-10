@@ -1,7 +1,7 @@
 static {{ if .Displayable }}__data_chip {{ end }}{{ .PixType }} {{ .Name }}_pixels[{{ .Size }}] = {
-	{{ range .PixData }}
-      {{- . -}},
-    {{ end -}}
+  {{ range .PixData }}
+    {{- . -}},
+  {{ end -}}
 };
 
 #define {{ .Name }}_width {{ .Width }}
@@ -14,3 +14,4 @@ static const __data PixmapT {{ .Name }} = {
   .pixels = {{ .Name }}_pixels
 };
 {{ end -}}
+

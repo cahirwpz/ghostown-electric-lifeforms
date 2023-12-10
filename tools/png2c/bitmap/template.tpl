@@ -1,7 +1,7 @@
 static {{ if not .CpuOnly }}__data_chip{{ end }} u_short _{{ .Name }}_bpl[] = {
-	{{ range .BplData }}
-      {{- . -}},
-    {{ end -}}
+  {{ range .BplData }}
+  {{- . -}},
+  {{ end -}}
 };
 
 #define {{ .Name }}_width {{ .Width }}
@@ -11,17 +11,18 @@ static {{ if not .CpuOnly }}__data_chip{{ end }} u_short _{{ .Name }}_bpl[] = {
 #define {{ .Name }}_bplSize {{ .BplSize }}
 #define {{ .Name }}_size {{ .Size}}
 {{ if not .OnlyData }}
-{{if not .Shared }} static {{ end }} const  __data BitmapT {{ .Name }} = {
-	.width = {{ .Width }},
-	.height = {{ .Height }},
-	.depth = {{ .Depth }},
-	.bytesPerRow = {{ .BytesPerRow }},
-	.bplSize = {{ .BplSize }},
-	.flags = {{ .Flags }},
-	.planes = {
-		{{ range .BplPtrs }}
-			{{- . -}},
-		{{ end }}
-	},
+{{ if not .Shared }}static {{ end }}const __data BitmapT {{ .Name }} = {
+  .width = {{ .Width }},
+  .height = {{ .Height }},
+  .depth = {{ .Depth }},
+  .bytesPerRow = {{ .BytesPerRow }},
+  .bplSize = {{ .BplSize }},
+  .flags = {{ .Flags }},
+  .planes = {
+    {{ range .BplPtrs }}
+      {{- . -}},
+  {{ end -}}
+  }
 };
 {{ end }}
+
