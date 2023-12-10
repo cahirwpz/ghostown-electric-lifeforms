@@ -1,4 +1,4 @@
-static {{ if .Displayable }}__data_chip {{ end }}{{ if .IsRGB }}u_short{{ else }}u_char{{ end }} {{ .Name }}_pixels[{{ .Size }}] = {
+static {{ if .Displayable }}__data_chip {{ end }}{{ .PixType }} {{ .Name }}_pixels[{{ .Size }}] = {
 	{{ range .PixData }}
       {{- . -}},
     {{ end -}}

@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"image"
+	"log"
 
 	"ghostown.pl/png2c/util"
 )
@@ -23,15 +24,13 @@ func Make(in *image.Paletted, cfg image.Config, opts map[string]any) string {
 	}
 
 	if len(p) > o.Count {
-		msg := fmt.Sprintf("Expected max %v colors, got %v", o.Count, len(p))
-		panic(msg)
+		log.Panicf("Expected max %v colors, got %v", o.Count, len(p))
 	}
 
 	// Calculate the color data
 	for _, v := range p {
-		r, g, b, _ := v.RGBA()
-		c := (r>>8/16)<<8 | (g>>8/16)<<4 | (b >> 8 / 16)
-		o.Colors = append(o.Colors, c)
+		c := util.RGB12(v)
+		o.ColorsData = append(o.ColorsData, fmt.Sprintf("0x%03x", c))
 	}
 
 	// Compile the template
@@ -60,5 +59,5 @@ type Opts struct {
 	Shared      bool
 	StoreUnused bool
 	// Template-specific data.
-	Colors []uint32
+	ColorsData []string
 }

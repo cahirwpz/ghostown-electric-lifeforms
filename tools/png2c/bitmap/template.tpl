@@ -17,9 +17,9 @@ static {{ if not .CpuOnly }}__data_chip{{ end }} u_short _{{ .Name }}_bpl[] = {
 	.depth = {{ .Depth }},
 	.bytesPerRow = {{ .BytesPerRow }},
 	.bplSize = {{ .BplSize }},
-	.flags = {{ .Flags }}
+	.flags = {{ .Flags }},
 	.planes = {
-		{{ range .BplPointers }}
+		{{ range .BplPtrs }}
 			{{- . -}},
 		{{ end }}
 	},

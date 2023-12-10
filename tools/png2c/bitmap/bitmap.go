@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"image"
+	"log"
 	"strings"
 
 	"ghostown.pl/png2c/util"
@@ -29,11 +30,15 @@ func Make(in *image.Paletted, cfg image.Config, opts map[string]any) string {
 		cfg.Height = o.Height
 	}
 
-	// Validate the image' size
-	if o.Width != cfg.Width || o.Height != cfg.Height || o.Depth < depth {
-		got := fmt.Sprintf("%vx%vx%v", cfg.Width, cfg.Height, depth)
-		exp := fmt.Sprintf("%vx%vx%v", o.Width, o.Height, o.Depth)
-		panic(fmt.Sprintf("image size is wrong: expected %q, got %q", exp, got))
+	// Validate the image size
+	if o.Width != cfg.Width || o.Height != cfg.Height {
+		log.Panicf("Image size is wrong: expected %vx%v, got %vx%v",
+			o.Width, o.Height, cfg.Width, cfg.Height)
+	}
+
+	// Validate image depth
+	if o.Depth < depth {
+		log.Panicf("Image depth is wrong: expected %v, got %v", o.Depth, depth)
 	}
 
 	// Calculate the binary data
@@ -70,7 +75,6 @@ func Make(in *image.Paletted, cfg image.Config, opts map[string]any) string {
 		flags = append(flags, "BM_INTERLEAVED")
 	}
 	o.Flags = strings.Join(flags, "|")
-	o.Flags += ","
 
 	for i := 0; i < depth; i++ {
 		offset := 0
@@ -80,7 +84,7 @@ func Make(in *image.Paletted, cfg image.Config, opts map[string]any) string {
 			offset = i * o.BplSize
 		}
 		ptr := fmt.Sprintf("(void *)_%s_bpl + %v", o.Name, offset)
-		o.BplPointers = append(o.BplPointers, ptr)
+		o.BplPtrs = append(o.BplPtrs, ptr)
 	}
 
 	out := util.CompileTemplate(tpl, o)
@@ -149,5 +153,5 @@ type Opts struct {
 	StartX      int
 	StartY      int
 	BplData     []string
-	BplPointers []string
+	BplPtrs     []string
 }

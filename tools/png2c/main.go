@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"io"
+	"log"
 	"os"
 	"strings"
 
@@ -46,13 +47,13 @@ func init() {
 func main() {
 	r, err := os.Open(flag.Arg(0))
 	if err != nil {
-		panic(fmt.Sprintf("Failed to open file %q", flag.Arg(0)))
+		log.Panicf("Failed to open file %q", flag.Arg(0))
 	}
 	file, _ := io.ReadAll(r)
 
 	img, cfg, err := util.DecodePNG(file)
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 
 	var out string
@@ -60,7 +61,7 @@ func main() {
 		// Check if image has a palette
 		pm, _ := img.(*image.Paletted)
 		if pm == nil {
-			panic("only paletted images are supported")
+			log.Panic("only paletted images are supported")
 		}
 
 		for _, flag := range bitmapVar {
@@ -84,7 +85,7 @@ func main() {
 		// Check if image has a palette
 		pm, _ := img.(*image.Paletted)
 		if pm == nil {
-			panic("only paletted images are supported")
+			log.Panic("Only paletted images are supported!")
 		}
 		for _, flag := range paletteVar {
 			opts := pms.ParseOpts(flag,
@@ -93,7 +94,6 @@ func main() {
 				pms.Param{Name: "shared", CastType: pms.TYPE_BOOL, Value: false},
 				pms.Param{Name: "store_unused", CastType: pms.TYPE_BOOL, Value: false},
 			)
-
 			out += p.Make(pm, cfg, opts)
 		}
 	}
@@ -114,7 +114,7 @@ func main() {
 	if len(spriteVar) > 0 {
 		pm, _ := img.(*image.Paletted)
 		if pm == nil {
-			panic("only paletted images are supported")
+			log.Panic("only paletted images are supported")
 		}
 		for _, flag := range spriteVar {
 			opts := pms.ParseOpts(flag,
@@ -129,8 +129,8 @@ func main() {
 
 	inName := strings.Split(r.Name(), ".")[0]
 	outName := fmt.Sprintf("%s.c", inName)
-	err = os.WriteFile(outName, []byte(out), 777)
+	err = os.WriteFile(outName, []byte(out), 0777)
 	if err != nil {
-		panic(fmt.Sprintf("Failed to write file %q", flag.Arg(0)))
+		log.Panicf("Failed to write file %q", flag.Arg(0))
 	}
 }

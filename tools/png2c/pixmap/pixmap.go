@@ -4,7 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"image"
-	"image/color"
+	"log"
 	"strings"
 
 	"ghostown.pl/png2c/util"
@@ -18,89 +18,85 @@ func Make(in image.Image, cfg image.Config, opts map[string]any) string {
 
 	// Validate bpp
 	if o.Bpp != 4 && o.Bpp != 8 && o.Bpp != 12 {
-		panic(fmt.Sprintf("Wrong specification: bits per pixel: %v!", o.Bpp))
+		log.Panicf("Wrong specification: bits per pixel: %v!", o.Bpp)
 	}
+
+	// Validate image size
+	if o.Width != cfg.Width || o.Height != cfg.Height {
+		log.Panicf("Image size is wrong: expected %vx%v, got %vx%v!",
+			o.Width, o.Height, cfg.Width, cfg.Height)
+	}
+
+	var data []uint
+	var dataFmtStr string
 
 	// Handle RGB images
 	if rgbm, _ := in.(*image.RGBA); rgbm != nil {
-		o.IsRGB = true
 		if o.Bpp <= 8 {
-			panic("Expected RGB true color image!")
-		}
-
-		// Validate image' size
-		if o.Width != cfg.Width || o.Height != cfg.Height {
-			got := fmt.Sprintf("%vx%vx%v", o.Width, o.Height, o.Bpp)
-			exp := fmt.Sprintf("%vx%vx%v", cfg.Width, cfg.Height, o.Bpp)
-			panic(fmt.Sprintf("image size is wrong: expected %q, got %q", exp, got))
+			log.Panic("Expected RGB true color image!")
 		}
 
 		// Calculate the data
 		o.Size = o.Width * o.Height
 		o.Type = "PM_RGB12"
 		o.Stride = o.Width
+		o.PixType = "u_short"
+
 		// Binary data
-		dataRGB := rgb12(*rgbm, o.Height, o.Width)
-		for i := 0; i < o.Stride*o.Height; i += o.Stride {
-			row := []string{}
-			for _, v := range dataRGB[i : i+o.Stride] {
-				o := fmt.Sprintf("0x%04x", v)
-				row = append(row, o)
-			}
-			o.PixData = append(o.PixData, strings.Join(row, ", "))
-		}
-		// Handle paletted and grayscale images
+		data = rgb12(*rgbm, o.Height, o.Width)
+		dataFmtStr = "0x%04x"
 	} else {
+		// Handle paletted and grayscale images
 		var pix []uint8
 		if pm, _ := in.(*image.Paletted); pm != nil {
 			pix = pm.Pix
 		} else if gray, _ := in.(*image.Gray); gray != nil {
 			pix = gray.Pix
 		} else {
-			panic("Expected color mapped or grayscale image!")
+			log.Panic("Expected color mapped or grayscale image!")
 		}
 
 		// Set and validate bpp
 		if o.Bpp > 8 {
-			panic("Depth too big!")
+			log.Panic("Depth too big!")
 		}
 		bpp := util.GetDepth(pix)
 		if o.LimitBpp {
 			bpp = min(o.Bpp, bpp)
 		}
 
-		// Validate image' size
-		if o.Width != cfg.Width || o.Height != cfg.Height || o.Bpp < bpp {
-			got := fmt.Sprintf("%vx%vx%v", o.Width, o.Height, o.Bpp)
-			exp := fmt.Sprintf("%vx%vx%v", cfg.Width, cfg.Height, bpp)
-			panic(fmt.Sprintf("image size is wrong: expected %q, got %q", exp, got))
+		// Validate image depth
+		if o.Bpp < bpp {
+			log.Panicf("Image depth is wrong: expected %v, got %v", o.Bpp, bpp)
 		}
 
 		// Calculate the data
-		o.Stride = o.Width
-		var data []uint16
 		if o.Bpp == 4 {
 			o.Type = "PM_CMAP4"
-			data = chunky4(in, pix, o.Width, o.Height)
 			o.Stride = (o.Width + 1) / 2
+			data = chunky4(in, pix, o.Width, o.Height)
 		} else {
 			o.Type = "PM_CMAP8"
-			var pix16 = make([]uint16, 0, len(pix))
+			o.Stride = o.Width
+			data = make([]uint, 0, len(pix))
 			for _, v := range pix {
-				pix16 = append(pix16, uint16(v))
+				data = append(data, uint(v))
 			}
-			data = pix16
 		}
 
-		for i := 0; i < o.Stride*o.Height; i += o.Stride {
-			row := []string{}
-			for _, v := range data[i : i+o.Stride] {
-				o := fmt.Sprintf("0x%02x", v)
-				row = append(row, o)
-			}
-			o.PixData = append(o.PixData, strings.Join(row, ", "))
-		}
 		o.Size = o.Stride * o.Height
+		o.PixType = "u_char"
+
+		dataFmtStr = "0x%02x"
+	}
+
+	for i := 0; i < o.Stride*o.Height; i += o.Stride {
+		row := []string{}
+		for _, v := range data[i : i+o.Stride] {
+			o := fmt.Sprintf(dataFmtStr, v)
+			row = append(row, o)
+		}
+		o.PixData = append(o.PixData, strings.Join(row, ", "))
 	}
 
 	out := util.CompileTemplate(tpl, o)
@@ -108,7 +104,7 @@ func Make(in image.Image, cfg image.Config, opts map[string]any) string {
 	return out
 }
 
-func chunky4(im image.Image, pix []uint8, width, height int) (out []uint16) {
+func chunky4(im image.Image, pix []uint8, width, height int) (out []uint) {
 	for y := 0; y < height; y++ {
 		for x := 0; x < ((width + 1) & ^1); x += 2 {
 			var x0, x1 uint8
@@ -122,29 +118,20 @@ func chunky4(im image.Image, pix []uint8, width, height int) (out []uint16) {
 			if x+1 >= width {
 				x1 = 0
 			}
-			out = append(out, uint16((x0<<4)|x1))
+			out = append(out, uint((x0<<4)|x1))
 		}
 	}
 	return out
 }
 
-func rgb12(img image.RGBA, height, width int) (out []uint16) {
+func rgb12(img image.RGBA, height, width int) (out []uint) {
 	for y := 0; y < height; y++ {
 		for x := 0; x < width; x++ {
-			o := toRGB12(img.At(x, y))
-			out = append(out, o)
+			c := util.RGB12(img.At(x, y))
+			out = append(out, c)
 		}
 	}
 	return out
-}
-
-func toRGB12(rgb color.Color) uint16 {
-	r, g, b, _ := rgb.RGBA()
-	var rr uint16 = uint16(r >> 8)
-	var gg uint16 = uint16(g >> 8)
-	var bb uint16 = uint16(b >> 8)
-
-	return ((rr & 0xf0) << 4) | (gg & 0xf0) | (bb >> 4)
 }
 
 func bindParams(p map[string]any) (out Opts) {
@@ -179,5 +166,5 @@ type Opts struct {
 	Stride  int
 	Type    string
 	PixData []string
-	IsRGB   bool
+	PixType string
 }

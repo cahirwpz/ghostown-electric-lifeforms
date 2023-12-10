@@ -6,6 +6,7 @@ import (
 	"image"
 	"image/color"
 	"image/png"
+	"log"
 	"math"
 	"slices"
 	"strings"
@@ -15,13 +16,13 @@ import (
 func CompileTemplate(tpl string, data any) string {
 	tmpl, err := template.New("template").Parse(tpl)
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 
 	var buf strings.Builder
 	err = tmpl.Execute(&buf, data)
 	if err != nil {
-		panic(err)
+		log.Panic(err)
 	}
 
 	return buf.String()
@@ -94,4 +95,9 @@ func Planar(pix []uint8, width, height, depth int) []uint16 {
 	}
 
 	return data
+}
+
+func RGB12(c color.Color) uint {
+	r, g, b, _ := c.RGBA() // 16-bit components
+	return uint(((r & 0xf000) >> 4) | ((g & 0xf000) >> 8) | ((b & 0xf000) >> 12))
 }

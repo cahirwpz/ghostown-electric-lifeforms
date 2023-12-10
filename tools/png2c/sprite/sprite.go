@@ -4,6 +4,7 @@ import (
 	_ "embed"
 	"fmt"
 	"image"
+	"log"
 
 	"ghostown.pl/png2c/util"
 )
@@ -18,13 +19,13 @@ func Make(in *image.Paletted, cfg image.Config, opts map[string]any) string {
 	if o.Width != cfg.Width || o.Height != cfg.Height {
 		got := fmt.Sprintf("%vx%v", cfg.Height, cfg.Width)
 		exp := fmt.Sprintf("%vx%v", o.Height, o.Width)
-		panic(fmt.Sprintf("image size is wrong: expected %q, got %q", exp, got))
+		log.Panicf("Image size is wrong: expected %q, got %q", exp, got)
 	}
 
 	// Validate depth
 	depth := util.GetDepth(in.Pix)
 	if !o.Attached && depth != 2 {
-		panic(fmt.Sprintf("image depth is %v, expected 2!", depth))
+		log.Panicf("Image depth is %v, expected 2!", depth)
 	}
 
 	var stride int = ((o.Width + 15) & ^15) / 16

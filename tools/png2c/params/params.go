@@ -1,7 +1,7 @@
 package params
 
 import (
-	"fmt"
+	"log"
 	"strconv"
 	"strings"
 )
@@ -36,7 +36,7 @@ func ParseOpts(s string, params ...Param) map[string]any {
 	// parse mandatory arguments
 	for _, v := range mandatory {
 		if len(ss) == 0 {
-			panic(fmt.Sprintf("Missing argument %q!", v.Name))
+			log.Panicf("Missing argument %q!", v.Name)
 		}
 		v.Value = ss[0]
 		result = cast(v, result)
@@ -56,7 +56,7 @@ func ParseOpts(s string, params ...Param) map[string]any {
 				} else if strings.Contains(s, "=") {
 					e := strings.Split(s, "=")
 					if len(e) != 2 {
-						panic("Malformed optional argument")
+						log.Panic("Malformed optional argument")
 					}
 					p.Name = e[0]
 					p.Value = e[1]
@@ -89,7 +89,7 @@ func cast(p Param, out map[string]any) map[string]any {
 				case TYPE_INT:
 					v, err := strconv.Atoi(values[i])
 					if err != nil {
-						panic(err)
+						log.Panic(err)
 					}
 					nv = v
 				}
@@ -100,7 +100,7 @@ func cast(p Param, out map[string]any) map[string]any {
 			for _, v := range values {
 				ve, err := strconv.Atoi(v)
 				if err != nil {
-					panic(err)
+					log.Panic(err)
 				}
 				vs = append(vs, ve)
 			}
