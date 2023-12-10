@@ -57,6 +57,24 @@ func main() {
 	}
 
 	var out string
+
+	if len(paletteVar) > 0 {
+		// Check if image has a palette
+		pm, _ := img.(*image.Paletted)
+		if pm == nil {
+			log.Panic("Only paletted images are supported!")
+		}
+		for _, flag := range paletteVar {
+			opts := pms.ParseOpts(flag,
+				pms.Param{Name: "name", CastType: pms.TYPE_STRING},
+				pms.Param{Name: "count", CastType: pms.TYPE_INT},
+				pms.Param{Name: "shared", CastType: pms.TYPE_BOOL, Value: false},
+				pms.Param{Name: "store_unused", CastType: pms.TYPE_BOOL, Value: false},
+			)
+			out += p.Make(pm, cfg, opts)
+		}
+	}
+
 	if len(bitmapVar) > 0 {
 		// Check if image has a palette
 		pm, _ := img.(*image.Paletted)
@@ -107,23 +125,6 @@ func main() {
 				pms.Param{Name: "attached", CastType: pms.TYPE_BOOL, Value: false},
 			)
 			out += sprite.Make(pm, cfg, opts)
-		}
-	}
-
-	if len(paletteVar) > 0 {
-		// Check if image has a palette
-		pm, _ := img.(*image.Paletted)
-		if pm == nil {
-			log.Panic("Only paletted images are supported!")
-		}
-		for _, flag := range paletteVar {
-			opts := pms.ParseOpts(flag,
-				pms.Param{Name: "name", CastType: pms.TYPE_STRING},
-				pms.Param{Name: "count", CastType: pms.TYPE_INT},
-				pms.Param{Name: "shared", CastType: pms.TYPE_BOOL, Value: false},
-				pms.Param{Name: "store_unused", CastType: pms.TYPE_BOOL, Value: false},
-			)
-			out += p.Make(pm, cfg, opts)
 		}
 	}
 
