@@ -41,8 +41,7 @@ func CutImage(startX, startY, width, height int, img image.Config, pix []uint8) 
 }
 
 func CleanPalette(pix []uint8, pal color.Palette) color.Palette {
-	ci := slices.Max(pix) + 1
-
+	ci := int(slices.Max(pix)) + 1
 	return pal[0:ci]
 }
 

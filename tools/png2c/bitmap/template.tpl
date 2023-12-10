@@ -20,8 +20,8 @@ static {{ if not .CpuOnly }}__data_chip{{ end }} u_short _{{ .Name }}_bpl[] = {
   .flags = {{ .Flags }},
   .planes = {
     {{ range .BplPtrs }}
-      {{- . -}},
-  {{ end -}}
+    {{- . -}},
+    {{ end -}}
   }
 };
 {{ end }}
