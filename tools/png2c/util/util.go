@@ -40,11 +40,6 @@ func CutImage(startX, startY, width, height int, img image.Config, pix []uint8) 
 	return out
 }
 
-func CleanPalette(pix []uint8, pal color.Palette) color.Palette {
-	ci := int(slices.Max(pix)) + 1
-	return pal[0:ci]
-}
-
 func GetDepth(pix []uint8) int {
 	return int(math.Ceil(math.Log2(float64(slices.Max(pix) + 1))))
 }

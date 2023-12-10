@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"image"
 	"log"
+	"slices"
 
 	"ghostown.pl/png2c/util"
 )
@@ -15,21 +16,19 @@ var tpl string
 func Make(in *image.Paletted, cfg image.Config, opts map[string]any) string {
 	o := bindParams(opts)
 
-	// Clean up the palette
-	p := in.Palette
-	if o.StoreUnused {
-		p = in.Palette[0:o.Count]
-	} else {
-		p = util.CleanPalette(in.Pix, p)
-		o.Count = len(p)
+	if !o.StoreUnused {
+		// Clean up the palette
+		o.Count = int(slices.Max(in.Pix)) + 1
 	}
 
-	if len(p) > o.Count {
-		log.Panicf("Expected max %v colors, got %v", o.Count, len(p))
+	pal := in.Palette[0:o.Count]
+
+	if len(pal) > o.Count {
+		log.Panicf("Expected max %v colors, got %v", o.Count, len(pal))
 	}
 
 	// Calculate the color data
-	for _, v := range p {
+	for _, v := range pal {
 		c := util.RGB12(v)
 		o.ColorsData = append(o.ColorsData, fmt.Sprintf("0x%03x", c))
 	}
