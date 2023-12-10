@@ -64,32 +64,32 @@ func DecodePNG(file []byte) (image.Image, image.Config, error) {
 	return img, cfg, nil
 }
 
-func Planar(pix []uint8, width, height, depth int) []uint16 {
-	data := make([]uint16, 0, len(pix))
-	padding := make([]uint8, 16-(width&15))
+func Planar(pix []uint8, width, height, depth int, interleaved bool) []uint16 {
+	wordsPerRow := (width + 15) / 16
 
-	for offset := 0; offset < width*height; offset = offset + width {
-		row := make([]uint8, width+len(padding))
-		r := pix[offset : offset+width]
-		if width&15 != 0 {
-			for i, v := range r {
-				row[i] = v
-			}
-		} else {
-			row = r
-		}
+	data := make([]uint16, height*depth*wordsPerRow)
+
+	for y := 0; y < height; y++ {
+		row := make([]uint8, (width+15)&-15)
+		copy(row, pix[y*width:(y+1)*width])
 
 		for p := 0; p < depth; p++ {
 			bits := make([]uint16, len(row))
-			for i, byte := range row {
-				bits[i] = uint16(byte >> p & 1)
+			// extract bits at position p and put them into the least significant bit
+			for i, b := range row {
+				bits[i] = uint16((b >> p) & 1)
 			}
-			for i := 0; i < width; i = i + 16 {
+			// merge them into full words and write to bitmap
+			for x := 0; x < width; x = x + 16 {
 				var word uint16 = 0
-				for j := 0; j < 16; j++ {
-					word = word*2 + bits[i+j]
+				for i := 0; i < 16; i++ {
+					word = word*2 + bits[x+i]
 				}
-				data = append(data, word)
+				if interleaved {
+					data[(y*depth+p)*wordsPerRow+x/16] = word
+				} else {
+					data[(p*height+y)*wordsPerRow+x/16] = word
+				}
 			}
 		}
 	}

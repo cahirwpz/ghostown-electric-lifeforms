@@ -41,30 +41,21 @@ func Make(in *image.Paletted, cfg image.Config, opts map[string]any) string {
 		log.Panicf("Image depth is wrong: expected %v, got %v", o.Depth, depth)
 	}
 
+	o.BytesPerRow = ((o.Width + 15) & ^15) / 8
+	o.WordsPerRow = o.BytesPerRow / 2
+	o.BplSize = o.BytesPerRow * o.Height
+	o.Size = o.BplSize * o.Depth
+
 	// Calculate the binary data
-	bpl := util.Planar(pix, o.Width, o.Height, depth)
-	if o.Interleaved {
-		for i := 0; i < depth*o.WordsPerRow*o.Height; i = i + o.WordsPerRow {
-			words := []string{}
-			for x := 0; x < o.WordsPerRow; x++ {
-				f := fmt.Sprintf("0x%04x", bpl[i+x])
-				words = append(words, f)
-			}
-			o.BplData = append(o.BplData, strings.Join(words, ","))
+	bpl := util.Planar(pix, o.Width, o.Height, depth, o.Interleaved)
+
+	for i := 0; i < depth*o.WordsPerRow*o.Height; i = i + o.WordsPerRow {
+		words := []string{}
+		for x := 0; x < o.WordsPerRow; x++ {
+			f := fmt.Sprintf("0x%04x", bpl[i+x])
+			words = append(words, f)
 		}
-	} else {
-		for i := 0; i < depth*o.WordsPerRow; i = i + o.WordsPerRow {
-			j := i
-			for y := 0; y < o.Height; y++ {
-				words := []string{}
-				for x := 0; x < o.WordsPerRow; x++ {
-					f := fmt.Sprintf("0x%04x", bpl[j+x])
-					words = append(words, f)
-				}
-				o.BplData = append(o.BplData, strings.Join(words, ","))
-				j += o.WordsPerRow * depth
-			}
-		}
+		o.BplData = append(o.BplData, strings.Join(words, ","))
 	}
 
 	flags := []string{"BM_STATIC"}
@@ -122,11 +113,6 @@ func bindParams(p map[string]any) (out Opts) {
 		out.StartX = coords[0]
 		out.StartY = coords[1]
 	}
-
-	out.BytesPerRow = ((out.Width + 15) & ^15) / 8
-	out.WordsPerRow = out.BytesPerRow / 2
-	out.BplSize = out.BytesPerRow * out.Height
-	out.Size = out.BplSize * out.Depth
 
 	return out
 }
