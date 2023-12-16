@@ -54,3 +54,8 @@ Otherwise if the formula was not satisfiable and `UNSATISFIABLE` was printed the
 Value of `N` has to be the same as the one used to generate the input in step 1. corresponding to the output from step 2.
 Result is a list of macros of blitter configs that have to be run in sequence in order to calculate the next generation.
 They are used in a structure describing a set of blitter passes, see [here](https://github.com/cahirwpz/ghostown-electric-lifeforms/blob/478ca16e16fb5fd6446b255df8066ed984248b18/intro/gol-games.c#L48) for an example.
+
+# Acknowledgements
+
+**Piotr Polesiuk** - for the original idea to use a SAT-solver for finding blitter configurations and for kindly donating the initial version of the code contained here.
+

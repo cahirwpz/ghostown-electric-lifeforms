@@ -1,3 +1,8 @@
+(*
+ * Copyright 2021-2023 Piotr Polesiuk & Ghostown
+ * SPDX-License-Identifier: MIT
+ *)
+
 open Sat
 
 let blit_n = int_of_string Sys.argv.(1)

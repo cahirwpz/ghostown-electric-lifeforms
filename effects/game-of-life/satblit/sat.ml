@@ -1,3 +1,8 @@
+(*
+ * Copyright 2021-2023 Piotr Polesiuk & Ghostown
+ * SPDX-License-Identifier: MIT
+ *)
+
 type var = int
 
 let var_num = ref 0

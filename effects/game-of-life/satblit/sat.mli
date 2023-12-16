@@ -1,3 +1,8 @@
+(*
+ * Copyright 2021-2023 Piotr Polesiuk & Ghostown
+ * SPDX-License-Identifier: MIT
+ *)
+
 type var
 
 val dump_dimacs : unit -> unit
