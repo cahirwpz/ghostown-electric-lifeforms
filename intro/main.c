@@ -56,7 +56,8 @@ static EffectT *AllEffects[] = {
 };
 
 static void ShowMemStats(void) {
-  Log("[Memory] CHIP: %d FAST: %d\n", MemAvail(MEMF_CHIP), MemAvail(MEMF_FAST));
+  Log("[Memory] CHIP: %d FAST: %d\n",
+      MemAvail(MEMF_CHIP), MemAvail(MEMF_PUBLIC));
 }
 
 void PixmapToBitmap(BitmapT *bm, short width, short height, short depth,
@@ -190,6 +191,8 @@ static void RunEffects(void) {
 }
 
 extern void InitSamples(void);
+extern void InitColorTab(void);
+extern void InitSinTab(void);
 
 int main(void) {
   /* NOP that triggers fs-uae debugger to stop and inform GDB that it should
@@ -197,6 +200,8 @@ int main(void) {
   asm volatile("exg %d7,%d7");
 
   ResetSprites();
+  InitColorTab();
+  InitSinTab();
   InitSamples();
   PtInstallCIA();
   PtInit(Module, Samples, 0);
